@@ -14,11 +14,14 @@ export interface FeedData {
   fetchedAt: string;
 }
 
+export type TileStyle = "full" | "condensed" | "compact";
+
 export interface FeedWidget {
   id: string;
   url: string;
   customTitle?: string;
   column: number;
+  style?: TileStyle;
 }
 
 export interface DashboardTab {
