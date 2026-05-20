@@ -30,6 +30,8 @@ import {
   X,
   Pencil,
 } from "lucide-react";
+import { UserMenu } from "@/components/UserMenu";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -56,6 +58,7 @@ function Home() {
   const [newTabOpen, setNewTabOpen] = useState(false);
   const [newTabName, setNewTabName] = useState("");
   const [editingTab, setEditingTab] = useState<string | null>(null);
+  const [tabToDelete, setTabToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const cols = dash.activeTab.columns;
   const gridClass =
@@ -104,7 +107,7 @@ function Home() {
         <div className="flex items-center gap-3 px-4 md:px-6 py-3">
           <div className="flex items-center gap-2">
             <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
-              <Sparkles className="h-4.5 w-4.5 text-primary-foreground" />
+              <Sparkles className="h-5 w-5 text-white drop-shadow" />
             </div>
             <div>
               <h1 className="font-display text-lg font-bold leading-none text-gradient">
@@ -137,6 +140,7 @@ function Home() {
               })}
             </div>
             <AddFeedDialog onAdd={dash.addWidget} />
+            <UserMenu />
           </div>
         </div>
 
@@ -165,7 +169,7 @@ function Home() {
                     if (name) dash.renameTab(t.id, name);
                     setEditingTab(null);
                   }}
-                  onRemove={() => dash.removeTab(t.id)}
+                  onRemove={() => setTabToDelete({ id: t.id, name: t.name })}
                 />
               ))}
               {newTabOpen ? (
@@ -236,6 +240,21 @@ function Home() {
       <footer className="px-4 md:px-6 py-4 text-center text-xs text-muted-foreground border-t border-border">
         Built with care · Feeds fetched server-side · Auto-refreshes every 10 min.
       </footer>
+
+      <ConfirmDialog
+        open={!!tabToDelete}
+        onOpenChange={(o) => !o && setTabToDelete(null)}
+        title="Delete this tab?"
+        description={
+          tabToDelete
+            ? `"${tabToDelete.name}" and all its feeds will be permanently removed.`
+            : ""
+        }
+        onConfirm={() => {
+          if (tabToDelete) dash.removeTab(tabToDelete.id);
+          setTabToDelete(null);
+        }}
+      />
     </div>
   );
 }

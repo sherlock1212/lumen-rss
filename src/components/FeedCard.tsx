@@ -12,6 +12,7 @@ import {
   Rss,
   Trash2,
 } from "lucide-react";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 interface Props {
   widget: FeedWidget;
@@ -43,6 +44,7 @@ function timeAgo(iso?: string): string {
 
 export function FeedCard({ widget, onRemove, onUpdate }: Props) {
   const [editing, setEditing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const style = widget.style ?? "full";
 
   const {
@@ -110,7 +112,7 @@ export function FeedCard({ widget, onRemove, onUpdate }: Props) {
           <GripVertical className="h-3.5 w-3.5" />
         </button>
         <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0">
-          <Rss className="h-3.5 w-3.5 text-primary-foreground" />
+          <Rss className="h-3.5 w-3.5 text-white drop-shadow" />
         </div>
         <h3 className="font-display font-semibold text-sm truncate flex-1">
           {title}
@@ -133,7 +135,7 @@ export function FeedCard({ widget, onRemove, onUpdate }: Props) {
             />
           </button>
           <button
-            onClick={onRemove}
+            onClick={() => setConfirmOpen(true)}
             className="p-1.5 rounded hover:bg-destructive/20 text-destructive"
             aria-label="Remove"
           >
@@ -240,6 +242,18 @@ export function FeedCard({ widget, onRemove, onUpdate }: Props) {
         open={editing}
         onClose={() => setEditing(false)}
         onSave={onUpdate}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Remove this feed?"
+        description={`"${title}" will be removed from this tab. You can always add it back later.`}
+        confirmLabel="Remove"
+        onConfirm={() => {
+          setConfirmOpen(false);
+          onRemove();
+        }}
       />
     </div>
   );
