@@ -240,6 +240,21 @@ function Home() {
       <footer className="px-4 md:px-6 py-4 text-center text-xs text-muted-foreground border-t border-border">
         Built with care · Feeds fetched server-side · Auto-refreshes every 10 min.
       </footer>
+
+      <ConfirmDialog
+        open={!!tabToDelete}
+        onOpenChange={(o) => !o && setTabToDelete(null)}
+        title="Delete this tab?"
+        description={
+          tabToDelete
+            ? `"${tabToDelete.name}" and all its feeds will be permanently removed.`
+            : ""
+        }
+        onConfirm={() => {
+          if (tabToDelete) dash.removeTab(tabToDelete.id);
+          setTabToDelete(null);
+        }}
+      />
     </div>
   );
 }
