@@ -140,6 +140,7 @@ function Home() {
               })}
             </div>
             <AddFeedDialog onAdd={dash.addWidget} />
+            <UserMenu />
           </div>
         </div>
 
@@ -168,7 +169,7 @@ function Home() {
                     if (name) dash.renameTab(t.id, name);
                     setEditingTab(null);
                   }}
-                  onRemove={() => dash.removeTab(t.id)}
+                  onRemove={() => setTabToDelete({ id: t.id, name: t.name })}
                 />
               ))}
               {newTabOpen ? (
