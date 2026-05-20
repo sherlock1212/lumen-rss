@@ -30,6 +30,8 @@ import {
   X,
   Pencil,
 } from "lucide-react";
+import { UserMenu } from "@/components/UserMenu";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -56,6 +58,7 @@ function Home() {
   const [newTabOpen, setNewTabOpen] = useState(false);
   const [newTabName, setNewTabName] = useState("");
   const [editingTab, setEditingTab] = useState<string | null>(null);
+  const [tabToDelete, setTabToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const cols = dash.activeTab.columns;
   const gridClass =
@@ -104,7 +107,7 @@ function Home() {
         <div className="flex items-center gap-3 px-4 md:px-6 py-3">
           <div className="flex items-center gap-2">
             <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
-              <Sparkles className="h-4.5 w-4.5 text-primary-foreground" />
+              <Sparkles className="h-5 w-5 text-white drop-shadow" />
             </div>
             <div>
               <h1 className="font-display text-lg font-bold leading-none text-gradient">
