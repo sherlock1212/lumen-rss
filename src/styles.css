@@ -265,4 +265,68 @@
     background: var(--color-border);
     border-radius: 6px;
   }
+
+  /* App top bar — uses --header-* tokens so Daylight can stay dark */
+  .app-header {
+    background: color-mix(in oklab, var(--header-bg) 82%, transparent);
+    color: var(--header-fg);
+    border-bottom: 1px solid var(--header-border);
+    backdrop-filter: blur(14px) saturate(140%);
+  }
+  .app-header .text-muted-foreground {
+    color: var(--header-muted);
+  }
+  .app-header .border-border {
+    border-color: var(--header-border);
+  }
+  .app-header .bg-surface\/60 {
+    background-color: color-mix(in oklab, var(--header-fg) 8%, transparent);
+  }
+
+  /* Read / unread feed item titles */
+  .feed-item-title {
+    font-weight: 600;
+  }
+  .feed-item-title[data-visited="true"] {
+    font-weight: 400;
+    color: var(--muted-foreground);
+  }
+
+  /* Newly arrived item — animated gradient that gently fades away */
+  @keyframes new-item-shimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  @keyframes new-item-fade {
+    0%, 70% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  .new-item {
+    position: relative;
+    isolation: isolate;
+  }
+  .new-item::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-left: 2px solid var(--primary);
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--primary) 22%, transparent) 0%,
+      color-mix(in oklab, var(--accent) 14%, transparent) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation:
+      new-item-shimmer 4s linear infinite,
+      new-item-fade 6s ease-out forwards;
+    pointer-events: none;
+  }
+  .new-item.fading::before {
+    animation:
+      new-item-shimmer 4s linear infinite,
+      new-item-fade 1.2s ease-out forwards;
+  }
+
 }
