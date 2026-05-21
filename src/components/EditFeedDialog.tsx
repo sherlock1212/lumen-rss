@@ -13,7 +13,9 @@ const STYLES: { value: TileStyle; label: string; desc: string }[] = [
   { value: "full", label: "Full", desc: "Title, excerpt & meta" },
   { value: "condensed", label: "Condensed", desc: "Titles only" },
   { value: "compact", label: "Compact", desc: "Tight one-line list" },
+  { value: "mini", label: "Mini", desc: "Smallest, ultra-dense" },
 ];
+
 
 export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
   const [title, setTitle] = useState(widget.customTitle ?? "");
