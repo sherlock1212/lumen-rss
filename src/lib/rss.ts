@@ -14,13 +14,14 @@ export interface FeedData {
   fetchedAt: string;
 }
 
-export type TileStyle = "full" | "condensed" | "compact";
+export type TileStyle = "full" | "condensed" | "compact" | "mini";
 
 export interface FeedWidget {
   id: string;
   url: string;
   customTitle?: string;
   column: number;
+  /** Per-widget style override. If undefined, falls back to tab.defaultStyle, then global. */
   style?: TileStyle;
 }
 
@@ -29,11 +30,17 @@ export interface DashboardTab {
   name: string;
   widgets: FeedWidget[];
   columns: number;
+  /** Default style applied to widgets in this tab that have no explicit style. */
+  defaultStyle?: TileStyle;
 }
 
 export interface DashboardState {
   tabs: DashboardTab[];
   activeTabId: string;
+  /** Global fallback display style. */
+  globalDefaultStyle?: TileStyle;
+  /** Whether to highlight newly arrived items in feeds. */
+  highlightNew?: boolean;
 }
 
 export async function fetchFeed(url: string): Promise<FeedData> {
