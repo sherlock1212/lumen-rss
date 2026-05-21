@@ -78,7 +78,7 @@ export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium block">Display style</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {STYLES.map((s) => (
                 <button
                   key={s.value}
