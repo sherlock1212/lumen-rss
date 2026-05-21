@@ -141,7 +141,9 @@ function Home() {
               })}
             </div>
             <AddFeedDialog onAdd={dash.addWidget} />
+            <ThemeSwitcher />
             <UserMenu />
+
           </div>
         </div>
 
