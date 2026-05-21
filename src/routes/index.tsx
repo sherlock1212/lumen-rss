@@ -35,6 +35,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 export const Route = createFileRoute("/")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Lumen — A modern RSS reader" },
