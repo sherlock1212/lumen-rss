@@ -60,6 +60,13 @@
   --ring: oklch(0.78 0.18 165);
   --glow: oklch(0.78 0.18 165 / 35%);
 
+  /* Header tokens — default mirrors card so dark themes are unchanged */
+  --header-bg: var(--card);
+  --header-fg: var(--foreground);
+  --header-border: var(--border);
+  --header-muted: var(--muted-foreground);
+
+
   --gradient-aurora: radial-gradient(
       circle at 20% 10%,
       oklch(0.45 0.18 175 / 0.35),
