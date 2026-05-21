@@ -13,7 +13,9 @@ const STYLES: { value: TileStyle; label: string; desc: string }[] = [
   { value: "full", label: "Full", desc: "Title, excerpt & meta" },
   { value: "condensed", label: "Condensed", desc: "Titles only" },
   { value: "compact", label: "Compact", desc: "Tight one-line list" },
+  { value: "mini", label: "Mini", desc: "Smallest, ultra-dense" },
 ];
+
 
 export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
   const [title, setTitle] = useState(widget.customTitle ?? "");
@@ -76,7 +78,7 @@ export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium block">Display style</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {STYLES.map((s) => (
                 <button
                   key={s.value}

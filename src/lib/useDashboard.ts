@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import type { DashboardState, DashboardTab, FeedWidget } from "./rss";
+import type { DashboardState, DashboardTab, FeedWidget, TileStyle } from "./rss";
 
 const STORAGE_KEY = "lumen-rss-dashboard-v1";
 
@@ -14,12 +14,12 @@ function defaultState(): DashboardState {
     name: "Home",
     columns: 3,
     widgets: [
-      { id: uid(), url: "https://hnrss.org/frontpage", column: 0, style: "full" },
-      { id: uid(), url: "https://www.theverge.com/rss/index.xml", column: 1, style: "full" },
-      { id: uid(), url: "https://news.ycombinator.com/rss", column: 2, style: "full" },
+      { id: uid(), url: "https://hnrss.org/frontpage", column: 0 },
+      { id: uid(), url: "https://www.theverge.com/rss/index.xml", column: 1 },
+      { id: uid(), url: "https://news.ycombinator.com/rss", column: 2 },
     ],
   };
-  return { tabs: [tab], activeTabId: tabId };
+  return { tabs: [tab], activeTabId: tabId, globalDefaultStyle: "full", highlightNew: true };
 }
 
 export function useDashboard() {
@@ -27,7 +27,12 @@ export function useDashboard() {
     if (typeof window === "undefined") return defaultState();
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as DashboardState;
+      if (raw) {
+        const parsed = JSON.parse(raw) as DashboardState;
+        if (parsed.globalDefaultStyle === undefined) parsed.globalDefaultStyle = "full";
+        if (parsed.highlightNew === undefined) parsed.highlightNew = true;
+        return parsed;
+      }
     } catch {}
     return defaultState();
   });
@@ -62,7 +67,7 @@ export function useDashboard() {
           ...t,
           widgets: [
             ...t.widgets,
-            { id: uid(), url, customTitle, column: col, style: "full" },
+            { id: uid(), url, customTitle, column: col },
           ],
         };
       });
@@ -92,10 +97,6 @@ export function useDashboard() {
     [activeTab.id, updateTab],
   );
 
-  /**
-   * Reorder / move widgets via drag and drop.
-   * Inserts `activeId` into `overColumn` at index `overIndex` (or at end if -1).
-   */
   const reorderWidgets = useCallback(
     (activeId: string, overColumn: number, overIndex: number) => {
       updateTab(activeTab.id, (t) => {
@@ -104,12 +105,10 @@ export function useDashboard() {
         const without = t.widgets.filter((w) => w.id !== activeId);
         const updated: FeedWidget = { ...moving, column: overColumn };
 
-        // Build the new column list, then splice into the global widgets array
         const colItems = without.filter((w) => w.column === overColumn);
         const insertAt = overIndex < 0 ? colItems.length : overIndex;
         colItems.splice(insertAt, 0, updated);
 
-        // Reassemble: keep other columns as-is in their order, replace target col
         const result: FeedWidget[] = [];
         const consumed = new Set<string>();
         for (const w of without) {
@@ -186,8 +185,46 @@ export function useDashboard() {
     setState((s) => ({ ...s, activeTabId: tabId }));
   }, []);
 
+  // -------- Bulk style controls --------
+
+  /** Set the tab's default style and clear per-widget overrides on this tab. */
+  const setTabStyle = useCallback(
+    (style: TileStyle) => {
+      updateTab(activeTab.id, (t) => ({
+        ...t,
+        defaultStyle: style,
+        widgets: t.widgets.map((w) => ({ ...w, style: undefined })),
+      }));
+    },
+    [activeTab.id, updateTab],
+  );
+
+  /** Set global default style and clear all per-tab + per-widget overrides. */
+  const setGlobalStyle = useCallback((style: TileStyle) => {
+    setState((s) => ({
+      ...s,
+      globalDefaultStyle: style,
+      tabs: s.tabs.map((t) => ({
+        ...t,
+        defaultStyle: undefined,
+        widgets: t.widgets.map((w) => ({ ...w, style: undefined })),
+      })),
+    }));
+  }, []);
+
+  const setHighlightNew = useCallback((v: boolean) => {
+    setState((s) => ({ ...s, highlightNew: v }));
+  }, []);
+
   const widgetsByColumn = (col: number): FeedWidget[] =>
     activeTab.widgets.filter((w) => w.column === col);
+
+  /** Resolve effective style for a widget. */
+  const resolveStyle = useCallback(
+    (w: FeedWidget): TileStyle =>
+      w.style ?? activeTab.defaultStyle ?? state.globalDefaultStyle ?? "full",
+    [activeTab.defaultStyle, state.globalDefaultStyle],
+  );
 
   return {
     state,
@@ -203,5 +240,9 @@ export function useDashboard() {
     renameTab,
     reorderTabs,
     setActiveTab,
+    setTabStyle,
+    setGlobalStyle,
+    setHighlightNew,
+    resolveStyle,
   };
 }

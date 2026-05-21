@@ -33,6 +33,8 @@ import {
 import { UserMenu } from "@/components/UserMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { StyleMenu } from "@/components/StyleMenu";
+
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -105,7 +107,7 @@ function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-30 glass border-b border-border">
+      <header className="app-header sticky top-0 z-30">
         <div className="flex items-center gap-3 px-4 md:px-6 py-3">
           <div className="flex items-center gap-2">
             <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
@@ -141,12 +143,20 @@ function Home() {
                 );
               })}
             </div>
+            <StyleMenu
+              tabStyle={dash.activeTab.defaultStyle}
+              globalStyle={dash.state.globalDefaultStyle ?? "full"}
+              highlightNew={dash.state.highlightNew ?? true}
+              onSetTabStyle={dash.setTabStyle}
+              onSetGlobalStyle={dash.setGlobalStyle}
+              onToggleHighlightNew={dash.setHighlightNew}
+            />
             <AddFeedDialog onAdd={dash.addWidget} />
             <ThemeSwitcher />
             <UserMenu />
-
           </div>
         </div>
+
 
         {/* Tabs */}
         <DndContext
@@ -229,10 +239,13 @@ function Home() {
                       <FeedCard
                         key={w.id}
                         widget={w}
+                        effectiveStyle={dash.resolveStyle(w)}
+                        highlightNew={dash.state.highlightNew ?? true}
                         onRemove={() => dash.removeWidget(w.id)}
                         onUpdate={(patch) => dash.updateWidget(w.id, patch)}
                       />
                     ))}
+
                   </Column>
                 );
               })}

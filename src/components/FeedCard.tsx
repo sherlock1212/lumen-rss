@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { fetchFeed, type FeedWidget } from "@/lib/rss";
+import { fetchFeed, type FeedWidget, type TileStyle } from "@/lib/rss";
 import { EditFeedDialog } from "./EditFeedDialog";
 import {
   ExternalLink,
@@ -13,14 +13,18 @@ import {
   Trash2,
 } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { useVisited } from "@/lib/useVisited";
+import { useSeenItems } from "@/lib/useSeenItems";
 
 interface Props {
   widget: FeedWidget;
+  effectiveStyle: TileStyle;
+  highlightNew: boolean;
   onRemove: () => void;
   onUpdate: (patch: Partial<FeedWidget>) => void;
 }
 
-const REFRESH_MS = 10 * 60 * 1000; // 10 minutes
+const REFRESH_MS = 10 * 60 * 1000;
 
 function hashStr(s: string): number {
   let h = 0;
@@ -42,10 +46,24 @@ function timeAgo(iso?: string): string {
   return `${dd}d`;
 }
 
-export function FeedCard({ widget, onRemove, onUpdate }: Props) {
+export function FeedCard({
+  widget,
+  effectiveStyle,
+  highlightNew,
+  onRemove,
+  onUpdate,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const style = widget.style ?? "full";
+  const style = effectiveStyle;
+  const { isVisited, markVisited } = useVisited();
+  const { computeNew } = useSeenItems(widget.url);
+
+  // Per-render set of links flagged as "new" (after fetch).
+  const [newLinks, setNewLinks] = useState<Set<string>>(new Set());
+  // After mouse-move dismissal, mark items as "fading" to shorten the fade.
+  const [fading, setFading] = useState(false);
+  const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     attributes,
@@ -69,8 +87,6 @@ export function FeedCard({ widget, onRemove, onUpdate }: Props) {
     refetchOnWindowFocus: false,
   });
 
-  // Staggered auto-refresh: offset each widget within a 10-minute window
-  // based on a stable hash of its id, then refetch on a 10-min cadence.
   useEffect(() => {
     const offset = hashStr(widget.id) % REFRESH_MS;
     let interval: ReturnType<typeof setInterval> | undefined;
@@ -85,6 +101,41 @@ export function FeedCard({ widget, onRemove, onUpdate }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [widget.id]);
 
+  // Whenever fetched data updates, recompute newly-arrived links.
+  const dataKey = query.data?.fetchedAt;
+  useEffect(() => {
+    if (!query.data) return;
+    if (!highlightNew) {
+      setNewLinks(new Set());
+      return;
+    }
+    const links = query.data.items.map((i) => i.link).filter(Boolean);
+    const fresh = computeNew(links);
+    setNewLinks(fresh);
+    setFading(false);
+    // Auto-clear after the CSS fade completes (~6s) to keep DOM clean.
+    const t = setTimeout(() => setNewLinks(new Set()), 6500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataKey, highlightNew]);
+
+  // On mouse activity over the card, fade highlights faster.
+  function handleMouseMove() {
+    if (!newLinks.size || fading) return;
+    if (dismissTimer.current) return;
+    dismissTimer.current = setTimeout(() => {
+      setFading(true);
+      setTimeout(() => setNewLinks(new Set()), 1300);
+      dismissTimer.current = null;
+    }, 1500);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (dismissTimer.current) clearTimeout(dismissTimer.current);
+    };
+  }, []);
+
   const title =
     widget.customTitle ??
     query.data?.title ??
@@ -96,10 +147,31 @@ export function FeedCard({ widget, onRemove, onUpdate }: Props) {
       }
     })();
 
+  const itemPadding = useMemo(() => {
+    switch (style) {
+      case "mini":
+        return "flex items-center gap-2 px-3 py-0.5";
+      case "compact":
+        return "flex items-center gap-2 px-3 py-1.5";
+      case "condensed":
+        return "block px-4 py-2";
+      default:
+        return "block px-4 py-3";
+    }
+  }, [style]);
+
+  const maxH =
+    style === "mini"
+      ? "max-h-64"
+      : style === "compact"
+      ? "max-h-80"
+      : "max-h-[28rem]";
+
   return (
     <div
       ref={setNodeRef}
       style={dragStyle}
+      onMouseMove={handleMouseMove}
       className="glass rounded-xl flex flex-col overflow-hidden shadow-[var(--shadow-card)] transition hover:border-primary/30 group"
     >
       <header className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface/50">
@@ -144,11 +216,7 @@ export function FeedCard({ widget, onRemove, onUpdate }: Props) {
         </div>
       </header>
 
-      <div
-        className={`flex-1 overflow-y-auto scroll-thin ${
-          style === "compact" ? "max-h-80" : "max-h-[28rem]"
-        }`}
-      >
+      <div className={`flex-1 overflow-y-auto scroll-thin ${maxH}`}>
         {query.isLoading && (
           <div className="p-4 space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -171,48 +239,56 @@ export function FeedCard({ widget, onRemove, onUpdate }: Props) {
         )}
         {query.data && (
           <ul>
-            {query.data.items.map((item, i) => (
-              <li
-                key={i}
-                className="border-b border-border last:border-b-0 hover:bg-secondary/40 transition"
-              >
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={
-                    style === "compact"
-                      ? "flex items-center gap-2 px-3 py-1.5"
-                      : style === "condensed"
-                      ? "block px-4 py-2"
-                      : "block px-4 py-3"
-                  }
+            {query.data.items.map((item, i) => {
+              const visited = isVisited(item.link);
+              const isNew = highlightNew && newLinks.has(item.link);
+              return (
+                <li
+                  key={i}
+                  className={`border-b border-border last:border-b-0 hover:bg-secondary/40 transition ${
+                    isNew ? `new-item${fading ? " fading" : ""}` : ""
+                  }`}
                 >
-                  {style === "compact" ? (
-                    <>
-                      <span className="text-xs flex-1 truncate">
-                        {item.title}
-                      </span>
-                      {item.pubDate && (
-                        <span className="text-[10px] text-muted-foreground shrink-0">
-                          {timeAgo(item.pubDate)}
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-start gap-2">
-                        <span className="text-sm font-medium leading-snug flex-1">
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => markVisited(item.link)}
+                    onAuxClick={() => markVisited(item.link)}
+                    className={itemPadding}
+                  >
+                    {style === "compact" || style === "mini" ? (
+                      <>
+                        <span
+                          className={`feed-item-title flex-1 truncate ${
+                            style === "mini" ? "text-[11px]" : "text-xs"
+                          }`}
+                          data-visited={visited ? "true" : "false"}
+                        >
                           {item.title}
                         </span>
-                        <ExternalLink className="h-3 w-3 mt-1 opacity-40 shrink-0" />
-                      </div>
-                      {style === "full" && item.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {item.description}
-                        </p>
-                      )}
-                      {(style === "full" || style === "condensed") && (
+                        {item.pubDate && style !== "mini" && (
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            {timeAgo(item.pubDate)}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-start gap-2">
+                          <span
+                            className="feed-item-title text-sm leading-snug flex-1"
+                            data-visited={visited ? "true" : "false"}
+                          >
+                            {item.title}
+                          </span>
+                          <ExternalLink className="h-3 w-3 mt-1 opacity-40 shrink-0" />
+                        </div>
+                        {style === "full" && item.description && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            {item.description}
+                          </p>
+                        )}
                         <div className="flex items-center gap-2 mt-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/80">
                           {style === "full" && item.author && (
                             <>
@@ -222,12 +298,12 @@ export function FeedCard({ widget, onRemove, onUpdate }: Props) {
                           )}
                           {item.pubDate && <span>{timeAgo(item.pubDate)}</span>}
                         </div>
-                      )}
-                    </>
-                  )}
-                </a>
-              </li>
-            ))}
+                      </>
+                    )}
+                  </a>
+                </li>
+              );
+            })}
             {query.data.items.length === 0 && (
               <p className="p-4 text-xs text-muted-foreground">
                 No items in this feed.

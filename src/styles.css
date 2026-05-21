@@ -60,6 +60,13 @@
   --ring: oklch(0.78 0.18 165);
   --glow: oklch(0.78 0.18 165 / 35%);
 
+  /* Header tokens — default mirrors card so dark themes are unchanged */
+  --header-bg: var(--card);
+  --header-fg: var(--foreground);
+  --header-border: var(--border);
+  --header-muted: var(--muted-foreground);
+
+
   --gradient-aurora: radial-gradient(
       circle at 20% 10%,
       oklch(0.45 0.18 175 / 0.35),
@@ -192,6 +199,12 @@
   --ring: oklch(0.58 0.2 265);
   --glow: oklch(0.58 0.2 265 / 25%);
 
+  /* Daylight: keep the top bar dark so logo + icons stay legible */
+  --header-bg: oklch(0.24 0.04 265);
+  --header-fg: oklch(0.97 0.01 250);
+  --header-border: oklch(1 0 0 / 12%);
+  --header-muted: oklch(0.78 0.02 260);
+
   --gradient-aurora:
     radial-gradient(circle at 15% 10%, oklch(0.8 0.12 265 / 0.35), transparent 55%),
     radial-gradient(circle at 90% 15%, oklch(0.82 0.13 305 / 0.3), transparent 60%),
@@ -204,6 +217,7 @@
   --shadow-glow: 0 10px 40px -14px var(--glow);
   --shadow-card: 0 8px 24px -14px oklch(0.22 0.03 260 / 0.18);
 }
+
 
 
 @layer base {
@@ -251,4 +265,68 @@
     background: var(--color-border);
     border-radius: 6px;
   }
+
+  /* App top bar — uses --header-* tokens so Daylight can stay dark */
+  .app-header {
+    background: color-mix(in oklab, var(--header-bg) 82%, transparent);
+    color: var(--header-fg);
+    border-bottom: 1px solid var(--header-border);
+    backdrop-filter: blur(14px) saturate(140%);
+  }
+  .app-header .text-muted-foreground {
+    color: var(--header-muted);
+  }
+  .app-header .border-border {
+    border-color: var(--header-border);
+  }
+  .app-header .bg-surface\/60 {
+    background-color: color-mix(in oklab, var(--header-fg) 8%, transparent);
+  }
+
+  /* Read / unread feed item titles */
+  .feed-item-title {
+    font-weight: 600;
+  }
+  .feed-item-title[data-visited="true"] {
+    font-weight: 400;
+    color: var(--muted-foreground);
+  }
+
+  /* Newly arrived item — animated gradient that gently fades away */
+  @keyframes new-item-shimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  @keyframes new-item-fade {
+    0%, 70% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  .new-item {
+    position: relative;
+    isolation: isolate;
+  }
+  .new-item::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-left: 2px solid var(--primary);
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--primary) 22%, transparent) 0%,
+      color-mix(in oklab, var(--accent) 14%, transparent) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation:
+      new-item-shimmer 4s linear infinite,
+      new-item-fade 6s ease-out forwards;
+    pointer-events: none;
+  }
+  .new-item.fading::before {
+    animation:
+      new-item-shimmer 4s linear infinite,
+      new-item-fade 1.2s ease-out forwards;
+  }
+
 }
