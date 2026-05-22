@@ -121,4 +121,6 @@ export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
       </div>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }
