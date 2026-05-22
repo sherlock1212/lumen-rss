@@ -124,6 +124,7 @@ function Home() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            <AddFeedDialog onAdd={dash.addWidget} />
             <div className="hidden md:flex items-center gap-1 bg-surface/60 rounded-md p-0.5 border border-border">
               {[2, 3, 4].map((n) => {
                 const Icon = n === 2 ? Columns2 : n === 3 ? Columns3 : Columns4;
@@ -143,7 +144,6 @@ function Home() {
                 );
               })}
             </div>
-            <AddFeedDialog onAdd={dash.addWidget} />
             <StyleMenu
               tabStyle={dash.activeTab.defaultStyle}
               globalStyle={dash.state.globalDefaultStyle ?? "full"}
