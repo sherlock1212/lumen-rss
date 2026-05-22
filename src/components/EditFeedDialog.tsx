@@ -35,7 +35,9 @@ export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
     onClose();
   }
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  const dialog = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/70 backdrop-blur-sm animate-in fade-in"
       onClick={onClose}
