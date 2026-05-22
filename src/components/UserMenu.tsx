@@ -30,7 +30,7 @@ export function UserMenu() {
 
   if (loading) {
     return (
-      <div className="h-8 w-8 flex items-center justify-center text-muted-foreground">
+      <div className="h-9 w-9 flex items-center justify-center text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
       </div>
     );
@@ -42,12 +42,12 @@ export function UserMenu() {
         onClick={handleSignIn}
         disabled={busy}
         title={error ?? "Sign in with Google"}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border bg-surface/60 text-foreground text-xs font-medium hover:bg-secondary disabled:opacity-50"
+        className="h-9 inline-flex items-center gap-1.5 px-3 rounded-md border border-border bg-surface/60 text-foreground text-sm font-medium hover:bg-secondary disabled:opacity-50"
       >
         {busy ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <LogIn className="h-3.5 w-3.5" />
+          <LogIn className="h-4 w-4" />
         )}
         Sign in
       </button>

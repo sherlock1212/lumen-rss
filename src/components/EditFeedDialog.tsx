@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import type { FeedWidget, TileStyle } from "@/lib/rss";
 
@@ -34,7 +35,9 @@ export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
     onClose();
   }
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  const dialog = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/70 backdrop-blur-sm animate-in fade-in"
       onClick={onClose}
@@ -118,4 +121,6 @@ export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
       </div>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }

@@ -143,6 +143,7 @@ function Home() {
                 );
               })}
             </div>
+            <AddFeedDialog onAdd={dash.addWidget} />
             <StyleMenu
               tabStyle={dash.activeTab.defaultStyle}
               globalStyle={dash.state.globalDefaultStyle ?? "full"}
@@ -151,7 +152,6 @@ function Home() {
               onSetGlobalStyle={dash.setGlobalStyle}
               onToggleHighlightNew={dash.setHighlightNew}
             />
-            <AddFeedDialog onAdd={dash.addWidget} />
             <ThemeSwitcher />
             <UserMenu />
           </div>
