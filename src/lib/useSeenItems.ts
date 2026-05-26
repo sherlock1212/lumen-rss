@@ -1,57 +1,105 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { db } from "./firebase";
+import { useAuth } from "./useAuth";
 
-const STORAGE_KEY = "lumen-seen-items-v1";
 const MAX_PER_FEED = 300;
+const SAVE_DEBOUNCE_MS = 1500;
 
 type SeenMap = Record<string, string[]>;
 
-function load(): SeenMap {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as SeenMap) : {};
-  } catch {
-    return {};
+// Shared cache across all feed widgets for the current user so we only keep
+// one Firestore subscription and one save timer.
+const cache: {
+  uid: string | null;
+  map: SeenMap;
+  loaded: boolean;
+  subscribers: Set<() => void>;
+  unsub: (() => void) | null;
+  saveTimer: ReturnType<typeof setTimeout> | null;
+} = {
+  uid: null,
+  map: {},
+  loaded: false,
+  subscribers: new Set(),
+  unsub: null,
+  saveTimer: null,
+};
+
+function notify() {
+  for (const cb of cache.subscribers) cb();
+}
+
+function scheduleSave() {
+  if (!cache.uid || !cache.loaded) return;
+  if (cache.saveTimer) clearTimeout(cache.saveTimer);
+  const uid = cache.uid;
+  cache.saveTimer = setTimeout(() => {
+    setDoc(doc(db, "users", uid, "data", "seen"), { map: cache.map }).catch(
+      (e) => console.error("Seen items save failed:", e),
+    );
+  }, SAVE_DEBOUNCE_MS);
+}
+
+function bind(uid: string | null) {
+  if (cache.uid === uid) return;
+  if (cache.unsub) {
+    cache.unsub();
+    cache.unsub = null;
   }
+  if (cache.saveTimer) {
+    clearTimeout(cache.saveTimer);
+    cache.saveTimer = null;
+  }
+  cache.uid = uid;
+  cache.map = {};
+  cache.loaded = false;
+  if (!uid) {
+    notify();
+    return;
+  }
+  cache.unsub = onSnapshot(
+    doc(db, "users", uid, "data", "seen"),
+    (snap) => {
+      const data = snap.data() as { map?: SeenMap } | undefined;
+      cache.map = data?.map ?? {};
+      cache.loaded = true;
+      notify();
+    },
+    (e) => console.error("Seen items subscription error:", e),
+  );
 }
 
-function save(map: SeenMap) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch {}
-}
-
-/**
- * Tracks per-feed seen item links. `computeNew` returns links that are NEW
- * relative to the previous snapshot (and updates the snapshot).
- * On very first sight of a feed, nothing is considered new.
- */
 export function useSeenItems(feedUrl: string) {
-  const mapRef = useRef<SeenMap>(load());
-  const initializedRef = useRef<Set<string>>(new Set());
-  const [, force] = useState(0);
+  const { user } = useAuth();
+  const uidRef = useRef<string | null>(null);
 
   useEffect(() => {
-    mapRef.current = load();
-    force((n) => n + 1);
-  }, []);
+    const uid = user?.uid ?? null;
+    uidRef.current = uid;
+    bind(uid);
+    const cb = () => {};
+    cache.subscribers.add(cb);
+    return () => {
+      cache.subscribers.delete(cb);
+    };
+  }, [user]);
 
   const computeNew = useCallback(
     (links: string[]): Set<string> => {
-      const map = mapRef.current;
-      const prev = map[feedUrl];
       const newSet = new Set<string>();
-      if (prev === undefined) {
-        // First time we ever see this feed — seed it without flagging anything new.
-        initializedRef.current.add(feedUrl);
-      } else {
+      // For guests or before Firestore loads, don't flag anything as new
+      // and don't persist.
+      const canPersist = !!cache.uid && cache.loaded;
+      const prev = cache.map[feedUrl];
+      if (prev !== undefined) {
         const prevSet = new Set(prev);
         for (const l of links) if (l && !prevSet.has(l)) newSet.add(l);
       }
-      // Update snapshot with current links (cap size).
-      const next = links.slice(0, MAX_PER_FEED);
-      map[feedUrl] = next;
-      save(map);
+      if (canPersist) {
+        cache.map[feedUrl] = links.slice(0, MAX_PER_FEED);
+        scheduleSave();
+      }
       return newSet;
     },
     [feedUrl],
