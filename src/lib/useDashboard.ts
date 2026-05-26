@@ -1,13 +1,25 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { db } from "./firebase";
+import { useAuth } from "./useAuth";
 import type { DashboardState, DashboardTab, FeedWidget, TileStyle } from "./rss";
-
-const STORAGE_KEY = "lumen-rss-dashboard-v1";
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function defaultState(): DashboardState {
+function emptyState(): DashboardState {
+  const tabId = uid();
+  const tab: DashboardTab = {
+    id: tabId,
+    name: "Home",
+    columns: 3,
+    widgets: [],
+  };
+  return { tabs: [tab], activeTabId: tabId, globalDefaultStyle: "full", highlightNew: true };
+}
+
+function starterState(): DashboardState {
   const tabId = uid();
   const tab: DashboardTab = {
     id: tabId,
@@ -23,25 +35,72 @@ function defaultState(): DashboardState {
 }
 
 export function useDashboard() {
-  const [state, setState] = useState<DashboardState>(() => {
-    if (typeof window === "undefined") return defaultState();
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as DashboardState;
-        if (parsed.globalDefaultStyle === undefined) parsed.globalDefaultStyle = "full";
-        if (parsed.highlightNew === undefined) parsed.highlightNew = true;
-        return parsed;
-      }
-    } catch {}
-    return defaultState();
-  });
+  const { user } = useAuth();
+  const [state, setState] = useState<DashboardState>(() => emptyState());
 
+  // Tracks whether the current `state` reflects data loaded from Firestore
+  // for the current user. Until true, we don't persist changes.
+  const loadedForUidRef = useRef<string | null>(null);
+  // Skip the very next save triggered by hydrating from a snapshot.
+  const skipNextSaveRef = useRef(false);
+
+  // Subscribe to the logged-in user's dashboard doc; reset to empty on logout.
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {}
-  }, [state]);
+    if (!user) {
+      loadedForUidRef.current = null;
+      skipNextSaveRef.current = true;
+      setState(emptyState());
+      return;
+    }
+
+    const ref = doc(db, "users", user.uid, "data", "dashboard");
+    let firstSnapshot = true;
+
+    const unsub = onSnapshot(
+      ref,
+      async (snap) => {
+        if (firstSnapshot && !snap.exists()) {
+          // First-time user: seed with starter feeds and persist immediately.
+          const seed = starterState();
+          loadedForUidRef.current = user.uid;
+          skipNextSaveRef.current = true;
+          setState(seed);
+          try {
+            await setDoc(ref, seed);
+          } catch (e) {
+            console.error("Failed to seed dashboard:", e);
+          }
+        } else if (snap.exists()) {
+          const data = snap.data() as DashboardState;
+          if (data.globalDefaultStyle === undefined) data.globalDefaultStyle = "full";
+          if (data.highlightNew === undefined) data.highlightNew = true;
+          loadedForUidRef.current = user.uid;
+          skipNextSaveRef.current = true;
+          setState(data);
+        }
+        firstSnapshot = false;
+      },
+      (err) => {
+        console.error("Dashboard subscription error:", err);
+      },
+    );
+
+    return () => unsub();
+  }, [user]);
+
+  // Persist state changes to Firestore (debounced) once loaded for this user.
+  useEffect(() => {
+    if (!user || loadedForUidRef.current !== user.uid) return;
+    if (skipNextSaveRef.current) {
+      skipNextSaveRef.current = false;
+      return;
+    }
+    const ref = doc(db, "users", user.uid, "data", "dashboard");
+    const t = setTimeout(() => {
+      setDoc(ref, state).catch((e) => console.error("Save failed:", e));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [state, user]);
 
   const activeTab =
     state.tabs.find((t) => t.id === state.activeTabId) ?? state.tabs[0];
@@ -185,9 +244,6 @@ export function useDashboard() {
     setState((s) => ({ ...s, activeTabId: tabId }));
   }, []);
 
-  // -------- Bulk style controls --------
-
-  /** Set the tab's default style and clear per-widget overrides on this tab. */
   const setTabStyle = useCallback(
     (style: TileStyle) => {
       updateTab(activeTab.id, (t) => ({
@@ -199,7 +255,6 @@ export function useDashboard() {
     [activeTab.id, updateTab],
   );
 
-  /** Set global default style and clear all per-tab + per-widget overrides. */
   const setGlobalStyle = useCallback((style: TileStyle) => {
     setState((s) => ({
       ...s,
@@ -219,7 +274,6 @@ export function useDashboard() {
   const widgetsByColumn = (col: number): FeedWidget[] =>
     activeTab.widgets.filter((w) => w.column === col);
 
-  /** Resolve effective style for a widget. */
   const resolveStyle = useCallback(
     (w: FeedWidget): TileStyle =>
       w.style ?? activeTab.defaultStyle ?? state.globalDefaultStyle ?? "full",
@@ -229,6 +283,7 @@ export function useDashboard() {
   return {
     state,
     activeTab,
+    isGuest: !user,
     widgetsByColumn,
     addWidget,
     removeWidget,
