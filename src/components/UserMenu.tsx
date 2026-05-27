@@ -71,7 +71,7 @@ export function UserMenu() {
       <button
         onClick={handleSignOut}
         disabled={busy}
-        className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+        className="hover-border h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
         title={`Sign out (${user.displayName ?? user.email})`}
         aria-label="Sign out"
       >
