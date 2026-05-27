@@ -329,4 +329,57 @@
       new-item-fade 1.2s ease-out forwards;
   }
 
+  /* Modern animated gradient border for header action buttons. */
+  .hover-border {
+    position: relative;
+    isolation: isolate;
+    transition:
+      transform 0.18s ease,
+      color 0.18s ease,
+      background-color 0.18s ease,
+      box-shadow 0.25s ease;
+  }
+  .hover-border::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+      from var(--hb-angle, 0deg),
+      color-mix(in oklab, var(--primary) 85%, transparent),
+      color-mix(in oklab, var(--accent) 75%, transparent),
+      color-mix(in oklab, var(--glow, var(--primary)) 85%, transparent),
+      color-mix(in oklab, var(--primary) 85%, transparent)
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .hover-border:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 6px 18px -8px color-mix(in oklab, var(--primary) 50%, transparent),
+      0 0 0 1px color-mix(in oklab, var(--primary) 25%, transparent) inset;
+    animation: hover-border-spin 4s linear infinite;
+  }
+  .hover-border:hover::before {
+    opacity: 1;
+  }
+  @property --hb-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+  }
+  @keyframes hover-border-spin {
+    to {
+      --hb-angle: 360deg;
+    }
+  }
 }
