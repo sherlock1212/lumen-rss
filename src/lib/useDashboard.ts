@@ -307,6 +307,7 @@ export function useDashboard() {
     setTabStyle,
     setGlobalStyle,
     setHighlightNew,
+    importTabs,
     resolveStyle,
   };
 }
