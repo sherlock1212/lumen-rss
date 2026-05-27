@@ -49,7 +49,7 @@ export function AddFeedDialog({ onAdd }: Props) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="h-9 inline-flex items-center gap-1.5 px-3 rounded-md bg-[var(--gradient-primary)] text-white font-semibold text-sm shadow-[var(--shadow-glow)] hover:opacity-90 transition [text-shadow:0_1px_2px_rgba(0,0,0,0.25)]"
+        className="hover-border h-9 inline-flex items-center gap-1.5 px-3 rounded-md bg-[var(--gradient-primary)] text-white font-semibold text-sm shadow-[var(--shadow-glow)] [text-shadow:0_1px_2px_rgba(0,0,0,0.25)]"
       >
         <Plus className="h-4 w-4" />
         Add feed
