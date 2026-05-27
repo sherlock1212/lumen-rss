@@ -271,6 +271,15 @@ export function useDashboard() {
     setState((s) => ({ ...s, highlightNew: v }));
   }, []);
 
+  const importTabs = useCallback((newTabs: DashboardTab[]) => {
+    if (newTabs.length === 0) return;
+    setState((s) => ({
+      ...s,
+      tabs: [...s.tabs, ...newTabs],
+      activeTabId: newTabs[0].id,
+    }));
+  }, []);
+
   const widgetsByColumn = (col: number): FeedWidget[] =>
     activeTab.widgets.filter((w) => w.column === col);
 
