@@ -34,6 +34,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { StyleMenu } from "@/components/StyleMenu";
+import { ImportOpmlDialog } from "@/components/ImportOpmlDialog";
 
 
 export const Route = createFileRoute("/")({
