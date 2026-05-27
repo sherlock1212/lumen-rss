@@ -42,7 +42,7 @@ export function UserMenu() {
         onClick={handleSignIn}
         disabled={busy}
         title={error ?? "Sign in with Google"}
-        className="h-9 inline-flex items-center gap-1.5 px-3 rounded-md border border-border bg-surface/60 text-foreground text-sm font-medium hover:bg-secondary disabled:opacity-50"
+        className="hover-border h-9 inline-flex items-center gap-1.5 px-3 rounded-md border border-border bg-surface/60 text-foreground text-sm font-medium disabled:opacity-50"
       >
         {busy ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -71,7 +71,7 @@ export function UserMenu() {
       <button
         onClick={handleSignOut}
         disabled={busy}
-        className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+        className="hover-border h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
         title={`Sign out (${user.displayName ?? user.email})`}
         aria-label="Sign out"
       >

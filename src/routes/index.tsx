@@ -34,6 +34,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { StyleMenu } from "@/components/StyleMenu";
+import { ImportOpmlDialog } from "@/components/ImportOpmlDialog";
 
 
 export const Route = createFileRoute("/")({
@@ -125,6 +126,7 @@ function Home() {
 
           <div className="ml-auto flex items-center gap-2">
             <AddFeedDialog onAdd={dash.addWidget} />
+            <ImportOpmlDialog onImport={dash.importTabs} />
             <div className="hidden md:flex items-center gap-1 bg-surface/60 rounded-md p-0.5 border border-border">
               {[2, 3, 4].map((n) => {
                 const Icon = n === 2 ? Columns2 : n === 3 ? Columns3 : Columns4;
