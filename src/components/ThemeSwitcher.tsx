@@ -23,7 +23,7 @@ export function ThemeSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border bg-surface/60 text-foreground hover:bg-secondary transition-colors"
+          className="hover-border h-9 w-9 inline-flex items-center justify-center rounded-md border border-border bg-surface/60 text-foreground"
           aria-label="Change theme"
           title="Change theme"
         >
