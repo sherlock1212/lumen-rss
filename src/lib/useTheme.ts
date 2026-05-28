@@ -22,17 +22,22 @@ function applyTheme(id: ThemeId) {
 export function useTheme() {
   const { user } = useAuth();
   const [theme, setThemeState] = useState<ThemeId>(DEFAULT_THEME);
-  const loadedForUidRef = useRef<string | null>(null);
-  const skipNextSaveRef = useRef(false);
 
+  // true while we are hydrating from Firestore — don't persist during hydration
+  const hydratingRef = useRef(false);
+  // track which uid we've loaded for, so we don't save before the first snapshot
+  const loadedForUidRef = useRef<string | null>(null);
+
+  // Apply theme to DOM immediately on every change
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
 
+  // Subscribe to Firestore prefs doc
   useEffect(() => {
     if (!user) {
       loadedForUidRef.current = null;
-      skipNextSaveRef.current = true;
+      hydratingRef.current = true;
       setThemeState(DEFAULT_THEME);
       return;
     }
@@ -43,10 +48,12 @@ export function useTheme() {
         const data = snap.data() as { theme?: ThemeId } | undefined;
         const t =
           data?.theme && THEMES.some((x) => x.id === data.theme)
-            ? data.theme
+            ? data.theme!
             : DEFAULT_THEME;
+        // Mark as hydrating BEFORE calling setThemeState so the save-effect
+        // triggered by this state change is skipped
+        hydratingRef.current = true;
         loadedForUidRef.current = user.uid;
-        skipNextSaveRef.current = true;
         setThemeState(t);
       },
       (e) => console.error("Theme subscription error:", e),
@@ -54,19 +61,28 @@ export function useTheme() {
     return () => unsub();
   }, [user]);
 
+  // Persist theme changes to Firestore (skip hydration-triggered updates)
   useEffect(() => {
     if (!user || loadedForUidRef.current !== user.uid) return;
-    if (skipNextSaveRef.current) {
-      skipNextSaveRef.current = false;
+
+    if (hydratingRef.current) {
+      // Clear the flag AFTER this render cycle so the next user-driven change
+      // will be persisted normally
+      hydratingRef.current = false;
       return;
     }
+
     const ref = doc(db, "users", user.uid, "data", "prefs");
     setDoc(ref, { theme }, { merge: true }).catch((e) =>
       console.error("Theme save failed:", e),
     );
   }, [theme, user]);
 
-  const setTheme = useCallback((id: ThemeId) => setThemeState(id), []);
+  const setTheme = useCallback((id: ThemeId) => {
+    // Ensure hydrating flag is off so this user-driven change is persisted
+    hydratingRef.current = false;
+    setThemeState(id);
+  }, []);
 
   return { theme, setTheme, themes: THEMES };
 }
