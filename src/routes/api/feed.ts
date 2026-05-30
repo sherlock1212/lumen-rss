@@ -164,9 +164,13 @@ export const Route = createFileRoute("/api/feed")({
           const upstream = await fetch(parsed.toString(), {
             headers: {
               "User-Agent":
-                "Mozilla/5.0 (compatible; LovableRSSReader/1.0; +https://lovable.dev)",
-              Accept:
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+              "Accept":
                 "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
+              "Accept-Language": "en-US,en;q=0.9",
+              "Accept-Encoding": "gzip, deflate, br",
+              "Cache-Control": "no-cache",
+              "Pragma": "no-cache",
             },
             signal: AbortSignal.timeout(15000),
           });
