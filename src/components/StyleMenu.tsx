@@ -1,4 +1,4 @@
-import { LayoutList, Check, Rows3, Rows4, Minus, AlignLeft } from "lucide-react";
+import { LayoutList, Check, Rows3, Rows4, Rows2, Minus, AlignLeft } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,7 @@ const STYLES: { value: TileStyle; label: string; icon: typeof Rows3 }[] = [
   { value: "full", label: "Full", icon: AlignLeft },
   { value: "condensed", label: "Condensed", icon: Rows3 },
   { value: "compact", label: "Compact", icon: Rows4 },
+  { value: "comfortable", label: "Comfortable", icon: Rows2 },
   { value: "mini", label: "Mini", icon: Minus },
 ];
 

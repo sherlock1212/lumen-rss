@@ -12,8 +12,9 @@ interface Props {
 
 const STYLES: { value: TileStyle; label: string; desc: string }[] = [
   { value: "full", label: "Full", desc: "Title, excerpt & meta" },
-  { value: "condensed", label: "Condensed", desc: "Titles only" },
+  { value: "condensed", label: "Condensed", desc: "Title + date, no wrapping" },
   { value: "compact", label: "Compact", desc: "Tight one-line list" },
+  { value: "comfortable", label: "Comfortable", desc: "Compact but titles wrap" },
   { value: "mini", label: "Mini", desc: "Smallest, ultra-dense" },
 ];
 

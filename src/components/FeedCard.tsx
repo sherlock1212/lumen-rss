@@ -16,59 +16,6 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { useVisited } from "@/lib/useVisited";
 import { useSeenItems } from "@/lib/useSeenItems";
 
-
-/** Ricava l'origin del sito dal link del feed, dal primo articolo, o dall'URL del feed stesso. */
-function resolveSiteUrl(
-  feedLink: string | undefined,
-  firstItemLink: string | undefined,
-  feedUrl: string,
-): string | null {
-  for (const candidate of [feedLink, firstItemLink, feedUrl]) {
-    if (!candidate) continue;
-    try {
-      const { origin } = new URL(candidate);
-      if (origin && origin !== "null") return origin;
-    } catch { /* skip */ }
-  }
-  return null;
-}
-
-function FeedFavicon({ siteUrl }: { siteUrl: string | null }) {
-  const googleUrl = siteUrl
-    ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(siteUrl)}&sz=32`
-    : null;
-  const directUrl = siteUrl ? `${siteUrl}/favicon.ico` : null;
-  const [src, setSrc] = useState<string | null>(googleUrl);
-  const triedDirect = useRef(false);
-
-  useEffect(() => {
-    triedDirect.current = false;
-    setSrc(googleUrl);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [siteUrl]);
-
-  function handleError() {
-    if (!triedDirect.current && directUrl) {
-      triedDirect.current = true;
-      setSrc(directUrl);
-    } else {
-      setSrc(null);
-    }
-  }
-
-  if (!src) return <Rss className="h-3.5 w-3.5 text-white drop-shadow" />;
-  return (
-    <img
-      src={src}
-      alt=""
-      width={16}
-      height={16}
-      onError={handleError}
-      className="h-4 w-4 rounded-sm object-contain"
-    />
-  );
-}
-
 interface Props {
   widget: FeedWidget;
   effectiveStyle: TileStyle;
@@ -200,18 +147,14 @@ export function FeedCard({
       }
     })();
 
-  const siteUrl = resolveSiteUrl(
-    query.data?.link,
-    query.data?.items?.[0]?.link,
-    widget.url,
-  );
-
   const itemPadding = useMemo(() => {
     switch (style) {
       case "mini":
         return "flex items-center gap-2 px-3 py-0.5";
       case "compact":
         return "flex items-center gap-2 px-3 py-1.5";
+      case "comfortable":
+        return "flex items-start gap-2 px-3 py-1.5";
       case "condensed":
         return "block px-4 py-2";
       default:
@@ -222,7 +165,7 @@ export function FeedCard({
   const maxH =
     style === "mini"
       ? "max-h-64"
-      : style === "compact"
+      : style === "compact" || style === "comfortable"
       ? "max-h-80"
       : "max-h-[28rem]";
 
@@ -243,23 +186,11 @@ export function FeedCard({
           <GripVertical className="h-3.5 w-3.5" />
         </button>
         <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0">
-          <FeedFavicon siteUrl={siteUrl} />
+          <Rss className="h-3.5 w-3.5 text-white drop-shadow" />
         </div>
-        {siteUrl ? (
-          <a
-            href={siteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-display font-semibold text-sm truncate flex-1 hover:text-primary hover:underline underline-offset-2 transition-colors"
-            title={siteUrl}
-          >
-            {title}
-          </a>
-        ) : (
-          <h3 className="font-display font-semibold text-sm truncate flex-1">
-            {title}
-          </h3>
-        )}
+        <h3 className="font-display font-semibold text-sm truncate flex-1">
+          {title}
+        </h3>
         <div className="flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
           <button
             onClick={() => setEditing(true)}
@@ -328,23 +259,61 @@ export function FeedCard({
                     onAuxClick={() => markVisited(item.link)}
                     className={itemPadding}
                   >
-                    {style === "compact" || style === "mini" ? (
+                    {style === "mini" ? (
+                      /* ── mini: single line, no date ── */
+                      <span
+                        className="feed-item-title flex-1 truncate text-[11px]"
+                        data-visited={visited ? "true" : "false"}
+                      >
+                        {item.title}
+                      </span>
+                    ) : style === "compact" ? (
+                      /* ── compact: single line, date on right ── */
                       <>
                         <span
-                          className={`feed-item-title flex-1 truncate ${
-                            style === "mini" ? "text-[11px]" : "text-xs"
-                          }`}
+                          className="feed-item-title flex-1 truncate text-xs"
                           data-visited={visited ? "true" : "false"}
                         >
                           {item.title}
                         </span>
-                        {item.pubDate && style !== "mini" && (
+                        {item.pubDate && (
                           <span className="text-[10px] text-muted-foreground shrink-0">
                             {timeAgo(item.pubDate)}
                           </span>
                         )}
                       </>
+                    ) : style === "comfortable" ? (
+                      /* ── comfortable: wrapping title, date on right ── */
+                      <>
+                        <span
+                          className="feed-item-title flex-1 text-xs leading-snug"
+                          data-visited={visited ? "true" : "false"}
+                        >
+                          {item.title}
+                        </span>
+                        {item.pubDate && (
+                          <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">
+                            {timeAgo(item.pubDate)}
+                          </span>
+                        )}
+                      </>
+                    ) : style === "condensed" ? (
+                      /* ── condensed: wrapping title, date inline on right ── */
+                      <div className="flex items-center justify-between gap-3">
+                        <span
+                          className="feed-item-title text-sm leading-snug"
+                          data-visited={visited ? "true" : "false"}
+                        >
+                          {item.title}
+                        </span>
+                        {item.pubDate && (
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            {timeAgo(item.pubDate)}
+                          </span>
+                        )}
+                      </div>
                     ) : (
+                      /* ── full: title + description + meta row ── */
                       <>
                         <div className="flex items-start gap-2">
                           <span
@@ -355,13 +324,13 @@ export function FeedCard({
                           </span>
                           <ExternalLink className="h-3 w-3 mt-1 opacity-40 shrink-0" />
                         </div>
-                        {style === "full" && item.description && (
+                        {item.description && (
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                             {item.description}
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/80">
-                          {style === "full" && item.author && (
+                          {item.author && (
                             <>
                               <span>{item.author}</span>
                               {item.pubDate && <span>·</span>}

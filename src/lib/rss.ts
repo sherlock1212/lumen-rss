@@ -14,7 +14,7 @@ export interface FeedData {
   fetchedAt: string;
 }
 
-export type TileStyle = "full" | "condensed" | "compact" | "mini";
+export type TileStyle = "full" | "condensed" | "compact" | "comfortable" | "mini";
 
 export interface FeedWidget {
   id: string;
