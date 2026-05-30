@@ -17,30 +17,27 @@ import { useVisited } from "@/lib/useVisited";
 import { useSeenItems } from "@/lib/useSeenItems";
 
 
-/** Derives the site origin from either the feed's declared link or its feed URL. */
-function siteOrigin(feedLink: string | undefined, feedUrl: string): string | null {
-  const candidate = feedLink || feedUrl;
-  try {
-    return new URL(candidate).origin;
-  } catch {
-    return null;
+/** Ricava l'origin del sito dal link del feed, dal primo articolo, o dall'URL del feed stesso. */
+function resolveSiteUrl(
+  feedLink: string | undefined,
+  firstItemLink: string | undefined,
+  feedUrl: string,
+): string | null {
+  for (const candidate of [feedLink, firstItemLink, feedUrl]) {
+    if (!candidate) continue;
+    try {
+      const { origin } = new URL(candidate);
+      if (origin && origin !== "null") return origin;
+    } catch { /* skip */ }
   }
+  return null;
 }
 
-/**
- * Shows the site favicon, falling back to the Rss icon if unavailable.
- * Strategy:
- *   1. Google favicon CDN (fast, cached, works for ~95 % of sites)
- *   2. Direct /favicon.ico on the origin
- *   3. Lucide <Rss> icon
- */
-function FeedFavicon({ feedLink, feedUrl }: { feedLink?: string; feedUrl: string }) {
-  const origin = siteOrigin(feedLink, feedUrl);
-  const googleUrl = origin
-    ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(origin)}&sz=32`
+function FeedFavicon({ siteUrl }: { siteUrl: string | null }) {
+  const googleUrl = siteUrl
+    ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(siteUrl)}&sz=32`
     : null;
-  const directUrl = origin ? `${origin}/favicon.ico` : null;
-
+  const directUrl = siteUrl ? `${siteUrl}/favicon.ico` : null;
   const [src, setSrc] = useState<string | null>(googleUrl);
   const triedDirect = useRef(false);
 
@@ -48,7 +45,7 @@ function FeedFavicon({ feedLink, feedUrl }: { feedLink?: string; feedUrl: string
     triedDirect.current = false;
     setSrc(googleUrl);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feedUrl, feedLink]);
+  }, [siteUrl]);
 
   function handleError() {
     if (!triedDirect.current && directUrl) {
@@ -59,10 +56,7 @@ function FeedFavicon({ feedLink, feedUrl }: { feedLink?: string; feedUrl: string
     }
   }
 
-  if (!src) {
-    return <Rss className="h-3.5 w-3.5 text-white drop-shadow" />;
-  }
-
+  if (!src) return <Rss className="h-3.5 w-3.5 text-white drop-shadow" />;
   return (
     <img
       src={src}
@@ -206,6 +200,12 @@ export function FeedCard({
       }
     })();
 
+  const siteUrl = resolveSiteUrl(
+    query.data?.link,
+    query.data?.items?.[0]?.link,
+    widget.url,
+  );
+
   const itemPadding = useMemo(() => {
     switch (style) {
       case "mini":
@@ -243,26 +243,23 @@ export function FeedCard({
           <GripVertical className="h-3.5 w-3.5" />
         </button>
         <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0">
-          <FeedFavicon feedLink={query.data?.link} feedUrl={widget.url} />
+          <FeedFavicon siteUrl={siteUrl} />
         </div>
-        {(() => {
-          const siteUrl = query.data?.link || siteOrigin(query.data?.link, widget.url);
-          return siteUrl ? (
-            <a
-              href={siteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-display font-semibold text-sm truncate flex-1 hover:text-primary hover:underline underline-offset-2 transition-colors"
-              title={siteUrl}
-            >
-              {title}
-            </a>
-          ) : (
-            <h3 className="font-display font-semibold text-sm truncate flex-1">
-              {title}
-            </h3>
-          );
-        })()}
+        {siteUrl ? (
+          <a
+            href={siteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-display font-semibold text-sm truncate flex-1 hover:text-primary hover:underline underline-offset-2 transition-colors"
+            title={siteUrl}
+          >
+            {title}
+          </a>
+        ) : (
+          <h3 className="font-display font-semibold text-sm truncate flex-1">
+            {title}
+          </h3>
+        )}
         <div className="flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
           <button
             onClick={() => setEditing(true)}
