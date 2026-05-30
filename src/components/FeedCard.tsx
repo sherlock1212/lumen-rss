@@ -245,9 +245,21 @@ export function FeedCard({
         <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0">
           <FeedFavicon feedLink={query.data?.link} feedUrl={widget.url} />
         </div>
-        <h3 className="font-display font-semibold text-sm truncate flex-1">
-          {title}
-        </h3>
+        {query.data?.link ? (
+          <a
+            href={query.data.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-display font-semibold text-sm truncate flex-1 hover:text-primary hover:underline underline-offset-2 transition-colors"
+            title={query.data.link}
+          >
+            {title}
+          </a>
+        ) : (
+          <h3 className="font-display font-semibold text-sm truncate flex-1">
+            {title}
+          </h3>
+        )}
         <div className="flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
           <button
             onClick={() => setEditing(true)}
