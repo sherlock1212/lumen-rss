@@ -16,6 +16,65 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { useVisited } from "@/lib/useVisited";
 import { useSeenItems } from "@/lib/useSeenItems";
 
+/** Derives the site origin from either the feed's declared link or its feed URL. */
+function siteOrigin(feedLink: string | undefined, feedUrl: string): string | null {
+  const candidate = feedLink || feedUrl;
+  try {
+    return new URL(candidate).origin;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Shows the site favicon, falling back to the Rss icon if unavailable.
+ * Strategy:
+ *   1. Google favicon CDN (fast, cached, works for ~95 % of sites)
+ *   2. Direct /favicon.ico on the origin
+ *   3. Lucide <Rss> icon
+ */
+function FeedFavicon({ feedLink, feedUrl }: { feedLink?: string; feedUrl: string }) {
+  const origin = siteOrigin(feedLink, feedUrl);
+  const googleUrl = origin
+    ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(origin)}&sz=32`
+    : null;
+  const directUrl = origin ? `${origin}/favicon.ico` : null;
+
+  const [src, setSrc] = useState<string | null>(googleUrl);
+  const triedDirect = useRef(false);
+
+  // Reset when the feed URL changes
+  useEffect(() => {
+    triedDirect.current = false;
+    setSrc(googleUrl);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feedUrl, feedLink]);
+
+  function handleError() {
+    if (!triedDirect.current && directUrl) {
+      triedDirect.current = true;
+      setSrc(directUrl);
+    } else {
+      setSrc(null); // trigger fallback icon
+    }
+  }
+
+  if (!src) {
+    return <Rss className="h-3.5 w-3.5 text-white drop-shadow" />;
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      width={16}
+      height={16}
+      onError={handleError}
+      className="h-4 w-4 rounded-sm object-contain"
+    />
+  );
+}
+
 interface Props {
   widget: FeedWidget;
   effectiveStyle: TileStyle;
@@ -184,7 +243,7 @@ export function FeedCard({
           <GripVertical className="h-3.5 w-3.5" />
         </button>
         <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0">
-          <Rss className="h-3.5 w-3.5 text-white drop-shadow" />
+          <FeedFavicon feedLink={query.data?.link} feedUrl={widget.url} />
         </div>
         <h3 className="font-display font-semibold text-sm truncate flex-1">
           {title}
