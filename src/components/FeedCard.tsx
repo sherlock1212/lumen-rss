@@ -16,6 +16,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { useVisited } from "@/lib/useVisited";
 import { useSeenItems } from "@/lib/useSeenItems";
 
+
 /** Derives the site origin from either the feed's declared link or its feed URL. */
 function siteOrigin(feedLink: string | undefined, feedUrl: string): string | null {
   const candidate = feedLink || feedUrl;
@@ -43,7 +44,6 @@ function FeedFavicon({ feedLink, feedUrl }: { feedLink?: string; feedUrl: string
   const [src, setSrc] = useState<string | null>(googleUrl);
   const triedDirect = useRef(false);
 
-  // Reset when the feed URL changes
   useEffect(() => {
     triedDirect.current = false;
     setSrc(googleUrl);
@@ -55,7 +55,7 @@ function FeedFavicon({ feedLink, feedUrl }: { feedLink?: string; feedUrl: string
       triedDirect.current = true;
       setSrc(directUrl);
     } else {
-      setSrc(null); // trigger fallback icon
+      setSrc(null);
     }
   }
 
@@ -245,21 +245,24 @@ export function FeedCard({
         <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0">
           <FeedFavicon feedLink={query.data?.link} feedUrl={widget.url} />
         </div>
-        {query.data?.link ? (
-          <a
-            href={query.data.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-display font-semibold text-sm truncate flex-1 hover:text-primary hover:underline underline-offset-2 transition-colors"
-            title={query.data.link}
-          >
-            {title}
-          </a>
-        ) : (
-          <h3 className="font-display font-semibold text-sm truncate flex-1">
-            {title}
-          </h3>
-        )}
+        {(() => {
+          const siteUrl = query.data?.link || siteOrigin(query.data?.link, widget.url);
+          return siteUrl ? (
+            <a
+              href={siteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-display font-semibold text-sm truncate flex-1 hover:text-primary hover:underline underline-offset-2 transition-colors"
+              title={siteUrl}
+            >
+              {title}
+            </a>
+          ) : (
+            <h3 className="font-display font-semibold text-sm truncate flex-1">
+              {title}
+            </h3>
+          );
+        })()}
         <div className="flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
           <button
             onClick={() => setEditing(true)}
