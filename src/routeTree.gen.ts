@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiFeedRouteImport } from './routes/api/feed'
+import { Route as ApiDiscoverFeedRouteImport } from './routes/api/discover-feed'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,30 +23,39 @@ const ApiFeedRoute = ApiFeedRouteImport.update({
   path: '/api/feed',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDiscoverFeedRoute = ApiDiscoverFeedRouteImport.update({
+  id: '/api/discover-feed',
+  path: '/api/discover-feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/discover-feed': typeof ApiDiscoverFeedRoute
   '/api/feed': typeof ApiFeedRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/discover-feed': typeof ApiDiscoverFeedRoute
   '/api/feed': typeof ApiFeedRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/discover-feed': typeof ApiDiscoverFeedRoute
   '/api/feed': typeof ApiFeedRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/feed'
+  fullPaths: '/' | '/api/discover-feed' | '/api/feed'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/feed'
-  id: '__root__' | '/' | '/api/feed'
+  to: '/' | '/api/discover-feed' | '/api/feed'
+  id: '__root__' | '/' | '/api/discover-feed' | '/api/feed'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiDiscoverFeedRoute: typeof ApiDiscoverFeedRoute
   ApiFeedRoute: typeof ApiFeedRoute
 }
 
@@ -65,13 +75,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFeedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/discover-feed': {
+      id: '/api/discover-feed'
+      path: '/api/discover-feed'
+      fullPath: '/api/discover-feed'
+      preLoaderRoute: typeof ApiDiscoverFeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiDiscoverFeedRoute: ApiDiscoverFeedRoute,
   ApiFeedRoute: ApiFeedRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
