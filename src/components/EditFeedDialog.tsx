@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import type { FeedWidget, TileStyle } from "@/lib/rss";
@@ -8,23 +8,53 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSave: (patch: Partial<FeedWidget>) => void;
+  effectiveStyle?: TileStyle;
 }
 
 const STYLES: { value: TileStyle; label: string; desc: string }[] = [
-  { value: "full", label: "Full", desc: "Title, excerpt & meta" },
-  { value: "condensed", label: "Condensed", desc: "Title + date, no wrapping" },
-  { value: "compact", label: "Compact", desc: "Tight one-line list" },
+  { value: "full",        label: "Full",        desc: "Title, excerpt & meta" },
+  { value: "condensed",   label: "Condensed",   desc: "Title + date, no wrapping" },
+  { value: "compact",     label: "Compact",     desc: "Tight one-line list" },
   { value: "comfortable", label: "Comfortable", desc: "Compact but titles wrap" },
-  { value: "mini", label: "Mini", desc: "Smallest, ultra-dense" },
+  { value: "mini",        label: "Mini",        desc: "Smallest, ultra-dense" },
 ];
 
-
-export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
+export function EditFeedDialog({ widget, open, onClose, onSave, effectiveStyle }: Props) {
+  // Initialise from widget; re-sync whenever the dialog opens or widget changes.
   const [title, setTitle] = useState(widget.customTitle ?? "");
-  const [url, setUrl] = useState(widget.url);
-  const [style, setStyle] = useState<TileStyle>(widget.style ?? "full");
+  const [url,   setUrl]   = useState(widget.url);
+  // Show the widget-level override if set, otherwise fall back to the effective
+  // (inherited) style so the user sees what is actually applied.
+  const [style, setStyle] = useState<TileStyle>(
+    widget.style ?? effectiveStyle ?? "full"
+  );
 
-  if (!open) return null;
+  useEffect(() => {
+    if (open) {
+      setTitle(widget.customTitle ?? "");
+      setUrl(widget.url);
+      setStyle(widget.style ?? effectiveStyle ?? "full");
+    }
+  }, [open, widget, effectiveStyle]);
+
+  // Close on ESC
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  // Prevent body scroll while open
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  if (!open || typeof document === "undefined") return null;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,11 +66,9 @@ export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
     onClose();
   }
 
-  if (typeof document === "undefined") return null;
-
-  const dialog = (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/70 backdrop-blur-sm animate-in fade-in"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-background/70 backdrop-blur-sm animate-in fade-in"
       onClick={onClose}
     >
       <div
@@ -49,11 +77,7 @@ export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
       >
         <div className="flex items-center justify-between p-5 border-b border-border">
           <h2 className="font-display text-lg font-semibold">Edit feed</h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded hover:bg-secondary"
-            aria-label="Close"
-          >
+          <button onClick={onClose} className="p-1.5 rounded hover:bg-secondary" aria-label="Close">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -62,6 +86,7 @@ export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
           <div className="space-y-1.5">
             <label className="text-sm font-medium block">Title</label>
             <input
+              autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Custom title (optional)"
@@ -95,33 +120,23 @@ export function EditFeedDialog({ widget, open, onClose, onSave }: Props) {
                   }`}
                 >
                   <p className="text-sm font-medium">{s.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {s.desc}
-                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{s.desc}</p>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-md text-sm hover:bg-secondary"
-            >
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-md text-sm hover:bg-secondary">
               Cancel
             </button>
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
-            >
+            <button type="submit" className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
               Save
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
-
-  return createPortal(dialog, document.body);
 }

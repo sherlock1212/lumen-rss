@@ -447,6 +447,7 @@ export function FeedCard({
         open={editing}
         onClose={() => setEditing(false)}
         onSave={onUpdate}
+        effectiveStyle={effectiveStyle}
       />
 
       <ConfirmDialog
