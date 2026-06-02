@@ -17,6 +17,59 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { useVisited } from "@/lib/useVisited";
 import { useSeenItems } from "@/lib/useSeenItems";
 
+
+/** Ricava l'origin del sito dal link del feed, dal primo articolo, o dall'URL del feed stesso. */
+function resolveSiteUrl(
+  feedLink: string | undefined,
+  firstItemLink: string | undefined,
+  feedUrl: string,
+): string | null {
+  for (const candidate of [feedLink, firstItemLink, feedUrl]) {
+    if (!candidate) continue;
+    try {
+      const { origin } = new URL(candidate);
+      if (origin && origin !== "null") return origin;
+    } catch { /* skip */ }
+  }
+  return null;
+}
+
+function FeedFavicon({ siteUrl }: { siteUrl: string | null }) {
+  const googleUrl = siteUrl
+    ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(siteUrl)}&sz=32`
+    : null;
+  const directUrl = siteUrl ? `${siteUrl}/favicon.ico` : null;
+  const [src, setSrc] = useState<string | null>(googleUrl);
+  const triedDirect = useRef(false);
+
+  useEffect(() => {
+    triedDirect.current = false;
+    setSrc(googleUrl);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteUrl]);
+
+  function handleError() {
+    if (!triedDirect.current && directUrl) {
+      triedDirect.current = true;
+      setSrc(directUrl);
+    } else {
+      setSrc(null);
+    }
+  }
+
+  if (!src) return <Rss className="h-3.5 w-3.5 text-white drop-shadow" />;
+  return (
+    <img
+      src={src}
+      alt=""
+      width={16}
+      height={16}
+      onError={handleError}
+      className="h-4 w-4 rounded-sm object-contain"
+    />
+  );
+}
+
 interface Props {
   widget: FeedWidget;
   effectiveStyle: TileStyle;
@@ -155,6 +208,12 @@ export function FeedCard({
       }
     })();
 
+  const siteUrl = resolveSiteUrl(
+    query.data?.link,
+    query.data?.items?.[0]?.link,
+    widget.url,
+  );
+
   const itemPadding = useMemo(() => {
     switch (style) {
       case "mini":
@@ -194,11 +253,23 @@ export function FeedCard({
           <GripVertical className="h-3.5 w-3.5" />
         </button>
         <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0">
-          <Rss className="h-3.5 w-3.5 text-white drop-shadow" />
+          <FeedFavicon siteUrl={siteUrl} />
         </div>
-        <h3 className="font-display font-semibold text-sm truncate flex-1">
-          {title}
-        </h3>
+        {siteUrl ? (
+          <a
+            href={siteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-display font-semibold text-sm truncate flex-1 hover:text-primary hover:underline underline-offset-2 transition-colors"
+            title={siteUrl}
+          >
+            {title}
+          </a>
+        ) : (
+          <h3 className="font-display font-semibold text-sm truncate flex-1">
+            {title}
+          </h3>
+        )}
         <div className="flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
           <button
             onClick={handleMarkAllRead}

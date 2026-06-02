@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "deploy": "vite build && wrangler deploy"
+    "deploy": "vite build && node -e \"require('fs').writeFileSync('dist/server/wrangler.json', JSON.stringify({name:'lumen-rss','compatibility_date':'2025-09-24','compatibility_flags':['nodejs_compat'],main:'server.js',assets:{directory:'../client'}}))\" && wrangler deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",
