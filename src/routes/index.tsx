@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   closestCenter,
   closestCorners,
@@ -9,6 +10,8 @@ import {
   useSensors,
   useDroppable,
   type DragEndEvent,
+  type DragStartEvent,
+  type DragOverEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -59,12 +62,77 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
+function DigitalClock() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    // Align to the next full second so the display doesn't lag
+    const timeout = setTimeout(() => {
+      setNow(new Date());
+      interval = setInterval(() => setNow(new Date()), 1000);
+    }, 1000 - (Date.now() % 1000));
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const hh = now.getHours().toString().padStart(2, "0");
+  const mm = now.getMinutes().toString().padStart(2, "0");
+  const ss = now.getSeconds().toString().padStart(2, "0");
+  const dateStr = now.toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+  });
+
+  return (
+    <div className="hidden md:flex flex-col items-end leading-none select-none gap-1"
+         aria-label="Current time">
+      {/* Time row */}
+      <span
+        className="font-mono text-xl font-bold"
+        style={{
+          color: "var(--color-foreground)",
+          textShadow: "0 0 10px var(--color-primary), 0 0 24px color-mix(in oklab, var(--color-primary) 50%, transparent)",
+          letterSpacing: "0.1em",
+        }}
+      >
+        {hh}
+        <span
+          className="animate-pulse"
+          style={{ color: "var(--color-primary)", opacity: 0.8 }}
+        >:</span>
+        {mm}
+        <span
+          className="text-sm font-medium ml-0.5"
+          style={{ color: "var(--color-primary)", opacity: 0.65 }}
+        >{ss}</span>
+      </span>
+      {/* Date row */}
+      <span
+        className="font-mono text-xs font-semibold uppercase tracking-[0.15em]"
+        style={{
+          color: "var(--color-foreground)",
+          opacity: 0.7,
+          textShadow: "0 0 6px color-mix(in oklab, var(--color-primary) 35%, transparent)",
+        }}
+      >
+        {dateStr}
+      </span>
+    </div>
+  );
+}
+
 function Home() {
   const dash = useDashboard();
   const [newTabOpen, setNewTabOpen] = useState(false);
   const [newTabName, setNewTabName] = useState("");
   const [editingTab, setEditingTab] = useState<string | null>(null);
   const [tabToDelete, setTabToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [draggingId, setDraggingId]   = useState<string | null>(null);
+  const [overId, setOverId]           = useState<string | null>(null);
 
   const cols = dash.activeTab.columns;
   const gridClass =
@@ -78,7 +146,18 @@ function Home() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  function handleWidgetDragStart(e: DragStartEvent) {
+    setDraggingId(String(e.active.id));
+    setOverId(null);
+  }
+
+  function handleWidgetDragOver(e: DragOverEvent) {
+    setOverId(e.over ? String(e.over.id) : null);
+  }
+
   function handleWidgetDragEnd(e: DragEndEvent) {
+    setDraggingId(null);
+    setOverId(null);
     const { active, over } = e;
     if (!over) return;
     const activeId = String(active.id);
@@ -157,6 +236,7 @@ function Home() {
             />
             <ThemeSwitcher />
             <UserMenu />
+            <DigitalClock />
           </div>
         </div>
 
@@ -231,6 +311,8 @@ function Home() {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
+            onDragStart={handleWidgetDragStart}
+            onDragOver={handleWidgetDragOver}
             onDragEnd={handleWidgetDragEnd}
           >
             <div className={`grid grid-cols-1 gap-4 ${gridClass}`}>
@@ -238,30 +320,37 @@ function Home() {
                 const items = dash.widgetsByColumn(col);
                 return (
                   <Column key={col} col={col} ids={items.map((w) => w.id)}>
-                    {items.map((w) =>
-                      w.kind === "bookmarks" ? (
-                        <BookmarksCard
-                          key={w.id}
-                          widget={w}
-                          onRemove={() => dash.removeWidget(w.id)}
-                          onUpdate={(patch) => dash.updateWidget(w.id, patch)}
-                        />
-                      ) : (
-                        <FeedCard
-                          key={w.id}
-                          widget={w}
-                          effectiveStyle={dash.resolveStyle(w)}
-                          highlightNew={dash.state.highlightNew ?? true}
-                          onRemove={() => dash.removeWidget(w.id)}
-                          onUpdate={(patch) => dash.updateWidget(w.id, patch)}
-                        />
-                      )
-                    )}
-
+                    {items.map((w) => (
+                      <TileWithIndicator
+                        key={w.id}
+                        isOver={overId === w.id && draggingId !== w.id}
+                      >
+                        {w.kind === "bookmarks" ? (
+                          <BookmarksCard
+                            widget={w}
+                            onRemove={() => dash.removeWidget(w.id)}
+                            onUpdate={(patch) => dash.updateWidget(w.id, patch)}
+                          />
+                        ) : (
+                          <FeedCard
+                            widget={w}
+                            effectiveStyle={dash.resolveStyle(w)}
+                            highlightNew={dash.state.highlightNew ?? true}
+                            onRemove={() => dash.removeWidget(w.id)}
+                            onUpdate={(patch) => dash.updateWidget(w.id, patch)}
+                          />
+                        )}
+                      </TileWithIndicator>
+                    ))}
                   </Column>
                 );
               })}
             </div>
+            <DragOverlay dropAnimation={null}>
+              {draggingId ? (
+                <DragGhost widget={dash.activeTab.widgets.find((w) => w.id === draggingId)!} />
+              ) : null}
+            </DragOverlay>
           </DndContext>
         )}
       </main>
@@ -288,6 +377,57 @@ function Home() {
   );
 }
 
+
+function TileWithIndicator({
+  children,
+  isOver,
+}: {
+  children: React.ReactNode;
+  isOver: boolean;
+}) {
+  return (
+    <div className="relative">
+      {isOver && (
+        <div className="absolute -top-2.5 left-4 right-4 z-10 h-1 pointer-events-none">
+          <div className="absolute inset-0 rounded-full bg-primary shadow-[0_0_10px_3px_var(--color-primary)]" />
+          <div className="absolute -left-1 -top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-background shadow-[0_0_6px_2px_var(--color-primary)]" />
+          <div className="absolute -right-1 -top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-background shadow-[0_0_6px_2px_var(--color-primary)]" />
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function DragGhost({ widget }: { widget: import("@/lib/rss").FeedWidget }) {
+  if (!widget) return null;
+  const label = widget.customTitle ?? widget.url ?? "Favourites";
+  const isBookmarks = widget.kind === "bookmarks";
+  return (
+    <div
+      className="glass rounded-xl shadow-2xl ring-2 ring-primary/50 pointer-events-none rotate-1 scale-[1.02]"
+      style={{ opacity: 0.92 }}
+    >
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface/50">
+        <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0 opacity-80">
+          {isBookmarks
+            ? <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            : <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+          }
+        </div>
+        <span className="font-display font-semibold text-sm truncate flex-1 text-foreground/80">
+          {label}
+        </span>
+      </div>
+      <div className="px-4 py-3 space-y-2">
+        {[0.75, 0.55, 0.65].map((w, i) => (
+          <div key={i} className="h-2.5 rounded bg-secondary/50 animate-pulse" style={{ width: `${w * 100}%` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Column({
   col,
   ids,
@@ -302,8 +442,8 @@ function Column({
     <SortableContext items={ids} strategy={verticalListSortingStrategy}>
       <div
         ref={setNodeRef}
-        className={`flex flex-col gap-4 min-h-32 rounded-xl transition ${
-          isOver ? "bg-primary/5 outline outline-2 outline-primary/30" : ""
+        className={`flex flex-col gap-4 min-h-32 rounded-xl transition-colors ${
+          isOver ? "bg-primary/5 outline outline-2 outline-primary/20" : ""
         }`}
       >
         {children}
