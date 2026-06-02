@@ -22,9 +22,30 @@ interface FeedResult {
   items: FeedItem[];
 }
 
+// Named HTML entities that appear most often in feed content
+const HTML_ENTITIES: Record<string, string> = {
+  amp: "&", lt: "<", gt: ">", quot: "\"", apos: "'",
+  nbsp: "\u00a0", ndash: "\u2013", mdash: "\u2014",
+  lsquo: "\u2018", rsquo: "\u2019", sbquo: "\u201a",
+  ldquo: "\u201c", rdquo: "\u201d", bdquo: "\u201e",
+  laquo: "\u00ab", raquo: "\u00bb", hellip: "\u2026",
+  copy: "\u00a9", reg: "\u00ae", trade: "\u2122",
+  euro: "\u20ac", pound: "\u00a3", yen: "\u00a5",
+};
+
+function decodeEntities(s: string): string {
+  return s
+    // Numeric decimal: &#8217; &#039;
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    // Numeric hex: &#x2019;
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    // Named: &rsquo; &amp; etc.
+    .replace(/&([a-z]+);/gi, (match, name) => HTML_ENTITIES[name.toLowerCase()] ?? match);
+}
+
 function stripHtml(s: string, max = 220): string {
   if (!s) return "";
-  const text = String(s).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  const text = decodeEntities(String(s).replace(/<[^>]*>/g, "")).replace(/\s+/g, " ").trim();
   return text.length > max ? text.slice(0, max) + "…" : text;
 }
 
@@ -164,13 +185,9 @@ export const Route = createFileRoute("/api/feed")({
           const upstream = await fetch(parsed.toString(), {
             headers: {
               "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-              "Accept":
+                "Mozilla/5.0 (compatible; LovableRSSReader/1.0; +https://lovable.dev)",
+              Accept:
                 "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
-              "Accept-Language": "en-US,en;q=0.9",
-              "Accept-Encoding": "gzip, deflate, br",
-              "Cache-Control": "no-cache",
-              "Pragma": "no-cache",
             },
             signal: AbortSignal.timeout(15000),
           });
