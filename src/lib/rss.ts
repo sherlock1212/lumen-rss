@@ -15,14 +15,25 @@ export interface FeedData {
 }
 
 export type TileStyle = "full" | "condensed" | "compact" | "comfortable" | "mini";
+export type WidgetKind = "feed" | "bookmarks";
+
+export interface Bookmark {
+  id: string;
+  url: string;
+  title: string;
+}
 
 export interface FeedWidget {
   id: string;
+  /** "feed" (default) or "bookmarks" tile */
+  kind?: WidgetKind;
   url: string;
   customTitle?: string;
   column: number;
   /** Per-widget style override. If undefined, falls back to tab.defaultStyle, then global. */
   style?: TileStyle;
+  /** Only used when kind === "bookmarks" */
+  bookmarks?: Bookmark[];
 }
 
 export interface DashboardTab {

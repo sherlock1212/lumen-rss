@@ -340,6 +340,30 @@ export function useDashboard() {
     userMutate((s) => ({ ...s, highlightNew: v }));
   }, []);
 
+  const addBookmarksTile = useCallback(() => {
+    userMutate((s) => {
+      const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+      const counts = Array.from({ length: tab.columns }, (_, i) =>
+        tab.widgets.filter((w) => w.column === i).length,
+      );
+      const col = counts.indexOf(Math.min(...counts));
+      return {
+        ...s,
+        tabs: s.tabs.map((t) =>
+          t.id === tab.id
+            ? {
+                ...t,
+                widgets: [
+                  ...t.widgets,
+                  { id: Math.random().toString(36).slice(2, 10), kind: "bookmarks" as const, url: "", customTitle: "Favourites", column: col, bookmarks: [] },
+                ],
+              }
+            : t,
+        ),
+      };
+    });
+  }, []);
+
   const importTabs = useCallback((newTabs: DashboardTab[]) => {
     if (newTabs.length === 0) return;
     userMutate((s) => ({
@@ -376,6 +400,7 @@ export function useDashboard() {
     setTabStyle,
     setGlobalStyle,
     setHighlightNew,
+    addBookmarksTile,
     importTabs,
     resolveStyle,
   };

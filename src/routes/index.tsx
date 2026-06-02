@@ -20,7 +20,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useDashboard } from "@/lib/useDashboard";
 import { FeedCard } from "@/components/FeedCard";
-import { AddFeedDialog } from "@/components/AddFeedDialog";
+import { AddItemDialog } from "@/components/AddItemDialog";
+import { BookmarksCard } from "@/components/BookmarksCard";
 import {
   Columns2,
   Columns3,
@@ -125,7 +126,7 @@ function Home() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <AddFeedDialog onAdd={dash.addWidget} />
+            <AddItemDialog onAddFeed={dash.addWidget} onAddBookmarks={dash.addBookmarksTile} />
             <ImportOpmlDialog onImport={dash.importTabs} />
             <div className="hidden md:flex items-center gap-1 bg-surface/60 rounded-md p-0.5 border border-border">
               {[2, 3, 4].map((n) => {
@@ -225,7 +226,7 @@ function Home() {
 
       <main className="flex-1 p-4 md:p-6">
         {dash.activeTab.widgets.length === 0 ? (
-          <EmptyState onAdd={dash.addWidget} />
+          <EmptyState onAddFeed={dash.addWidget} onAddBookmarks={dash.addBookmarksTile} />
         ) : (
           <DndContext
             sensors={sensors}
@@ -237,16 +238,25 @@ function Home() {
                 const items = dash.widgetsByColumn(col);
                 return (
                   <Column key={col} col={col} ids={items.map((w) => w.id)}>
-                    {items.map((w) => (
-                      <FeedCard
-                        key={w.id}
-                        widget={w}
-                        effectiveStyle={dash.resolveStyle(w)}
-                        highlightNew={dash.state.highlightNew ?? true}
-                        onRemove={() => dash.removeWidget(w.id)}
-                        onUpdate={(patch) => dash.updateWidget(w.id, patch)}
-                      />
-                    ))}
+                    {items.map((w) =>
+                      w.kind === "bookmarks" ? (
+                        <BookmarksCard
+                          key={w.id}
+                          widget={w}
+                          onRemove={() => dash.removeWidget(w.id)}
+                          onUpdate={(patch) => dash.updateWidget(w.id, patch)}
+                        />
+                      ) : (
+                        <FeedCard
+                          key={w.id}
+                          widget={w}
+                          effectiveStyle={dash.resolveStyle(w)}
+                          highlightNew={dash.state.highlightNew ?? true}
+                          onRemove={() => dash.removeWidget(w.id)}
+                          onUpdate={(patch) => dash.updateWidget(w.id, patch)}
+                        />
+                      )
+                    )}
 
                   </Column>
                 );
@@ -395,9 +405,11 @@ function SortableTab({
 }
 
 function EmptyState({
-  onAdd,
+  onAddFeed,
+  onAddBookmarks,
 }: {
-  onAdd: (url: string, title?: string) => void;
+  onAddFeed: (url: string, title?: string) => void;
+  onAddBookmarks: () => void;
 }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-24">
@@ -411,7 +423,7 @@ function EmptyState({
         Add your first RSS or Atom feed to start tracking what matters. We fetch
         everything server-side, so CORS never gets in the way.
       </p>
-      <AddFeedDialog onAdd={onAdd} />
+      <AddItemDialog onAddFeed={onAddFeed} onAddBookmarks={onAddBookmarks} />
     </div>
   );
 }
