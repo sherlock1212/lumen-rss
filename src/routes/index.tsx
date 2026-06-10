@@ -38,7 +38,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { StyleMenu } from "@/components/StyleMenu";
-import { ImportOpmlDialog } from "@/components/ImportOpmlDialog";
+import { DataDialog } from "@/components/DataDialog";
 
 
 export const Route = createFileRoute("/")({
@@ -206,7 +206,7 @@ function Home() {
 
           <div className="ml-auto flex items-center gap-2">
             <AddItemDialog onAddFeed={dash.addWidget} onAddBookmarks={dash.addBookmarksTile} />
-            <ImportOpmlDialog onImport={dash.importTabs} />
+            <DataDialog state={dash.state} onImport={dash.importTabs} />
             <div className="hidden md:flex items-center gap-1 bg-surface/60 rounded-md p-0.5 border border-border">
               {[2, 3, 4].map((n) => {
                 const Icon = n === 2 ? Columns2 : n === 3 ? Columns3 : Columns4;
@@ -216,7 +216,7 @@ function Home() {
                     onClick={() => dash.setColumns(n)}
                     className={`p-1.5 rounded ${
                       cols === n
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-primary/20 text-primary border border-primary/40"
                         : "hover:bg-secondary text-muted-foreground"
                     }`}
                     aria-label={`${n} columns`}
