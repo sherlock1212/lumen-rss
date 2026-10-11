@@ -54,6 +54,24 @@ function asArray<T>(v: T | T[] | undefined): T[] {
   return Array.isArray(v) ? v : [v];
 }
 
+/**
+ * fast-xml-parser returns an object ({ "#text": "...", "@_attr": "..." }) instead of
+ * a string whenever an element carries attributes (e.g. <dc:creator xmlns:dc="...">).
+ * Always funnel values through this before sending them to the client, otherwise
+ * React crashes with error #31 ("Objects are not valid as a React child").
+ */
+function toText(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  if (Array.isArray(v)) return toText(v[0]);
+  if (typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    if ("#text" in o) return toText(o["#text"]);
+  }
+  return "";
+}
+
 function pickLink(link: unknown): string {
   if (!link) return "";
   if (typeof link === "string") return link;
@@ -63,7 +81,7 @@ function pickLink(link: unknown): string {
   }
   if (typeof link === "object" && link) {
     const l = link as Record<string, unknown>;
-    return (l["@_href"] as string) ?? (l["#text"] as string) ?? "";
+    return toText(l["@_href"]) || toText(l["#text"]);
   }
   return "";
 }
@@ -81,16 +99,16 @@ function parseFeed(xml: string): FeedResult {
   if (data.rss?.channel) {
     const ch = data.rss.channel;
     const items = asArray(ch.item).map((it: Record<string, unknown>) => ({
-      title: stripHtml(String(it.title ?? "Untitled"), 200),
-      link: typeof it.link === "string" ? it.link : pickLink(it.link),
-      pubDate: (it.pubDate ?? it["dc:date"]) as string | undefined,
-      description: stripHtml(String(it.description ?? it["content:encoded"] ?? "")),
-      author: (it["dc:creator"] ?? it.author) as string | undefined,
+      title: stripHtml(toText(it.title) || "Untitled", 200),
+      link: pickLink(it.link),
+      pubDate: toText(it.pubDate ?? it["dc:date"]) || undefined,
+      description: stripHtml(toText(it.description ?? it["content:encoded"])),
+      author: toText(it["dc:creator"] ?? it.author) || undefined,
     }));
     return {
-      title: String(ch.title ?? "Untitled feed"),
+      title: toText(ch.title) || "Untitled feed",
       link: pickLink(ch.link),
-      description: stripHtml(String(ch.description ?? "")),
+      description: stripHtml(toText(ch.description)),
       items,
     };
   }
@@ -99,32 +117,18 @@ function parseFeed(xml: string): FeedResult {
   if (data.feed) {
     const f = data.feed;
     const items = asArray(f.entry).map((e: Record<string, unknown>) => {
-      const content = (e.summary ?? e.content ?? "") as unknown;
-      const text =
-        typeof content === "string"
-          ? content
-          : (content as Record<string, unknown>)?.["#text"];
+      const authorNode = Array.isArray(e.author) ? e.author[0] : e.author;
       return {
-        title: stripHtml(
-          typeof e.title === "string"
-            ? e.title
-            : String((e.title as Record<string, unknown>)?.["#text"] ?? "Untitled"),
-          200,
-        ),
+        title: stripHtml(toText(e.title) || "Untitled", 200),
         link: pickLink(e.link),
-        pubDate: (e.updated ?? e.published) as string | undefined,
-        description: stripHtml(String(text ?? "")),
+        pubDate: toText(e.updated ?? e.published) || undefined,
+        description: stripHtml(toText(e.summary ?? e.content)),
         author:
-          ((e.author as Record<string, unknown>)?.name as string | undefined) ??
-          undefined,
+          toText((authorNode as Record<string, unknown> | undefined)?.name) || undefined,
       };
     });
     return {
-      title: String(
-        typeof f.title === "string"
-          ? f.title
-          : (f.title as Record<string, unknown>)?.["#text"] ?? "Untitled feed",
-      ),
+      title: toText(f.title) || "Untitled feed",
       link: pickLink(f.link),
       description: "",
       items,
@@ -136,15 +140,16 @@ function parseFeed(xml: string): FeedResult {
     const r = data["rdf:RDF"];
     const ch = r.channel ?? {};
     const items = asArray(r.item).map((it: Record<string, unknown>) => ({
-      title: stripHtml(String(it.title ?? "Untitled"), 200),
-      link: typeof it.link === "string" ? it.link : pickLink(it.link),
-      pubDate: it["dc:date"] as string | undefined,
-      description: stripHtml(String(it.description ?? "")),
+      title: stripHtml(toText(it.title) || "Untitled", 200),
+      link: pickLink(it.link),
+      pubDate: toText(it["dc:date"]) || undefined,
+      description: stripHtml(toText(it.description)),
+      author: toText(it["dc:creator"]) || undefined,
     }));
     return {
-      title: String(ch.title ?? "Untitled feed"),
+      title: toText(ch.title) || "Untitled feed",
       link: pickLink(ch.link),
-      description: stripHtml(String(ch.description ?? "")),
+      description: stripHtml(toText(ch.description)),
       items,
     };
   }
