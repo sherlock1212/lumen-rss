@@ -373,6 +373,11 @@ export function useDashboard() {
     }));
   }, []);
 
+  /** Replace the whole dashboard (used by "restore from JSON backup"). */
+  const replaceState = useCallback((next: DashboardState) => {
+    userMutate(() => next);
+  }, []);
+
   const widgetsByColumn = (col: number): FeedWidget[] =>
     activeTab.widgets.filter((w) => w.column === col);
 
@@ -402,6 +407,7 @@ export function useDashboard() {
     setHighlightNew,
     addBookmarksTile,
     importTabs,
+    replaceState,
     resolveStyle,
   };
 }

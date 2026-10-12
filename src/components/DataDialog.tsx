@@ -1,54 +1,25 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Upload, Download, X, Loader2, Database } from "lucide-react";
-import { parseOpml } from "@/lib/opml";
+import { Upload, Download, X, Loader2, Database, ArrowLeft, AlertTriangle } from "lucide-react";
+import { buildOpml, parseOpml } from "@/lib/opml";
+import {
+  buildBackupJson,
+  parseBackup,
+  summarizeState,
+  withFreshIds,
+  type ParsedBackup,
+} from "@/lib/backup";
 import type { DashboardState, DashboardTab } from "@/lib/rss";
 
 interface Props {
   state: DashboardState;
+  /** Add tabs next to the existing ones. */
   onImport: (tabs: DashboardTab[]) => void;
+  /** Replace the whole dashboard (restore from a JSON backup). */
+  onReplace: (state: DashboardState) => void;
 }
 
-// ── Export ────────────────────────────────────────────────────────────────────
-
-function buildOpml(state: DashboardState): string {
-  const esc = (s: string) =>
-    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
-  const tabsXml = state.tabs
-    .map((tab) => {
-      const feedsXml = tab.widgets
-        .map((w) => {
-          if (w.kind === "bookmarks") {
-            // Export bookmarks as a nested group inside the tab
-            const bkXml = (w.bookmarks ?? [])
-              .map(
-                (b) =>
-                  `      <outline type="link" text="${esc(b.title)}" url="${esc(b.url)}" />`,
-              )
-              .join("\n");
-            return `    <outline text="${esc(w.customTitle ?? "Favourites")}" type="favourites">\n${bkXml}\n    </outline>`;
-          }
-          const titleAttr = w.customTitle ? ` title="${esc(w.customTitle)}"` : "";
-          const colAttr = ` pos="{'col':${w.column},'row':0}"`;
-          return `    <outline type="rss" text="${esc(w.customTitle ?? w.url)}"${titleAttr} xmlUrl="${esc(w.url)}"${colAttr} />`;
-        })
-        .join("\n");
-      return `  <outline text="${esc(tab.name)}" title="${esc(tab.name)}">\n${feedsXml}\n  </outline>`;
-    })
-    .join("\n");
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<opml version="2.0">
-  <head>
-    <title>Lumen RSS Dashboard export</title>
-    <dateCreated>${new Date().toUTCString()}</dateCreated>
-  </head>
-  <body>
-${tabsXml}
-  </body>
-</opml>`;
-}
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function downloadFile(content: string, filename: string, mime: string) {
   const blob = new Blob([content], { type: mime });
@@ -56,25 +27,40 @@ function downloadFile(content: string, filename: string, mime: string) {
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  // Revoking immediately can cancel the download in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+function timestamp() {
+  return new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+}
+
+/** A JSON backup starts with "{"; OPML / uStart exports are XML. */
+function looksLikeJson(text: string) {
+  return /^\s*[{[]/.test(text);
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 
 type Mode = "choose" | "import" | "export";
 
-interface ModalProps {
-  state: DashboardState;
-  onImport: (tabs: DashboardTab[]) => void;
+interface ModalProps extends Props {
   onClose: () => void;
 }
 
-function Modal({ state, onImport, onClose }: ModalProps) {
+function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
   const [mode, setMode] = useState<Mode>("choose");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
+  // A parsed JSON backup waiting for the user to choose "add" or "replace".
+  const [pending, setPending] = useState<ParsedBackup | null>(null);
+  const [confirmReplace, setConfirmReplace] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -90,19 +76,36 @@ function Modal({ state, onImport, onClose }: ModalProps) {
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  async function handleFile(file: File) {
-    setLoading(true);
+  function resetImport() {
     setError(null);
     setSummary(null);
+    setPending(null);
+    setConfirmReplace(false);
+  }
+
+  async function handleFile(file: File) {
+    setLoading(true);
+    resetImport();
     try {
       const text = await file.text();
-      const result = parseOpml(text);
-      onImport(result.tabs);
-      setSummary(
-        `Imported ${result.tabs.length} tab${result.tabs.length === 1 ? "" : "s"} ` +
-        `and ${result.feedCount} feed${result.feedCount === 1 ? "" : "s"}.` +
-        (result.skipped ? ` Skipped ${result.skipped} non-feed item${result.skipped === 1 ? "" : "s"}.` : ""),
-      );
+      if (looksLikeJson(text)) {
+        // Lumen JSON backup: ask whether to add or replace before touching anything.
+        setPending(parseBackup(text));
+      } else {
+        const result = parseOpml(text);
+        onImport(result.tabs);
+        const parts = [
+          plural(result.tabs.length, "tab"),
+          plural(result.feedCount, "feed"),
+        ];
+        if (result.bookmarkCount) parts.push(plural(result.bookmarkCount, "bookmark"));
+        setSummary(
+          `Imported ${parts.join(", ")}.` +
+            (result.skipped
+              ? ` Skipped ${plural(result.skipped, "unsupported item")}.`
+              : ""),
+        );
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -110,31 +113,45 @@ function Modal({ state, onImport, onClose }: ModalProps) {
     }
   }
 
+  function handleAddBackup() {
+    if (!pending) return;
+    onImport(withFreshIds(pending.state.tabs));
+    const { tabCount, feedCount, bookmarkCount } = pending.summary;
+    setSummary(
+      `Added ${plural(tabCount, "tab")} (${plural(feedCount, "feed")}, ` +
+        `${plural(bookmarkCount, "bookmark")}) next to your existing tabs.`,
+    );
+    setPending(null);
+  }
+
+  function handleReplaceBackup() {
+    if (!pending) return;
+    // Safety net: save what is on screen right now before overwriting it.
+    downloadFile(
+      buildBackupJson(state),
+      `lumen-backup-before-restore-${timestamp()}.json`,
+      "application/json",
+    );
+    onReplace(pending.state);
+    setSummary(
+      "Dashboard restored from backup. A copy of your previous dashboard was downloaded just before.",
+    );
+    setPending(null);
+    setConfirmReplace(false);
+  }
+
   function handleExportOpml() {
-    const xml = buildOpml(state);
-    const date = new Date().toISOString().slice(0, 10);
-    downloadFile(xml, `lumen-export-${date}.opml`, "application/xml");
+    downloadFile(buildOpml(state), `lumen-export-${timestamp()}.opml`, "application/xml");
   }
 
   function handleExportJson() {
-    const date = new Date().toISOString().slice(0, 10);
-    downloadFile(
-      JSON.stringify(state, null, 2),
-      `lumen-export-${date}.json`,
-      "application/json",
-    );
+    downloadFile(buildBackupJson(state), `lumen-backup-${timestamp()}.json`, "application/json");
   }
 
-  // Count stats for export preview
-  const totalFeeds = state.tabs.reduce(
-    (n, t) => n + t.widgets.filter((w) => w.kind !== "bookmarks").length,
-    0,
-  );
-  const totalBookmarks = state.tabs.reduce(
-    (n, t) =>
-      n + t.widgets.filter((w) => w.kind === "bookmarks").reduce((m, w) => m + (w.bookmarks?.length ?? 0), 0),
-    0,
-  );
+  const current = summarizeState(state);
+
+  const title =
+    mode === "choose" ? "Import / Export" : mode === "import" ? "Import" : "Export";
 
   return createPortal(
     <div
@@ -142,14 +159,26 @@ function Modal({ state, onImport, onClose }: ModalProps) {
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className="glass rounded-2xl w-full max-w-lg shadow-[var(--shadow-card)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="font-display text-lg font-semibold">
-            {mode === "choose" ? "Import / Export" : mode === "import" ? "Import feeds" : "Export backup"}
-          </h2>
+          <div className="flex items-center gap-2">
+            {mode !== "choose" && (
+              <button
+                onClick={() => { setMode("choose"); resetImport(); }}
+                className="p-1.5 -ml-1.5 rounded hover:bg-secondary"
+                aria-label="Back"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            )}
+            <h2 className="font-display text-lg font-semibold">{title}</h2>
+          </div>
           <button onClick={onClose} className="p-1.5 rounded hover:bg-secondary" aria-label="Close">
             <X className="h-4 w-4" />
           </button>
@@ -167,7 +196,7 @@ function Modal({ state, onImport, onClose }: ModalProps) {
               </div>
               <div className="text-center">
                 <p className="font-semibold text-sm">Import</p>
-                <p className="text-xs text-muted-foreground mt-0.5">OPML or uStart.org export</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Backup, OPML or uStart</p>
               </div>
             </button>
             <button
@@ -179,7 +208,7 @@ function Modal({ state, onImport, onClose }: ModalProps) {
               </div>
               <div className="text-center">
                 <p className="font-semibold text-sm">Export</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Download backup file</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Backup or OPML</p>
               </div>
             </button>
           </div>
@@ -188,14 +217,10 @@ function Modal({ state, onImport, onClose }: ModalProps) {
         {/* ── Import ── */}
         {mode === "import" && (
           <div className="p-5 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Import an <strong>OPML</strong> file or your <strong>uStart.org</strong> XML export.
-              Each top-level group becomes a new tab.
-            </p>
             <input
               ref={fileRef}
               type="file"
-              accept=".xml,.opml,text/xml,application/xml"
+              accept=".json,.xml,.opml,application/json,text/xml,application/xml"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -203,20 +228,123 @@ function Modal({ state, onImport, onClose }: ModalProps) {
                 e.target.value = "";
               }}
             />
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={loading}
-              className="w-full py-8 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground disabled:opacity-50"
-            >
-              {loading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                <>
-                  <Upload className="h-6 w-6" />
-                  <span>Click to choose a .xml or .opml file</span>
-                </>
-              )}
-            </button>
+
+            {/* Step 1: pick a file */}
+            {!pending && !summary && (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Choose a file. Lumen recognises the format automatically:
+                </p>
+                <ul className="text-sm text-muted-foreground space-y-1.5 list-disc pl-5">
+                  <li>
+                    <strong>Lumen backup (.json)</strong> — restores everything: tabs, feeds,
+                    bookmarks and display settings. You choose whether to add it to or replace
+                    your current dashboard.
+                  </li>
+                  <li>
+                    <strong>OPML (.opml / .xml)</strong> — a feed list from Lumen or another
+                    reader. Each top-level group becomes a new tab, added next to yours.
+                  </li>
+                  <li>
+                    <strong>uStart.org export (.xml)</strong> — imported like OPML; columns and
+                    custom titles are kept, link tiles are skipped.
+                  </li>
+                </ul>
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={loading}
+                  className="w-full py-8 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground disabled:opacity-50"
+                >
+                  {loading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6" />
+                      <span>Click to choose a .json, .opml or .xml file</span>
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+
+            {/* Step 2 (JSON only): add or replace */}
+            {pending && !confirmReplace && (
+              <>
+                <div className="text-sm rounded-md border border-border bg-secondary/40 p-3">
+                  <p className="font-medium mb-1">Lumen backup recognised</p>
+                  <p className="text-muted-foreground">
+                    {plural(pending.summary.tabCount, "tab")},{" "}
+                    {plural(pending.summary.feedCount, "feed")},{" "}
+                    {plural(pending.summary.bookmarkCount, "bookmark")}.
+                    {pending.summary.skipped > 0 &&
+                      ` ${plural(pending.summary.skipped, "unusable item")} will be skipped.`}
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Your current dashboard has {plural(current.tabCount, "tab")},{" "}
+                  {plural(current.feedCount, "feed")} and{" "}
+                  {plural(current.bookmarkCount, "bookmark")}. What do you want to do?
+                </p>
+                <div className="grid gap-3">
+                  <button
+                    onClick={handleAddBackup}
+                    className="text-left p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition"
+                  >
+                    <p className="font-semibold text-sm">Add as new tabs</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Keeps everything you have now and adds the tabs from the backup.
+                      Display settings are not changed.
+                    </p>
+                  </button>
+                  <button
+                    onClick={() => setConfirmReplace(true)}
+                    className="text-left p-4 rounded-xl border-2 border-border hover:border-destructive hover:bg-destructive/5 transition"
+                  >
+                    <p className="font-semibold text-sm">Replace everything</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Restores the dashboard exactly as in the backup, including display
+                      settings. Your current tabs are removed.
+                    </p>
+                  </button>
+                </div>
+                <button
+                  onClick={resetImport}
+                  className="w-full px-4 py-2 rounded-md border border-border text-sm font-medium hover:bg-secondary"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+
+            {/* Step 3 (replace only): confirmation */}
+            {pending && confirmReplace && (
+              <>
+                <div className="flex gap-3 text-sm rounded-md border border-destructive/40 bg-destructive/10 p-3">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+                  <p>
+                    This replaces your current {plural(current.tabCount, "tab")},{" "}
+                    {plural(current.feedCount, "feed")} and{" "}
+                    {plural(current.bookmarkCount, "bookmark")} with the backup. A backup of
+                    your current dashboard is downloaded automatically first.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setConfirmReplace(false)}
+                    className="px-4 py-2 rounded-md border border-border text-sm font-medium hover:bg-secondary"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleReplaceBackup}
+                    className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90"
+                  >
+                    Replace everything
+                  </button>
+                </div>
+              </>
+            )}
+
             {error && <p className="text-sm text-destructive">{error}</p>}
             {summary && (
               <>
@@ -240,43 +368,44 @@ function Modal({ state, onImport, onClose }: ModalProps) {
             {/* Stats */}
             <div className="rounded-lg border border-border bg-secondary/30 p-4 flex gap-6">
               <div className="text-center">
-                <p className="text-2xl font-bold font-display text-primary">{state.tabs.length}</p>
+                <p className="text-2xl font-bold font-display text-primary">{current.tabCount}</p>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">Tabs</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold font-display text-primary">{totalFeeds}</p>
+                <p className="text-2xl font-bold font-display text-primary">{current.feedCount}</p>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">Feeds</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold font-display text-primary">{totalBookmarks}</p>
+                <p className="text-2xl font-bold font-display text-primary">{current.bookmarkCount}</p>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">Bookmarks</p>
               </div>
             </div>
 
-            <p className="text-sm text-muted-foreground">
-              Choose a format. <strong>OPML</strong> is compatible with most RSS readers.
-              <strong> JSON</strong> is a full backup that preserves everything including bookmarks.
-            </p>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3">
               <button
-                onClick={handleExportOpml}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition"
+                onClick={handleExportJson}
+                className="flex items-start gap-3 text-left p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition"
               >
-                <Download className="h-5 w-5 text-primary" />
-                <div className="text-center">
-                  <p className="font-semibold text-sm">OPML</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">RSS readers compatible</p>
+                <Download className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-semibold text-sm">Full backup (JSON) — recommended</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Everything Lumen stores: tabs, feeds, bookmarks, columns, tile styles and
+                    display options. Use it to restore Lumen exactly as it is now.
+                  </p>
                 </div>
               </button>
               <button
-                onClick={handleExportJson}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition"
+                onClick={handleExportOpml}
+                className="flex items-start gap-3 text-left p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition"
               >
-                <Download className="h-5 w-5 text-primary" />
-                <div className="text-center">
-                  <p className="font-semibold text-sm">JSON</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Full backup with bookmarks</p>
+                <Download className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-semibold text-sm">Feed list (OPML)</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Tabs, feeds and bookmark tiles in a standard format that other RSS readers
+                    understand. Tile styles and display options are not included.
+                  </p>
                 </div>
               </button>
             </div>
@@ -290,7 +419,7 @@ function Modal({ state, onImport, onClose }: ModalProps) {
 
 // ── Trigger button ────────────────────────────────────────────────────────────
 
-export function DataDialog({ state, onImport }: Props) {
+export function DataDialog({ state, onImport, onReplace }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -303,7 +432,12 @@ export function DataDialog({ state, onImport }: Props) {
         <span className="hidden md:inline">Data</span>
       </button>
       {open && (
-        <Modal state={state} onImport={onImport} onClose={() => setOpen(false)} />
+        <Modal
+          state={state}
+          onImport={onImport}
+          onReplace={onReplace}
+          onClose={() => setOpen(false)}
+        />
       )}
     </>
   );
