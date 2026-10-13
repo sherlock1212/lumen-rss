@@ -39,6 +39,9 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { StyleMenu } from "@/components/StyleMenu";
 import { DataDialog } from "@/components/DataDialog";
+import { SyncBanner, SyncIndicator } from "@/components/SyncStatus";
+import { ExportReminderBanner } from "@/components/ExportReminder";
+import { useExportReminder } from "@/lib/useExportReminder";
 
 
 export const Route = createFileRoute("/")({
@@ -127,6 +130,9 @@ function DigitalClock() {
 
 function Home() {
   const dash = useDashboard();
+  const exportReminder = useExportReminder();
+  // A backup is meaningful only when what is on screen is what is really stored.
+  const stateIsTrustworthy = dash.sync.status === "synced" || dash.sync.status === "saving";
   const [newTabOpen, setNewTabOpen] = useState(false);
   const [newTabName, setNewTabName] = useState("");
   const [editingTab, setEditingTab] = useState<string | null>(null);
@@ -210,6 +216,15 @@ function Home() {
               state={dash.state}
               onImport={dash.importTabs}
               onReplace={dash.replaceState}
+              backups={dash.backups}
+              exportInfo={
+                exportReminder.enabled && stateIsTrustworthy
+                  ? {
+                      lastExportAt: exportReminder.lastExportAt,
+                      onExported: exportReminder.markExported,
+                    }
+                  : null
+              }
             />
             <div className="hidden md:flex items-center gap-1 bg-surface/60 rounded-md p-0.5 border border-border">
               {[2, 3, 4].map((n) => {
@@ -239,6 +254,7 @@ function Home() {
               onToggleHighlightNew={dash.setHighlightNew}
             />
             <ThemeSwitcher />
+            <SyncIndicator sync={dash.sync} />
             <UserMenu />
             <DigitalClock />
           </div>
@@ -309,6 +325,12 @@ function Home() {
       </header>
 
       <main className="flex-1 p-4 md:p-6">
+        <SyncBanner sync={dash.sync} />
+        <ExportReminderBanner
+          reminder={exportReminder}
+          state={dash.state}
+          stateIsTrustworthy={stateIsTrustworthy}
+        />
         {dash.activeTab.widgets.length === 0 ? (
           <EmptyState onAddFeed={dash.addWidget} onAddBookmarks={dash.addBookmarksTile} />
         ) : (

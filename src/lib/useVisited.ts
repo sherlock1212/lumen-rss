@@ -30,6 +30,9 @@ export function useVisited() {
     const unsub = onSnapshot(
       ref,
       (snap) => {
+        // An empty answer from the local cache is not "nothing saved": wait for the
+        // server, otherwise we would later overwrite the real list with a partial one.
+        if (snap.metadata.fromCache && !snap.exists()) return;
         const data = snap.data() as { links?: string[] } | undefined;
         setRef.current = new Set(data?.links ?? []);
         loadedForUidRef.current = user.uid;

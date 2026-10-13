@@ -1,29 +1,16 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { db } from "./firebase";
 import { useAuth } from "./useAuth";
+import {
+  DashboardSync,
+  ensureDailyBackup,
+  firestoreBackend,
+  firestoreBackups,
+  type SyncIssue,
+  type SyncStatus,
+} from "./dashboardSync";
 import type { DashboardState, DashboardTab, FeedWidget, TileStyle } from "./rss";
-
-/**
- * Firestore silently drops `undefined` fields — it doesn't write them and
- * doesn't clear existing values at those paths. This breaks setGlobalStyle
- * (which sets defaultStyle/style to undefined) and importTabs (widgets with
- * customTitle: undefined). Fix: replace every undefined with null before saving.
- */
-function sanitize<T>(value: T): T {
-  if (value === undefined) return null as unknown as T;
-  if (value === null || typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.map(sanitize) as unknown as T;
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-    out[k] = sanitize(v);
-  }
-  return out as T;
-}
-
-function uid() {
-  return Math.random().toString(36).slice(2, 10);
-}
+import { uid } from "./utils";
 
 function emptyState(): DashboardState {
   const tabId = uid();
@@ -51,108 +38,106 @@ function starterState(): DashboardState {
   return { tabs: [tab], activeTabId: tabId, globalDefaultStyle: "full", highlightNew: true };
 }
 
+export interface SyncInfo {
+  status: SyncStatus;
+  issue?: SyncIssue;
+}
+
 export function useDashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.uid ?? null;
+
   const [state, setState] = useState<DashboardState>(() => emptyState());
+  const [sync, setSync] = useState<SyncInfo>({ status: "loading" });
 
-  // When > 0, we have a local change that hasn't been flushed to Firestore yet.
-  // Incoming snapshots must be ignored during this window to avoid reverting
-  // in-flight edits (Firestore can echo a stale snapshot within the debounce).
-  const pendingWriteRef = useRef(0); // stores the setTimeout id, or 0 if none
+  // `stateRef` always holds the latest state (even before React re-renders) and is
+  // what every mutation starts from. `syncRef` is the live Firestore sync, if signed in.
+  const stateRef = useRef(state);
+  const syncRef = useRef<DashboardSync | null>(null);
 
-  // Track which uid we've loaded for so we don't save before the first snapshot.
-  const loadedForUidRef = useRef<string | null>(null);
+  const applyState = useCallback((next: DashboardState) => {
+    stateRef.current = next;
+    setState(next);
+  }, []);
 
-  // ── Firestore subscription ────────────────────────────────────────────────
+  // ── Connect to Firestore ──────────────────────────────────────────────────
+  // All the safety rules (never save before the server has confirmed what is
+  // stored, never overwrite unreadable data, retry failed saves, ...) live in
+  // DashboardSync; see dashboardSync.ts.
   useEffect(() => {
-    if (!user) {
-      loadedForUidRef.current = null;
-      pendingWriteRef.current = 0;
-      setState(emptyState());
+    if (authLoading) {
+      setSync({ status: "loading" });
+      return;
+    }
+    if (!userId) {
+      syncRef.current = null;
+      applyState(emptyState());
+      setSync({ status: "guest" });
       return;
     }
 
-    const ref = doc(db, "users", user.uid, "data", "dashboard");
-    let firstSnapshot = true;
-
-    const unsub = onSnapshot(
-      ref,
-      async (snap) => {
-        // While we have a local write pending, ignore remote snapshots —
-        // they may reflect an older server state and would revert the user's edit.
-        if (pendingWriteRef.current !== 0) return;
-
-        if (firstSnapshot && !snap.exists()) {
-          const seed = starterState();
-          loadedForUidRef.current = user.uid;
-          setState(seed);
-          try {
-            await setDoc(ref, sanitize(seed));
-          } catch (e) {
-            console.error("Failed to seed dashboard:", e);
-          }
-        } else if (snap.exists()) {
-          const data = snap.data() as DashboardState;
-          if (data.globalDefaultStyle === undefined) data.globalDefaultStyle = "full";
-          if (data.highlightNew === undefined) data.highlightNew = true;
-          loadedForUidRef.current = user.uid;
-          setState(data);
+    // Shown (in memory only) if the account has no saved dashboard yet.
+    // It is written to Firestore only when the user changes something.
+    const starter = starterState();
+    const dashSync = new DashboardSync(firestoreBackend(db, userId), {
+      onRemote: (remote) => {
+        const next = remote ?? starter;
+        if (JSON.stringify(next) !== JSON.stringify(stateRef.current)) applyState(next);
+      },
+      onStatus: (status, issue) => setSync({ status, issue }),
+      onConfirmed: (remote) => {
+        if (remote) {
+          ensureDailyBackup(db, userId, remote).catch((e) =>
+            console.warn("Daily backup skipped:", e),
+          );
         }
-        firstSnapshot = false;
       },
-      (err) => {
-        console.error("Dashboard subscription error:", err);
-      },
-    );
+    });
+    syncRef.current = dashSync;
+    setSync({ status: "loading" });
+    dashSync.start();
 
     return () => {
-      unsub();
-      // Clear any pending debounce timer on unmount/user-change.
-      if (pendingWriteRef.current) {
-        clearTimeout(pendingWriteRef.current);
-        pendingWriteRef.current = 0;
+      dashSync.stop({ flush: true });
+      if (syncRef.current === dashSync) syncRef.current = null;
+    };
+  }, [userId, authLoading, applyState]);
+
+  // Don't lose an edit made in the last fraction of a second before the tab closes.
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (syncRef.current?.hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = "";
       }
     };
-  }, [user]);
-
-  // ── Persist on change (debounced 400ms) ──────────────────────────────────
-  // NOTE: this effect only runs for user-driven changes because `userMutate`
-  // is the only path that sets pendingWriteRef before calling setState.
-  // Snapshot-driven setState calls never reach the save path because
-  // pendingWriteRef is 0 when the snapshot arrives (see guard above).
-  useEffect(() => {
-    if (!user || loadedForUidRef.current !== user.uid) return;
-    // pendingWriteRef === 0 means this setState came from a snapshot, not the user.
-    if (pendingWriteRef.current === 0) return;
-
-    const ref = doc(db, "users", user.uid, "data", "dashboard");
-
-    // Clear any previously scheduled timer, then schedule a fresh one.
-    clearTimeout(pendingWriteRef.current);
-    const t = window.setTimeout(() => {
-      pendingWriteRef.current = 0; // write is flushed; snapshots are welcome again
-      setDoc(ref, sanitize(state)).catch((e) => console.error("Save failed:", e));
-    }, 400);
-    pendingWriteRef.current = t;
-
-    // No cleanup clearTimeout here on purpose: we want the timer to survive
-    // rapid consecutive state changes (each re-schedules it above). The timer
-    // is only cancelled by: (a) the next mutation re-scheduling it, or
-    // (b) the subscription cleanup on unmount.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") syncRef.current?.flushNow();
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
 
   // ── Shared helper for ALL user-driven mutations ───────────────────────────
-  // Sets pendingWriteRef to a sentinel (1) BEFORE setState so the save effect
-  // knows this is a user change (not a snapshot echo) and schedules a write.
-  function userMutate(updater: (s: DashboardState) => DashboardState) {
-    // Mark as dirty before React processes the new state.
-    // The save effect will replace this with the real timer id.
-    if (pendingWriteRef.current === 0) {
-      pendingWriteRef.current = 1; // sentinel: "dirty, timer not yet assigned"
-    }
-    setState(updater);
-  }
+  const userMutate = useCallback(
+    (updater: (s: DashboardState) => DashboardState) => {
+      const dashSync = syncRef.current;
+      // Signed in, but the stored dashboard has not been safely loaded yet
+      // (or could not be read): ignore the edit rather than risk overwriting it.
+      if (dashSync && !dashSync.canEdit()) return;
+
+      const prev = stateRef.current;
+      const next = updater(prev);
+      if (next === prev) return;
+      applyState(next);
+      dashSync?.schedule(next);
+    },
+    [applyState],
+  );
 
   // ── Selectors / derived state ─────────────────────────────────────────────
   const activeTab =
@@ -374,9 +359,16 @@ export function useDashboard() {
   }, []);
 
   /** Replace the whole dashboard (used by "restore from JSON backup"). */
-  const replaceState = useCallback((next: DashboardState) => {
-    userMutate(() => next);
-  }, []);
+  const replaceState = useCallback(
+    (next: DashboardState) => {
+      const dashSync = syncRef.current;
+      // `force`: an explicit restore is allowed even when the stored data was
+      // unreadable, but still only after the server has confirmed it.
+      if (dashSync && !dashSync.schedule(next, { force: true })) return;
+      applyState(next);
+    },
+    [applyState],
+  );
 
   const widgetsByColumn = (col: number): FeedWidget[] =>
     activeTab.widgets.filter((w) => w.column === col);
@@ -387,10 +379,17 @@ export function useDashboard() {
     [activeTab.defaultStyle, state.globalDefaultStyle],
   );
 
+  const backups = useMemo(
+    () => (userId ? firestoreBackups(db, userId) : null),
+    [userId],
+  );
+
   return {
     state,
     activeTab,
-    isGuest: !user,
+    isGuest: !userId && !authLoading,
+    sync,
+    backups,
     widgetsByColumn,
     addWidget,
     removeWidget,

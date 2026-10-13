@@ -61,6 +61,9 @@ function bind(uid: string | null) {
   cache.unsub = onSnapshot(
     doc(db, "users", uid, "data", "seen"),
     (snap) => {
+      // An empty answer from the local cache is not "nothing saved": wait for the
+      // server, otherwise we would later overwrite the real data with a partial map.
+      if (snap.metadata.fromCache && !snap.exists()) return;
       const data = snap.data() as { map?: SeenMap } | undefined;
       cache.map = data?.map ?? {};
       cache.loaded = true;

@@ -1,0 +1,1143 @@
+diff --git a/src/components/DataDialog.tsx b/src/components/DataDialog.tsx
+index c00babb..1ae89bb 100644
+--- a/src/components/DataDialog.tsx
++++ b/src/components/DataDialog.tsx
+@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
+ import { createPortal } from "react-dom";
+ import { Upload, Download, X, Loader2, Database, ArrowLeft, AlertTriangle } from "lucide-react";
+ import { buildOpml, parseOpml } from "@/lib/opml";
++import type { BackupInfo, BackupsApi } from "@/lib/dashboardSync";
+ import {
+   buildBackupJson,
+   parseBackup,
+@@ -17,6 +18,8 @@ interface Props {
+   onImport: (tabs: DashboardTab[]) => void;
+   /** Replace the whole dashboard (restore from a JSON backup). */
+   onReplace: (state: DashboardState) => void;
++  /** Automatic daily backups stored in the user's account (null when signed out). */
++  backups: BackupsApi | null;
+ }
+ 
+ // ── Helpers ───────────────────────────────────────────────────────────────────
+@@ -40,6 +43,15 @@ function timestamp() {
+   return new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+ }
+ 
++function formatBackupDate(id: string) {
++  return new Date(`${id}T00:00:00Z`).toLocaleDateString(undefined, {
++    day: "numeric",
++    month: "short",
++    year: "numeric",
++    timeZone: "UTC",
++  });
++}
++
+ /** A JSON backup starts with "{"; OPML / uStart exports are XML. */
+ function looksLikeJson(text: string) {
+   return /^\s*[{[]/.test(text);
+@@ -53,7 +65,7 @@ interface ModalProps extends Props {
+   onClose: () => void;
+ }
+ 
+-function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
++function Modal({ state, onImport, onReplace, backups, onClose }: ModalProps) {
+   const [mode, setMode] = useState<Mode>("choose");
+   const [loading, setLoading] = useState(false);
+   const [error, setError] = useState<string | null>(null);
+@@ -61,6 +73,11 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
+   // A parsed JSON backup waiting for the user to choose "add" or "replace".
+   const [pending, setPending] = useState<ParsedBackup | null>(null);
+   const [confirmReplace, setConfirmReplace] = useState(false);
++  // Where the pending backup comes from, shown to the user.
++  const [pendingSource, setPendingSource] = useState("Lumen backup file");
++  // Automatic backups list: null = not loaded yet.
++  const [backupList, setBackupList] = useState<BackupInfo[] | null>(null);
++  const [backupBusy, setBackupBusy] = useState<string | null>(null); // "list" or a backup id
+   const fileRef = useRef<HTMLInputElement>(null);
+ 
+   useEffect(() => {
+@@ -91,6 +108,7 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
+       if (looksLikeJson(text)) {
+         // Lumen JSON backup: ask whether to add or replace before touching anything.
+         setPending(parseBackup(text));
++        setPendingSource("Lumen backup file");
+       } else {
+         const result = parseOpml(text);
+         onImport(result.tabs);
+@@ -113,6 +131,33 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
+     }
+   }
+ 
++  async function handleShowBackups() {
++    if (!backups) return;
++    setBackupBusy("list");
++    setError(null);
++    try {
++      setBackupList(await backups.list());
++    } catch (e) {
++      setError(`Couldn't load automatic backups: ${(e as Error).message}`);
++    } finally {
++      setBackupBusy(null);
++    }
++  }
++
++  async function handlePickBackup(id: string) {
++    if (!backups) return;
++    setBackupBusy(id);
++    setError(null);
++    try {
++      setPending(await backups.load(id));
++      setPendingSource(`Automatic backup of ${formatBackupDate(id)}`);
++    } catch (e) {
++      setError(`Couldn't open this backup: ${(e as Error).message}`);
++    } finally {
++      setBackupBusy(null);
++    }
++  }
++
+   function handleAddBackup() {
+     if (!pending) return;
+     onImport(withFreshIds(pending.state.tabs));
+@@ -264,6 +309,52 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
+                     </>
+                   )}
+                 </button>
++
++                {backups && (
++                  <div className="rounded-lg border border-border p-4 space-y-3">
++                    <div>
++                      <p className="font-semibold text-sm">Automatic backups</p>
++                      <p className="text-xs text-muted-foreground mt-0.5">
++                        Lumen keeps a daily copy of your dashboard in your account (the last
++                        14 days). Each copy is taken the first time you open Lumen that day,
++                        before any change.
++                      </p>
++                    </div>
++                    {backupList === null ? (
++                      <button
++                        onClick={handleShowBackups}
++                        disabled={backupBusy !== null}
++                        className="px-3 py-1.5 rounded-md border border-border text-sm font-medium hover:bg-secondary disabled:opacity-50 inline-flex items-center gap-2"
++                      >
++                        {backupBusy === "list" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
++                        Show automatic backups
++                      </button>
++                    ) : backupList.length === 0 ? (
++                      <p className="text-xs text-muted-foreground">
++                        No automatic backups yet. The first one is created the next time you open Lumen.
++                      </p>
++                    ) : (
++                      <ul className="space-y-1.5">
++                        {backupList.map((b) => (
++                          <li key={b.id}>
++                            <button
++                              onClick={() => handlePickBackup(b.id)}
++                              disabled={backupBusy !== null}
++                              className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md border border-border text-sm text-left hover:border-primary hover:bg-primary/5 transition disabled:opacity-50"
++                            >
++                              <span className="font-medium">{formatBackupDate(b.id)}</span>
++                              <span className="text-xs text-muted-foreground">
++                                {plural(b.tabCount, "tab")} · {plural(b.feedCount, "feed")} ·{" "}
++                                {plural(b.bookmarkCount, "bookmark")}
++                              </span>
++                              {backupBusy === b.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
++                            </button>
++                          </li>
++                        ))}
++                      </ul>
++                    )}
++                  </div>
++                )}
+               </>
+             )}
+ 
+@@ -271,7 +362,7 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
+             {pending && !confirmReplace && (
+               <>
+                 <div className="text-sm rounded-md border border-border bg-secondary/40 p-3">
+-                  <p className="font-medium mb-1">Lumen backup recognised</p>
++                  <p className="font-medium mb-1">{pendingSource}</p>
+                   <p className="text-muted-foreground">
+                     {plural(pending.summary.tabCount, "tab")},{" "}
+                     {plural(pending.summary.feedCount, "feed")},{" "}
+@@ -419,7 +510,7 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
+ 
+ // ── Trigger button ────────────────────────────────────────────────────────────
+ 
+-export function DataDialog({ state, onImport, onReplace }: Props) {
++export function DataDialog({ state, onImport, onReplace, backups }: Props) {
+   const [open, setOpen] = useState(false);
+   return (
+     <>
+@@ -436,6 +527,7 @@ export function DataDialog({ state, onImport, onReplace }: Props) {
+           state={state}
+           onImport={onImport}
+           onReplace={onReplace}
++          backups={backups}
+           onClose={() => setOpen(false)}
+         />
+       )}
+diff --git a/src/components/SyncStatus.tsx b/src/components/SyncStatus.tsx
+new file mode 100644
+index 0000000..9f846d1
+--- /dev/null
++++ b/src/components/SyncStatus.tsx
+@@ -0,0 +1,106 @@
++import { AlertTriangle, Check, CloudOff, Loader2, UserX } from "lucide-react";
++import type { SyncInfo } from "@/lib/useDashboard";
++
++/** Small pill next to the account button: tells the user whether their work is saved. */
++export function SyncIndicator({ sync }: { sync: SyncInfo }) {
++  const { status } = sync;
++  const base =
++    "hidden md:inline-flex h-7 items-center gap-1.5 px-2.5 rounded-full border text-[11px] font-medium select-none";
++
++  if (status === "synced") {
++    return (
++      <span className={`${base} border-border text-muted-foreground`} title="All changes are saved">
++        <Check className="h-3 w-3 text-primary" /> Saved
++      </span>
++    );
++  }
++  if (status === "loading") {
++    return (
++      <span className={`${base} border-border text-muted-foreground`} title="Loading your dashboard">
++        <Loader2 className="h-3 w-3 animate-spin" /> Loading
++      </span>
++    );
++  }
++  if (status === "saving") {
++    const offline = typeof navigator !== "undefined" && navigator.onLine === false;
++    return (
++      <span
++        className={`${base} border-amber-500/40 text-amber-500`}
++        title={offline ? "You are offline: changes will be saved when you reconnect" : "Saving your changes"}
++      >
++        <Loader2 className="h-3 w-3 animate-spin" /> {offline ? "Offline" : "Saving…"}
++      </span>
++    );
++  }
++  if (status === "guest") {
++    return (
++      <span className={`${base} border-amber-500/40 text-amber-500`} title="Sign in to save your dashboard">
++        <UserX className="h-3 w-3" /> Not saved
++      </span>
++    );
++  }
++  if (status === "offline") {
++    return (
++      <span className={`${base} border-amber-500/40 text-amber-500`} title="Can't reach your saved dashboard">
++        <CloudOff className="h-3 w-3" /> Offline
++      </span>
++    );
++  }
++  return (
++    <span className={`${base} border-destructive/40 text-destructive`} title="Your latest changes are not saved">
++      <AlertTriangle className="h-3 w-3" /> Not saved
++    </span>
++  );
++}
++
++function bannerContent(sync: SyncInfo): { tone: "warn" | "danger"; text: string } | null {
++  switch (sync.status) {
++    case "guest":
++      return {
++        tone: "warn",
++        text: "You're not signed in. Changes are kept only in this tab and will be lost when you reload. Sign in to save your dashboard.",
++      };
++    case "offline":
++      return {
++        tone: "warn",
++        text: "Can't reach your saved dashboard right now. Editing is paused so nothing gets overwritten. Check your connection (or any ad-blocker / VPN that blocks Google services), then reload.",
++      };
++    case "error":
++      if (sync.issue === "unreadable") {
++        return {
++          tone: "danger",
++          text: "Your saved dashboard couldn't be read, so nothing was changed or overwritten. Restore it from Data → Import (automatic backups or a backup file).",
++        };
++      }
++      if (sync.issue === "permission-denied") {
++        return {
++          tone: "danger",
++          text: "The database refused access to your data (permission denied). Check the Firestore security rules and that you're signed in with the right account.",
++        };
++      }
++      return {
++        tone: "danger",
++        text: "Your latest changes could not be saved. Lumen keeps trying — don't close this tab. If it persists, export a backup from Data → Export.",
++      };
++    default:
++      return null;
++  }
++}
++
++/** Full-width notice, shown only when there is something the user needs to know. */
++export function SyncBanner({ sync }: { sync: SyncInfo }) {
++  const content = bannerContent(sync);
++  if (!content) return null;
++  const tone =
++    content.tone === "danger"
++      ? "border-destructive/40 bg-destructive/10 text-foreground"
++      : "border-amber-500/40 bg-amber-500/10 text-foreground";
++  return (
++    <div role="status" className={`mb-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${tone}`}>
++      <AlertTriangle
++        className={`h-4 w-4 mt-0.5 shrink-0 ${content.tone === "danger" ? "text-destructive" : "text-amber-500"}`}
++      />
++      <p>{content.text}</p>
++    </div>
++  );
++}
+diff --git a/src/lib/backup.ts b/src/lib/backup.ts
+index f3939e5..aa54b93 100644
+--- a/src/lib/backup.ts
++++ b/src/lib/backup.ts
+@@ -96,6 +96,45 @@ function isObject(v: unknown): v is Record<string, unknown> {
+   return typeof v === "object" && v !== null && !Array.isArray(v);
+ }
+ 
++const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
++
++/**
++ * Fields we don't know about are preserved (minus null/undefined), so a field
++ * added to the app in the future is not silently dropped — and then erased from
++ * Firestore on the next save — by a normaliser that predates it.
++ */
++function extras(
++  raw: Record<string, unknown>,
++  known: readonly string[],
++): Record<string, unknown> {
++  const out: Record<string, unknown> = {};
++  for (const [k, v] of Object.entries(raw)) {
++    if (known.includes(k) || UNSAFE_KEYS.has(k)) continue;
++    if (v !== null && v !== undefined) out[k] = v;
++  }
++  return out;
++}
++
++const STATE_KEYS = [
++  "tabs",
++  "activeTabId",
++  "globalDefaultStyle",
++  "highlightNew",
++  // written by the sync layer, not part of the dashboard itself
++  "updatedAt",
++  "schemaVersion",
++] as const;
++const TAB_KEYS = ["id", "name", "columns", "widgets", "defaultStyle"] as const;
++const WIDGET_KEYS = [
++  "id",
++  "kind",
++  "url",
++  "customTitle",
++  "column",
++  "style",
++  "bookmarks",
++] as const;
++
+ /** Returns `id` if it is a usable, not-yet-seen string; otherwise a fresh one. */
+ function uniqueId(id: unknown, seen: Set<string>): string {
+   let out = str(id);
+@@ -134,21 +173,27 @@ function normalizeWidget(
+   const widgetStyle = style(raw.style);
+ 
+   if (raw.kind === "bookmarks") {
+-    const w: FeedWidget = {
++    const w = {
++      ...extras(raw, WIDGET_KEYS),
+       id: uniqueId(raw.id, seen),
+       kind: "bookmarks",
+       url: "",
+       customTitle: customTitle ?? "Favourites",
+       column,
+       bookmarks: normalizeBookmarks(raw.bookmarks, seen),
+-    };
++    } as FeedWidget;
+     if (widgetStyle) w.style = widgetStyle;
+     return w;
+   }
+ 
+   const url = str(raw.url);
+   if (!isHttpUrl(url)) return null;
+-  const w: FeedWidget = { id: uniqueId(raw.id, seen), url, column };
++  const w = {
++    ...extras(raw, WIDGET_KEYS),
++    id: uniqueId(raw.id, seen),
++    url,
++    column,
++  } as FeedWidget;
+   if (customTitle) w.customTitle = customTitle;
+   if (widgetStyle) w.style = widgetStyle;
+   return w;
+@@ -176,6 +221,15 @@ export function parseBackup(text: string): ParsedBackup {
+     }
+     data = json.data;
+   }
++  return normalizeDashboardState(data);
++}
++
++/**
++ * Validates and repairs a dashboard state coming from anywhere untrusted:
++ * a backup file, or the document read back from Firestore.
++ * Throws if there is no usable dashboard in it.
++ */
++export function normalizeDashboardState(data: unknown): ParsedBackup {
+   if (!isObject(data) || !Array.isArray(data.tabs)) {
+     throw new Error("Not a Lumen backup file (no tabs found).");
+   }
+@@ -200,12 +254,13 @@ export function parseBackup(text: string): ParsedBackup {
+       if (w) widgets.push(w);
+       else skipped++;
+     }
+-    const tab: DashboardTab = {
++    const tab = {
++      ...extras(rawTab, TAB_KEYS),
+       id: uniqueId(rawTab.id, seen),
+       name: str(rawTab.name) || `Tab ${i + 1}`,
+       columns,
+       widgets,
+-    };
++    } as DashboardTab;
+     const tabStyle = style(rawTab.defaultStyle);
+     if (tabStyle) tab.defaultStyle = tabStyle;
+     tabs.push(tab);
+@@ -218,12 +273,13 @@ export function parseBackup(text: string): ParsedBackup {
+     ? (data.activeTabId as string)
+     : tabs[0].id;
+ 
+-  const state: DashboardState = {
++  const state = {
++    ...extras(data, STATE_KEYS),
+     tabs,
+     activeTabId,
+     globalDefaultStyle: style(data.globalDefaultStyle) ?? "full",
+     highlightNew: typeof data.highlightNew === "boolean" ? data.highlightNew : true,
+-  };
++  } as DashboardState;
+ 
+   return { state, summary: { ...summarizeState(state), skipped } };
+ }
+diff --git a/src/lib/dashboardSync.ts b/src/lib/dashboardSync.ts
+new file mode 100644
+index 0000000..af62e39
+--- /dev/null
++++ b/src/lib/dashboardSync.ts
+@@ -0,0 +1,379 @@
++// Keeps the dashboard in sync with Firestore — safely.
++//
++// The rules this module enforces (each one exists because the previous code
++// broke it and could wipe a user's data):
++//
++//  1. NOTHING is written until the server has confirmed what is stored.
++//     When the client is offline / blocked / slow at page load, Firestore reports
++//     "this document does not exist" from its empty local cache. That answer is
++//     ignored here (`fromCache`), instead of being mistaken for a new account.
++//  2. A missing document is never "seeded" automatically. The starter dashboard
++//     is shown in memory only, and saved the first time the user changes something.
++//  3. A document that exists but cannot be understood is never overwritten
++//     (the sync is blocked, the user is told, and can restore a backup).
++//  4. Failed saves are retried and reported; they are never silent.
++//
++// The class below knows nothing about React or Firestore, so it can be tested
++// with a fake backend (see DashboardBackend).
++
++import {
++  collection,
++  deleteDoc,
++  doc,
++  getDoc,
++  getDocs,
++  onSnapshot,
++  serverTimestamp,
++  setDoc,
++  type Firestore,
++} from "firebase/firestore";
++import {
++  normalizeDashboardState,
++  summarizeState,
++  type ParsedBackup,
++} from "./backup";
++import type { DashboardState } from "./rss";
++
++export const SCHEMA_VERSION = 1;
++
++export type SyncStatus =
++  | "guest" //   not signed in: nothing is saved
++  | "loading" // waiting for the first answer from the server
++  | "offline" // server not reachable: editing paused, nothing will be overwritten
++  | "synced" //  everything is saved
++  | "saving" //  local changes not yet confirmed by the server
++  | "error"; //  see `issue`
++
++/** Machine-readable reason attached to status "error" / "offline". */
++export type SyncIssue =
++  | "unreadable" //          the stored dashboard exists but is not valid
++  | "permission-denied" //   Firestore security rules rejected the request
++  | "write-failed" //        a save failed (will be retried)
++  | "unknown";
++
++export interface RemoteSnapshot {
++  exists: boolean;
++  /** true when the answer comes from the local cache, not from the server */
++  fromCache: boolean;
++  data: unknown;
++}
++
++export interface DashboardBackend {
++  subscribe(
++    onSnap: (s: RemoteSnapshot) => void,
++    onError: (e: unknown) => void,
++  ): () => void;
++  write(payload: Record<string, unknown>): Promise<void>;
++}
++
++export interface SyncEvents {
++  /** New state from the server. `null` = the server says nothing is saved yet. */
++  onRemote(state: DashboardState | null): void;
++  onStatus(status: SyncStatus, issue?: SyncIssue): void;
++  /** Called once, on the first trustworthy read (used to take the daily backup). */
++  onConfirmed?(state: DashboardState | null): void;
++}
++
++export interface SyncOptions {
++  debounceMs?: number;
++  /** Delays between retries after a failed save; the last value repeats. */
++  retryDelaysMs?: number[];
++}
++
++/**
++ * Firestore rejects `undefined`. Removing it is also the right way to "clear" a
++ * field, because every save replaces the whole document.
++ */
++export function stripUndefined<T>(value: T): T {
++  if (value === undefined) return value;
++  if (value === null || typeof value !== "object") return value;
++  if (Array.isArray(value)) {
++    return value.filter((v) => v !== undefined).map(stripUndefined) as unknown as T;
++  }
++  const out: Record<string, unknown> = {};
++  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
++    if (v !== undefined) out[k] = stripUndefined(v);
++  }
++  return out as T;
++}
++
++function issueFrom(e: unknown): SyncIssue {
++  const code = (e as { code?: string } | null)?.code;
++  return code === "permission-denied" ? "permission-denied" : "unknown";
++}
++
++export class DashboardSync {
++  private unsub: (() => void) | null = null;
++  private status: SyncStatus = "loading";
++  private confirmed = false; //   the server has told us what is stored
++  private blocked = false; //     stored data unreadable / access denied: no automatic writes
++  private dirty = false; //       local change not yet handed to Firestore
++  private inflight = 0; //        writes handed to Firestore, not yet acknowledged
++  private failures = 0;
++  private latest: DashboardState | null = null;
++  private timer: ReturnType<typeof setTimeout> | null = null;
++  private stopped = false;
++  private reportedConfirmed = false;
++  private readonly debounceMs: number;
++  private readonly retryDelaysMs: number[];
++
++  constructor(
++    private readonly backend: DashboardBackend,
++    private readonly events: SyncEvents,
++    options: SyncOptions = {},
++  ) {
++    this.debounceMs = options.debounceMs ?? 400;
++    this.retryDelaysMs = options.retryDelaysMs ?? [3000, 10000, 30000];
++  }
++
++  start() {
++    this.unsub = this.backend.subscribe(
++      (s) => this.handleSnapshot(s),
++      (e) => this.handleListenError(e),
++    );
++  }
++
++  /** Stops listening. With `flush`, hands any unsaved change to Firestore first. */
++  stop(opts: { flush?: boolean } = {}) {
++    if (opts.flush && this.dirty && this.confirmed) this.flush();
++    this.stopped = true;
++    this.clearTimer();
++    this.unsub?.();
++    this.unsub = null;
++  }
++
++  /** Normal edits are allowed only once the stored data is known and readable. */
++  canEdit(): boolean {
++    return this.confirmed && !this.blocked && !this.stopped;
++  }
++
++  hasUnsavedChanges(): boolean {
++    return this.dirty || this.inflight > 0;
++  }
++
++  /**
++   * Queues `state` to be saved. Returns false (and does nothing) if saving is not
++   * safe right now. `force` is for an explicit user decision to replace the stored
++   * dashboard (restore from backup); it still requires a server-confirmed read.
++   */
++  schedule(state: DashboardState, opts: { force?: boolean } = {}): boolean {
++    if (this.stopped) return false;
++    if (opts.force) {
++      if (!this.confirmed) return false;
++      this.blocked = false;
++    } else if (!this.canEdit()) {
++      return false;
++    }
++    this.latest = state;
++    this.dirty = true;
++    this.setStatus("saving");
++    this.arm(this.debounceMs);
++    return true;
++  }
++
++  /** Saves immediately instead of waiting for the debounce (e.g. tab being hidden). */
++  flushNow() {
++    if (this.dirty && this.confirmed && !this.blocked && !this.stopped) this.flush();
++  }
++
++  // ── internals ──────────────────────────────────────────────────────────────
++
++  private setStatus(status: SyncStatus, issue?: SyncIssue) {
++    if (this.stopped) return;
++    this.status = status;
++    this.events.onStatus(status, issue);
++  }
++
++  private clearTimer() {
++    if (this.timer) clearTimeout(this.timer);
++    this.timer = null;
++  }
++
++  private arm(ms: number) {
++    this.clearTimer();
++    this.timer = setTimeout(() => this.flush(), ms);
++  }
++
++  private handleSnapshot(s: RemoteSnapshot) {
++    if (this.stopped) return;
++
++    if (s.fromCache && !this.confirmed) {
++      // Rule 1: an answer from the local cache, before the server has ever
++      // answered, proves nothing. An empty cache looks exactly like "no document".
++      this.setStatus("offline");
++      return;
++    }
++    if (!s.fromCache) this.confirmed = true;
++    if (!this.confirmed) return;
++
++    // Our own unsaved edits win over whatever the server shows right now.
++    if (this.dirty || this.inflight > 0) return;
++
++    let state: DashboardState | null = null;
++    if (s.exists) {
++      try {
++        state = normalizeDashboardState(s.data).state;
++      } catch {
++        // Rule 3: never overwrite what we cannot read.
++        this.blocked = true;
++        this.setStatus("error", "unreadable");
++        return;
++      }
++    }
++
++    this.blocked = false;
++    this.events.onRemote(state);
++    this.setStatus("synced");
++    if (!this.reportedConfirmed) {
++      this.reportedConfirmed = true;
++      this.events.onConfirmed?.(state);
++    }
++  }
++
++  private handleListenError(e: unknown) {
++    if (this.stopped) return;
++    this.blocked = true;
++    this.setStatus("error", issueFrom(e));
++  }
++
++  private flush() {
++    this.clearTimer();
++    if (!this.dirty || !this.latest || this.stopped) return;
++
++    const payload: Record<string, unknown> = {
++      ...stripUndefined(this.latest),
++      schemaVersion: SCHEMA_VERSION,
++    };
++    this.dirty = false;
++    this.inflight++;
++
++    this.backend.write(payload).then(
++      () => {
++        this.inflight--;
++        this.failures = 0;
++        if (!this.dirty && this.inflight === 0) this.setStatus("synced");
++      },
++      (e) => {
++        // Rule 4: keep the change, tell the user, try again.
++        this.inflight--;
++        this.dirty = true;
++        this.failures++;
++        const issue = issueFrom(e);
++        this.setStatus("error", issue === "unknown" ? "write-failed" : issue);
++        const delays = this.retryDelaysMs;
++        this.arm(delays[Math.min(this.failures - 1, delays.length - 1)]);
++      },
++    );
++  }
++}
++
++// ── Firestore backend ─────────────────────────────────────────────────────────
++
++export function firestoreBackend(db: Firestore, uid: string): DashboardBackend {
++  const ref = doc(db, "users", uid, "data", "dashboard");
++  return {
++    subscribe(onSnap, onError) {
++      // includeMetadataChanges: also get notified when an answer that came from
++      // the cache is later confirmed by the server (needed to leave "offline").
++      return onSnapshot(
++        ref,
++        { includeMetadataChanges: true },
++        (snap) =>
++          onSnap({
++            exists: snap.exists(),
++            fromCache: snap.metadata.fromCache,
++            data: snap.exists() ? snap.data() : undefined,
++          }),
++        onError,
++      );
++    },
++    write: (payload) => setDoc(ref, { ...payload, updatedAt: serverTimestamp() }),
++  };
++}
++
++// ── Automatic daily backups ───────────────────────────────────────────────────
++//
++// users/{uid}/backups/{YYYY-MM-DD}  →  copy of the dashboard as it was when the
++// app was first opened that day (i.e. before any change made that day).
++// The 14 most recent are kept. Empty dashboards are never backed up, so a wipe
++// cannot push good backups out of the window.
++
++export const BACKUP_KEEP = 14;
++const BACKUP_ID = /^\d{4}-\d{2}-\d{2}$/;
++
++export interface BackupInfo {
++  id: string; // YYYY-MM-DD
++  tabCount: number;
++  feedCount: number;
++  bookmarkCount: number;
++}
++
++export interface BackupsApi {
++  list(): Promise<BackupInfo[]>;
++  load(id: string): Promise<ParsedBackup>;
++}
++
++export function backupIdFor(date: Date): string {
++  return date.toISOString().slice(0, 10);
++}
++
++/** Ids to delete so that only the `keep` most recent remain. */
++export function backupsToPrune(ids: string[], keep = BACKUP_KEEP): string[] {
++  return ids
++    .filter((id) => BACKUP_ID.test(id))
++    .sort()
++    .reverse()
++    .slice(keep);
++}
++
++export async function ensureDailyBackup(
++  db: Firestore,
++  uid: string,
++  state: DashboardState,
++  now = new Date(),
++): Promise<boolean> {
++  const counts = summarizeState(state);
++  if (counts.feedCount + counts.bookmarkCount === 0) return false;
++
++  const ref = doc(db, "users", uid, "backups", backupIdFor(now));
++  if ((await getDoc(ref)).exists()) return false;
++
++  await setDoc(ref, {
++    createdAt: serverTimestamp(),
++    ...counts,
++    data: stripUndefined(state),
++  });
++
++  const all = await getDocs(collection(db, "users", uid, "backups"));
++  await Promise.all(
++    backupsToPrune(all.docs.map((d) => d.id)).map((id) =>
++      deleteDoc(doc(db, "users", uid, "backups", id)),
++    ),
++  );
++  return true;
++}
++
++export function firestoreBackups(db: Firestore, uid: string): BackupsApi {
++  return {
++    async list() {
++      const snap = await getDocs(collection(db, "users", uid, "backups"));
++      return snap.docs
++        .filter((d) => BACKUP_ID.test(d.id))
++        .map((d) => {
++          const v = d.data() as Partial<BackupInfo>;
++          return {
++            id: d.id,
++            tabCount: Number(v.tabCount) || 0,
++            feedCount: Number(v.feedCount) || 0,
++            bookmarkCount: Number(v.bookmarkCount) || 0,
++          };
++        })
++        .sort((a, b) => b.id.localeCompare(a.id));
++    },
++    async load(id) {
++      const snap = await getDoc(doc(db, "users", uid, "backups", id));
++      if (!snap.exists()) throw new Error("This backup no longer exists.");
++      return normalizeDashboardState((snap.data() as { data?: unknown }).data);
++    },
++  };
++}
+diff --git a/src/lib/useDashboard.ts b/src/lib/useDashboard.ts
+index e37474a..fdfde68 100644
+--- a/src/lib/useDashboard.ts
++++ b/src/lib/useDashboard.ts
+@@ -1,29 +1,16 @@
+-import { useEffect, useRef, useState, useCallback } from "react";
+-import { doc, onSnapshot, setDoc } from "firebase/firestore";
++import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+ import { db } from "./firebase";
+ import { useAuth } from "./useAuth";
++import {
++  DashboardSync,
++  ensureDailyBackup,
++  firestoreBackend,
++  firestoreBackups,
++  type SyncIssue,
++  type SyncStatus,
++} from "./dashboardSync";
+ import type { DashboardState, DashboardTab, FeedWidget, TileStyle } from "./rss";
+-
+-/**
+- * Firestore silently drops `undefined` fields — it doesn't write them and
+- * doesn't clear existing values at those paths. This breaks setGlobalStyle
+- * (which sets defaultStyle/style to undefined) and importTabs (widgets with
+- * customTitle: undefined). Fix: replace every undefined with null before saving.
+- */
+-function sanitize<T>(value: T): T {
+-  if (value === undefined) return null as unknown as T;
+-  if (value === null || typeof value !== "object") return value;
+-  if (Array.isArray(value)) return value.map(sanitize) as unknown as T;
+-  const out: Record<string, unknown> = {};
+-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+-    out[k] = sanitize(v);
+-  }
+-  return out as T;
+-}
+-
+-function uid() {
+-  return Math.random().toString(36).slice(2, 10);
+-}
++import { uid } from "./utils";
+ 
+ function emptyState(): DashboardState {
+   const tabId = uid();
+@@ -51,108 +38,106 @@ function starterState(): DashboardState {
+   return { tabs: [tab], activeTabId: tabId, globalDefaultStyle: "full", highlightNew: true };
+ }
+ 
++export interface SyncInfo {
++  status: SyncStatus;
++  issue?: SyncIssue;
++}
++
+ export function useDashboard() {
+-  const { user } = useAuth();
++  const { user, loading: authLoading } = useAuth();
++  const userId = user?.uid ?? null;
++
+   const [state, setState] = useState<DashboardState>(() => emptyState());
++  const [sync, setSync] = useState<SyncInfo>({ status: "loading" });
+ 
+-  // When > 0, we have a local change that hasn't been flushed to Firestore yet.
+-  // Incoming snapshots must be ignored during this window to avoid reverting
+-  // in-flight edits (Firestore can echo a stale snapshot within the debounce).
+-  const pendingWriteRef = useRef(0); // stores the setTimeout id, or 0 if none
++  // `stateRef` always holds the latest state (even before React re-renders) and is
++  // what every mutation starts from. `syncRef` is the live Firestore sync, if signed in.
++  const stateRef = useRef(state);
++  const syncRef = useRef<DashboardSync | null>(null);
+ 
+-  // Track which uid we've loaded for so we don't save before the first snapshot.
+-  const loadedForUidRef = useRef<string | null>(null);
++  const applyState = useCallback((next: DashboardState) => {
++    stateRef.current = next;
++    setState(next);
++  }, []);
+ 
+-  // ── Firestore subscription ────────────────────────────────────────────────
++  // ── Connect to Firestore ──────────────────────────────────────────────────
++  // All the safety rules (never save before the server has confirmed what is
++  // stored, never overwrite unreadable data, retry failed saves, ...) live in
++  // DashboardSync; see dashboardSync.ts.
+   useEffect(() => {
+-    if (!user) {
+-      loadedForUidRef.current = null;
+-      pendingWriteRef.current = 0;
+-      setState(emptyState());
++    if (authLoading) {
++      setSync({ status: "loading" });
++      return;
++    }
++    if (!userId) {
++      syncRef.current = null;
++      applyState(emptyState());
++      setSync({ status: "guest" });
+       return;
+     }
+ 
+-    const ref = doc(db, "users", user.uid, "data", "dashboard");
+-    let firstSnapshot = true;
+-
+-    const unsub = onSnapshot(
+-      ref,
+-      async (snap) => {
+-        // While we have a local write pending, ignore remote snapshots —
+-        // they may reflect an older server state and would revert the user's edit.
+-        if (pendingWriteRef.current !== 0) return;
+-
+-        if (firstSnapshot && !snap.exists()) {
+-          const seed = starterState();
+-          loadedForUidRef.current = user.uid;
+-          setState(seed);
+-          try {
+-            await setDoc(ref, sanitize(seed));
+-          } catch (e) {
+-            console.error("Failed to seed dashboard:", e);
+-          }
+-        } else if (snap.exists()) {
+-          const data = snap.data() as DashboardState;
+-          if (data.globalDefaultStyle === undefined) data.globalDefaultStyle = "full";
+-          if (data.highlightNew === undefined) data.highlightNew = true;
+-          loadedForUidRef.current = user.uid;
+-          setState(data);
+-        }
+-        firstSnapshot = false;
++    // Shown (in memory only) if the account has no saved dashboard yet.
++    // It is written to Firestore only when the user changes something.
++    const starter = starterState();
++    const dashSync = new DashboardSync(firestoreBackend(db, userId), {
++      onRemote: (remote) => {
++        const next = remote ?? starter;
++        if (JSON.stringify(next) !== JSON.stringify(stateRef.current)) applyState(next);
+       },
+-      (err) => {
+-        console.error("Dashboard subscription error:", err);
++      onStatus: (status, issue) => setSync({ status, issue }),
++      onConfirmed: (remote) => {
++        if (remote) {
++          ensureDailyBackup(db, userId, remote).catch((e) =>
++            console.warn("Daily backup skipped:", e),
++          );
++        }
+       },
+-    );
++    });
++    syncRef.current = dashSync;
++    setSync({ status: "loading" });
++    dashSync.start();
+ 
+     return () => {
+-      unsub();
+-      // Clear any pending debounce timer on unmount/user-change.
+-      if (pendingWriteRef.current) {
+-        clearTimeout(pendingWriteRef.current);
+-        pendingWriteRef.current = 0;
+-      }
++      dashSync.stop({ flush: true });
++      if (syncRef.current === dashSync) syncRef.current = null;
+     };
+-  }, [user]);
++  }, [userId, authLoading, applyState]);
+ 
+-  // ── Persist on change (debounced 400ms) ──────────────────────────────────
+-  // NOTE: this effect only runs for user-driven changes because `userMutate`
+-  // is the only path that sets pendingWriteRef before calling setState.
+-  // Snapshot-driven setState calls never reach the save path because
+-  // pendingWriteRef is 0 when the snapshot arrives (see guard above).
++  // Don't lose an edit made in the last fraction of a second before the tab closes.
+   useEffect(() => {
+-    if (!user || loadedForUidRef.current !== user.uid) return;
+-    // pendingWriteRef === 0 means this setState came from a snapshot, not the user.
+-    if (pendingWriteRef.current === 0) return;
+-
+-    const ref = doc(db, "users", user.uid, "data", "dashboard");
+-
+-    // Clear any previously scheduled timer, then schedule a fresh one.
+-    clearTimeout(pendingWriteRef.current);
+-    const t = window.setTimeout(() => {
+-      pendingWriteRef.current = 0; // write is flushed; snapshots are welcome again
+-      setDoc(ref, sanitize(state)).catch((e) => console.error("Save failed:", e));
+-    }, 400);
+-    pendingWriteRef.current = t;
+-
+-    // No cleanup clearTimeout here on purpose: we want the timer to survive
+-    // rapid consecutive state changes (each re-schedules it above). The timer
+-    // is only cancelled by: (a) the next mutation re-scheduling it, or
+-    // (b) the subscription cleanup on unmount.
+-  // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, [state]);
++    const onBeforeUnload = (e: BeforeUnloadEvent) => {
++      if (syncRef.current?.hasUnsavedChanges()) {
++        e.preventDefault();
++        e.returnValue = "";
++      }
++    };
++    const onVisibility = () => {
++      if (document.visibilityState === "hidden") syncRef.current?.flushNow();
++    };
++    window.addEventListener("beforeunload", onBeforeUnload);
++    document.addEventListener("visibilitychange", onVisibility);
++    return () => {
++      window.removeEventListener("beforeunload", onBeforeUnload);
++      document.removeEventListener("visibilitychange", onVisibility);
++    };
++  }, []);
+ 
+   // ── Shared helper for ALL user-driven mutations ───────────────────────────
+-  // Sets pendingWriteRef to a sentinel (1) BEFORE setState so the save effect
+-  // knows this is a user change (not a snapshot echo) and schedules a write.
+-  function userMutate(updater: (s: DashboardState) => DashboardState) {
+-    // Mark as dirty before React processes the new state.
+-    // The save effect will replace this with the real timer id.
+-    if (pendingWriteRef.current === 0) {
+-      pendingWriteRef.current = 1; // sentinel: "dirty, timer not yet assigned"
+-    }
+-    setState(updater);
+-  }
++  const userMutate = useCallback(
++    (updater: (s: DashboardState) => DashboardState) => {
++      const dashSync = syncRef.current;
++      // Signed in, but the stored dashboard has not been safely loaded yet
++      // (or could not be read): ignore the edit rather than risk overwriting it.
++      if (dashSync && !dashSync.canEdit()) return;
++
++      const prev = stateRef.current;
++      const next = updater(prev);
++      if (next === prev) return;
++      applyState(next);
++      dashSync?.schedule(next);
++    },
++    [applyState],
++  );
+ 
+   // ── Selectors / derived state ─────────────────────────────────────────────
+   const activeTab =
+@@ -374,9 +359,16 @@ export function useDashboard() {
+   }, []);
+ 
+   /** Replace the whole dashboard (used by "restore from JSON backup"). */
+-  const replaceState = useCallback((next: DashboardState) => {
+-    userMutate(() => next);
+-  }, []);
++  const replaceState = useCallback(
++    (next: DashboardState) => {
++      const dashSync = syncRef.current;
++      // `force`: an explicit restore is allowed even when the stored data was
++      // unreadable, but still only after the server has confirmed it.
++      if (dashSync && !dashSync.schedule(next, { force: true })) return;
++      applyState(next);
++    },
++    [applyState],
++  );
+ 
+   const widgetsByColumn = (col: number): FeedWidget[] =>
+     activeTab.widgets.filter((w) => w.column === col);
+@@ -387,10 +379,17 @@ export function useDashboard() {
+     [activeTab.defaultStyle, state.globalDefaultStyle],
+   );
+ 
++  const backups = useMemo(
++    () => (userId ? firestoreBackups(db, userId) : null),
++    [userId],
++  );
++
+   return {
+     state,
+     activeTab,
+-    isGuest: !user,
++    isGuest: !userId && !authLoading,
++    sync,
++    backups,
+     widgetsByColumn,
+     addWidget,
+     removeWidget,
+diff --git a/src/lib/useSeenItems.ts b/src/lib/useSeenItems.ts
+index e0bf2d0..528f1e1 100644
+--- a/src/lib/useSeenItems.ts
++++ b/src/lib/useSeenItems.ts
+@@ -61,6 +61,9 @@ function bind(uid: string | null) {
+   cache.unsub = onSnapshot(
+     doc(db, "users", uid, "data", "seen"),
+     (snap) => {
++      // An empty answer from the local cache is not "nothing saved": wait for the
++      // server, otherwise we would later overwrite the real data with a partial map.
++      if (snap.metadata.fromCache && !snap.exists()) return;
+       const data = snap.data() as { map?: SeenMap } | undefined;
+       cache.map = data?.map ?? {};
+       cache.loaded = true;
+diff --git a/src/lib/useVisited.ts b/src/lib/useVisited.ts
+index fccb0c8..e79d731 100644
+--- a/src/lib/useVisited.ts
++++ b/src/lib/useVisited.ts
+@@ -30,6 +30,9 @@ export function useVisited() {
+     const unsub = onSnapshot(
+       ref,
+       (snap) => {
++        // An empty answer from the local cache is not "nothing saved": wait for the
++        // server, otherwise we would later overwrite the real list with a partial one.
++        if (snap.metadata.fromCache && !snap.exists()) return;
+         const data = snap.data() as { links?: string[] } | undefined;
+         setRef.current = new Set(data?.links ?? []);
+         loadedForUidRef.current = user.uid;
+diff --git a/src/routes/index.tsx b/src/routes/index.tsx
+index 07ea0d7..f83b7e0 100644
+--- a/src/routes/index.tsx
++++ b/src/routes/index.tsx
+@@ -39,6 +39,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
+ import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+ import { StyleMenu } from "@/components/StyleMenu";
+ import { DataDialog } from "@/components/DataDialog";
++import { SyncBanner, SyncIndicator } from "@/components/SyncStatus";
+ 
+ 
+ export const Route = createFileRoute("/")({
+@@ -210,6 +211,7 @@ function Home() {
+               state={dash.state}
+               onImport={dash.importTabs}
+               onReplace={dash.replaceState}
++              backups={dash.backups}
+             />
+             <div className="hidden md:flex items-center gap-1 bg-surface/60 rounded-md p-0.5 border border-border">
+               {[2, 3, 4].map((n) => {
+@@ -239,6 +241,7 @@ function Home() {
+               onToggleHighlightNew={dash.setHighlightNew}
+             />
+             <ThemeSwitcher />
++            <SyncIndicator sync={dash.sync} />
+             <UserMenu />
+             <DigitalClock />
+           </div>
+@@ -309,6 +312,7 @@ function Home() {
+       </header>
+ 
+       <main className="flex-1 p-4 md:p-6">
++        <SyncBanner sync={dash.sync} />
+         {dash.activeTab.widgets.length === 0 ? (
+           <EmptyState onAddFeed={dash.addWidget} onAddBookmarks={dash.addBookmarksTile} />
+         ) : (

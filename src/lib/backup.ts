@@ -61,6 +61,32 @@ export function buildBackupJson(state: DashboardState): string {
   );
 }
 
+// ── Download helpers (shared by the Data dialog and the backup reminder) ──────
+
+/** Saves `content` as a file through the browser's download mechanism. */
+export function downloadFile(content: string, filename: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoking immediately can cancel the download in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+/** "2026-10-12-14-30-05": safe to use inside a file name. */
+export function fileTimestamp(date = new Date()) {
+  return date.toISOString().slice(0, 19).replace(/[:T]/g, "-");
+}
+
+/** Downloads the full JSON backup of `state`. */
+export function downloadJsonBackup(state: DashboardState) {
+  downloadFile(buildBackupJson(state), `lumen-backup-${fileTimestamp()}.json`, "application/json");
+}
+
 export function summarizeState(state: DashboardState): Omit<BackupSummary, "skipped"> {
   let feedCount = 0;
   let bookmarkCount = 0;
@@ -95,6 +121,45 @@ function style(v: unknown): TileStyle | undefined {
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
+
+const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+/**
+ * Fields we don't know about are preserved (minus null/undefined), so a field
+ * added to the app in the future is not silently dropped — and then erased from
+ * Firestore on the next save — by a normaliser that predates it.
+ */
+function extras(
+  raw: Record<string, unknown>,
+  known: readonly string[],
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (known.includes(k) || UNSAFE_KEYS.has(k)) continue;
+    if (v !== null && v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
+const STATE_KEYS = [
+  "tabs",
+  "activeTabId",
+  "globalDefaultStyle",
+  "highlightNew",
+  // written by the sync layer, not part of the dashboard itself
+  "updatedAt",
+  "schemaVersion",
+] as const;
+const TAB_KEYS = ["id", "name", "columns", "widgets", "defaultStyle"] as const;
+const WIDGET_KEYS = [
+  "id",
+  "kind",
+  "url",
+  "customTitle",
+  "column",
+  "style",
+  "bookmarks",
+] as const;
 
 /** Returns `id` if it is a usable, not-yet-seen string; otherwise a fresh one. */
 function uniqueId(id: unknown, seen: Set<string>): string {
@@ -134,21 +199,27 @@ function normalizeWidget(
   const widgetStyle = style(raw.style);
 
   if (raw.kind === "bookmarks") {
-    const w: FeedWidget = {
+    const w = {
+      ...extras(raw, WIDGET_KEYS),
       id: uniqueId(raw.id, seen),
       kind: "bookmarks",
       url: "",
       customTitle: customTitle ?? "Favourites",
       column,
       bookmarks: normalizeBookmarks(raw.bookmarks, seen),
-    };
+    } as FeedWidget;
     if (widgetStyle) w.style = widgetStyle;
     return w;
   }
 
   const url = str(raw.url);
   if (!isHttpUrl(url)) return null;
-  const w: FeedWidget = { id: uniqueId(raw.id, seen), url, column };
+  const w = {
+    ...extras(raw, WIDGET_KEYS),
+    id: uniqueId(raw.id, seen),
+    url,
+    column,
+  } as FeedWidget;
   if (customTitle) w.customTitle = customTitle;
   if (widgetStyle) w.style = widgetStyle;
   return w;
@@ -176,6 +247,15 @@ export function parseBackup(text: string): ParsedBackup {
     }
     data = json.data;
   }
+  return normalizeDashboardState(data);
+}
+
+/**
+ * Validates and repairs a dashboard state coming from anywhere untrusted:
+ * a backup file, or the document read back from Firestore.
+ * Throws if there is no usable dashboard in it.
+ */
+export function normalizeDashboardState(data: unknown): ParsedBackup {
   if (!isObject(data) || !Array.isArray(data.tabs)) {
     throw new Error("Not a Lumen backup file (no tabs found).");
   }
@@ -200,12 +280,13 @@ export function parseBackup(text: string): ParsedBackup {
       if (w) widgets.push(w);
       else skipped++;
     }
-    const tab: DashboardTab = {
+    const tab = {
+      ...extras(rawTab, TAB_KEYS),
       id: uniqueId(rawTab.id, seen),
       name: str(rawTab.name) || `Tab ${i + 1}`,
       columns,
       widgets,
-    };
+    } as DashboardTab;
     const tabStyle = style(rawTab.defaultStyle);
     if (tabStyle) tab.defaultStyle = tabStyle;
     tabs.push(tab);
@@ -218,12 +299,13 @@ export function parseBackup(text: string): ParsedBackup {
     ? (data.activeTabId as string)
     : tabs[0].id;
 
-  const state: DashboardState = {
+  const state = {
+    ...extras(data, STATE_KEYS),
     tabs,
     activeTabId,
     globalDefaultStyle: style(data.globalDefaultStyle) ?? "full",
     highlightNew: typeof data.highlightNew === "boolean" ? data.highlightNew : true,
-  };
+  } as DashboardState;
 
   return { state, summary: { ...summarizeState(state), skipped } };
 }

@@ -2,8 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Upload, Download, X, Loader2, Database, ArrowLeft, AlertTriangle } from "lucide-react";
 import { buildOpml, parseOpml } from "@/lib/opml";
+import type { BackupInfo, BackupsApi } from "@/lib/dashboardSync";
 import {
   buildBackupJson,
+  downloadFile,
+  downloadJsonBackup,
+  fileTimestamp as timestamp,
   parseBackup,
   summarizeState,
   withFreshIds,
@@ -17,27 +21,37 @@ interface Props {
   onImport: (tabs: DashboardTab[]) => void;
   /** Replace the whole dashboard (restore from a JSON backup). */
   onReplace: (state: DashboardState) => void;
+  /** Automatic daily backups stored in the user's account (null when signed out). */
+  backups: BackupsApi | null;
+  /**
+   * Backup-date tracking. Present only when signed in and the dashboard is in sync;
+   * then downloading the full JSON backup records the date, and the last one is shown.
+   */
+  exportInfo?: { lastExportAt: Date | null; onExported: () => void } | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function downloadFile(content: string, filename: string, mime: string) {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Revoking immediately can cancel the download in some browsers.
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
-
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-function timestamp() {
-  return new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+function formatLastExport(date: Date | null) {
+  if (!date) return "No full backup recorded yet.";
+  const days = Math.max(0, Math.floor((Date.now() - date.getTime()) / 86_400_000));
+  const when = date.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  return `Last full backup: ${when} (${days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"} ago`}).`;
+}
+
+function formatBackupDate(id: string) {
+  return new Date(`${id}T00:00:00Z`).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 /** A JSON backup starts with "{"; OPML / uStart exports are XML. */
@@ -53,7 +67,7 @@ interface ModalProps extends Props {
   onClose: () => void;
 }
 
-function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
+function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: ModalProps) {
   const [mode, setMode] = useState<Mode>("choose");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +75,11 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
   // A parsed JSON backup waiting for the user to choose "add" or "replace".
   const [pending, setPending] = useState<ParsedBackup | null>(null);
   const [confirmReplace, setConfirmReplace] = useState(false);
+  // Where the pending backup comes from, shown to the user.
+  const [pendingSource, setPendingSource] = useState("Lumen backup file");
+  // Automatic backups list: null = not loaded yet.
+  const [backupList, setBackupList] = useState<BackupInfo[] | null>(null);
+  const [backupBusy, setBackupBusy] = useState<string | null>(null); // "list" or a backup id
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -91,6 +110,7 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
       if (looksLikeJson(text)) {
         // Lumen JSON backup: ask whether to add or replace before touching anything.
         setPending(parseBackup(text));
+        setPendingSource("Lumen backup file");
       } else {
         const result = parseOpml(text);
         onImport(result.tabs);
@@ -110,6 +130,33 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
       setError((e as Error).message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleShowBackups() {
+    if (!backups) return;
+    setBackupBusy("list");
+    setError(null);
+    try {
+      setBackupList(await backups.list());
+    } catch (e) {
+      setError(`Couldn't load automatic backups: ${(e as Error).message}`);
+    } finally {
+      setBackupBusy(null);
+    }
+  }
+
+  async function handlePickBackup(id: string) {
+    if (!backups) return;
+    setBackupBusy(id);
+    setError(null);
+    try {
+      setPending(await backups.load(id));
+      setPendingSource(`Automatic backup of ${formatBackupDate(id)}`);
+    } catch (e) {
+      setError(`Couldn't open this backup: ${(e as Error).message}`);
+    } finally {
+      setBackupBusy(null);
     }
   }
 
@@ -145,7 +192,8 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
   }
 
   function handleExportJson() {
-    downloadFile(buildBackupJson(state), `lumen-backup-${timestamp()}.json`, "application/json");
+    downloadJsonBackup(state);
+    exportInfo?.onExported();
   }
 
   const current = summarizeState(state);
@@ -264,6 +312,52 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
                     </>
                   )}
                 </button>
+
+                {backups && (
+                  <div className="rounded-lg border border-border p-4 space-y-3">
+                    <div>
+                      <p className="font-semibold text-sm">Automatic backups</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Lumen keeps a daily copy of your dashboard in your account (the last
+                        14 days). Each copy is taken the first time you open Lumen that day,
+                        before any change.
+                      </p>
+                    </div>
+                    {backupList === null ? (
+                      <button
+                        onClick={handleShowBackups}
+                        disabled={backupBusy !== null}
+                        className="px-3 py-1.5 rounded-md border border-border text-sm font-medium hover:bg-secondary disabled:opacity-50 inline-flex items-center gap-2"
+                      >
+                        {backupBusy === "list" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                        Show automatic backups
+                      </button>
+                    ) : backupList.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No automatic backups yet. The first one is created the next time you open Lumen.
+                      </p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {backupList.map((b) => (
+                          <li key={b.id}>
+                            <button
+                              onClick={() => handlePickBackup(b.id)}
+                              disabled={backupBusy !== null}
+                              className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md border border-border text-sm text-left hover:border-primary hover:bg-primary/5 transition disabled:opacity-50"
+                            >
+                              <span className="font-medium">{formatBackupDate(b.id)}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {plural(b.tabCount, "tab")} · {plural(b.feedCount, "feed")} ·{" "}
+                                {plural(b.bookmarkCount, "bookmark")}
+                              </span>
+                              {backupBusy === b.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </>
             )}
 
@@ -271,7 +365,7 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
             {pending && !confirmReplace && (
               <>
                 <div className="text-sm rounded-md border border-border bg-secondary/40 p-3">
-                  <p className="font-medium mb-1">Lumen backup recognised</p>
+                  <p className="font-medium mb-1">{pendingSource}</p>
                   <p className="text-muted-foreground">
                     {plural(pending.summary.tabCount, "tab")},{" "}
                     {plural(pending.summary.feedCount, "feed")},{" "}
@@ -393,6 +487,11 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
                     Everything Lumen stores: tabs, feeds, bookmarks, columns, tile styles and
                     display options. Use it to restore Lumen exactly as it is now.
                   </p>
+                  {exportInfo && (
+                    <p className="text-xs text-primary mt-1.5">
+                      {formatLastExport(exportInfo.lastExportAt)}
+                    </p>
+                  )}
                 </div>
               </button>
               <button
@@ -419,7 +518,7 @@ function Modal({ state, onImport, onReplace, onClose }: ModalProps) {
 
 // ── Trigger button ────────────────────────────────────────────────────────────
 
-export function DataDialog({ state, onImport, onReplace }: Props) {
+export function DataDialog({ state, onImport, onReplace, backups, exportInfo }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -436,6 +535,8 @@ export function DataDialog({ state, onImport, onReplace }: Props) {
           state={state}
           onImport={onImport}
           onReplace={onReplace}
+          backups={backups}
+          exportInfo={exportInfo}
           onClose={() => setOpen(false)}
         />
       )}

@@ -1,0 +1,430 @@
+diff --git a/src/components/DataDialog.tsx b/src/components/DataDialog.tsx
+index 1ae89bb..e7e40df 100644
+--- a/src/components/DataDialog.tsx
++++ b/src/components/DataDialog.tsx
+@@ -5,6 +5,9 @@ import { buildOpml, parseOpml } from "@/lib/opml";
+ import type { BackupInfo, BackupsApi } from "@/lib/dashboardSync";
+ import {
+   buildBackupJson,
++  downloadFile,
++  downloadJsonBackup,
++  fileTimestamp as timestamp,
+   parseBackup,
+   summarizeState,
+   withFreshIds,
+@@ -20,27 +23,26 @@ interface Props {
+   onReplace: (state: DashboardState) => void;
+   /** Automatic daily backups stored in the user's account (null when signed out). */
+   backups: BackupsApi | null;
++  /**
++   * Backup-date tracking. Present only when signed in and the dashboard is in sync;
++   * then downloading the full JSON backup records the date, and the last one is shown.
++   */
++  exportInfo?: { lastExportAt: Date | null; onExported: () => void } | null;
+ }
+ 
+ // ── Helpers ───────────────────────────────────────────────────────────────────
+ 
+-function downloadFile(content: string, filename: string, mime: string) {
+-  const blob = new Blob([content], { type: mime });
+-  const url = URL.createObjectURL(blob);
+-  const a = document.createElement("a");
+-  a.href = url;
+-  a.download = filename;
+-  document.body.appendChild(a);
+-  a.click();
+-  a.remove();
+-  // Revoking immediately can cancel the download in some browsers.
+-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+-}
+-
+ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+ 
+-function timestamp() {
+-  return new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
++function formatLastExport(date: Date | null) {
++  if (!date) return "No full backup recorded yet.";
++  const days = Math.max(0, Math.floor((Date.now() - date.getTime()) / 86_400_000));
++  const when = date.toLocaleDateString(undefined, {
++    day: "numeric",
++    month: "short",
++    year: "numeric",
++  });
++  return `Last full backup: ${when} (${days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"} ago`}).`;
+ }
+ 
+ function formatBackupDate(id: string) {
+@@ -65,7 +67,7 @@ interface ModalProps extends Props {
+   onClose: () => void;
+ }
+ 
+-function Modal({ state, onImport, onReplace, backups, onClose }: ModalProps) {
++function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: ModalProps) {
+   const [mode, setMode] = useState<Mode>("choose");
+   const [loading, setLoading] = useState(false);
+   const [error, setError] = useState<string | null>(null);
+@@ -190,7 +192,8 @@ function Modal({ state, onImport, onReplace, backups, onClose }: ModalProps) {
+   }
+ 
+   function handleExportJson() {
+-    downloadFile(buildBackupJson(state), `lumen-backup-${timestamp()}.json`, "application/json");
++    downloadJsonBackup(state);
++    exportInfo?.onExported();
+   }
+ 
+   const current = summarizeState(state);
+@@ -484,6 +487,11 @@ function Modal({ state, onImport, onReplace, backups, onClose }: ModalProps) {
+                     Everything Lumen stores: tabs, feeds, bookmarks, columns, tile styles and
+                     display options. Use it to restore Lumen exactly as it is now.
+                   </p>
++                  {exportInfo && (
++                    <p className="text-xs text-primary mt-1.5">
++                      {formatLastExport(exportInfo.lastExportAt)}
++                    </p>
++                  )}
+                 </div>
+               </button>
+               <button
+@@ -510,7 +518,7 @@ function Modal({ state, onImport, onReplace, backups, onClose }: ModalProps) {
+ 
+ // ── Trigger button ────────────────────────────────────────────────────────────
+ 
+-export function DataDialog({ state, onImport, onReplace, backups }: Props) {
++export function DataDialog({ state, onImport, onReplace, backups, exportInfo }: Props) {
+   const [open, setOpen] = useState(false);
+   return (
+     <>
+@@ -528,6 +536,7 @@ export function DataDialog({ state, onImport, onReplace, backups }: Props) {
+           onImport={onImport}
+           onReplace={onReplace}
+           backups={backups}
++          exportInfo={exportInfo}
+           onClose={() => setOpen(false)}
+         />
+       )}
+diff --git a/src/components/ExportReminder.tsx b/src/components/ExportReminder.tsx
+new file mode 100644
+index 0000000..cf22b6a
+--- /dev/null
++++ b/src/components/ExportReminder.tsx
+@@ -0,0 +1,59 @@
++import { DatabaseBackup } from "lucide-react";
++import { downloadJsonBackup, summarizeState } from "@/lib/backup";
++import { EXPORT_INTERVAL_DAYS, SNOOZE_DAYS } from "@/lib/exportReminder";
++import type { ExportReminder } from "@/lib/useExportReminder";
++import type { DashboardState } from "@/lib/rss";
++
++interface Props {
++  reminder: ExportReminder;
++  state: DashboardState;
++  /**
++   * True only when `state` is what is really stored (signed in and in sync).
++   * Otherwise the file would not be a meaningful backup, so nothing is offered.
++   */
++  stateIsTrustworthy: boolean;
++}
++
++function message(daysSince: number | null) {
++  if (daysSince === null) {
++    return "You haven't downloaded a full backup yet. Keep a copy of your dashboard outside Firebase.";
++  }
++  if (daysSince >= EXPORT_INTERVAL_DAYS) {
++    return `Your last full backup was ${daysSince} days ago. Time for a fresh one.`;
++  }
++  return "Time for a fresh backup.";
++}
++
++/** Monthly nudge to download the JSON backup. Hidden when there is nothing to back up. */
++export function ExportReminderBanner({ reminder, state, stateIsTrustworthy }: Props) {
++  if (!reminder.due || !stateIsTrustworthy) return null;
++  const { feedCount, bookmarkCount } = summarizeState(state);
++  if (feedCount + bookmarkCount === 0) return null;
++
++  return (
++    <div
++      role="status"
++      className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm"
++    >
++      <DatabaseBackup className="h-4 w-4 shrink-0 text-amber-500" />
++      <p className="flex-1 min-w-[12rem]">{message(reminder.daysSince)}</p>
++      <div className="flex items-center gap-2">
++        <button
++          onClick={() => {
++            downloadJsonBackup(state);
++            reminder.markExported();
++          }}
++          className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90"
++        >
++          Download backup
++        </button>
++        <button
++          onClick={reminder.snooze}
++          className="px-3 py-1.5 rounded-md border border-border text-xs font-medium hover:bg-secondary"
++        >
++          Remind me in {SNOOZE_DAYS} days
++        </button>
++      </div>
++    </div>
++  );
++}
+diff --git a/src/lib/backup.ts b/src/lib/backup.ts
+index aa54b93..21098c7 100644
+--- a/src/lib/backup.ts
++++ b/src/lib/backup.ts
+@@ -61,6 +61,32 @@ export function buildBackupJson(state: DashboardState): string {
+   );
+ }
+ 
++// ── Download helpers (shared by the Data dialog and the backup reminder) ──────
++
++/** Saves `content` as a file through the browser's download mechanism. */
++export function downloadFile(content: string, filename: string, mime: string) {
++  const blob = new Blob([content], { type: mime });
++  const url = URL.createObjectURL(blob);
++  const a = document.createElement("a");
++  a.href = url;
++  a.download = filename;
++  document.body.appendChild(a);
++  a.click();
++  a.remove();
++  // Revoking immediately can cancel the download in some browsers.
++  setTimeout(() => URL.revokeObjectURL(url), 10_000);
++}
++
++/** "2026-10-12-14-30-05": safe to use inside a file name. */
++export function fileTimestamp(date = new Date()) {
++  return date.toISOString().slice(0, 19).replace(/[:T]/g, "-");
++}
++
++/** Downloads the full JSON backup of `state`. */
++export function downloadJsonBackup(state: DashboardState) {
++  downloadFile(buildBackupJson(state), `lumen-backup-${fileTimestamp()}.json`, "application/json");
++}
++
+ export function summarizeState(state: DashboardState): Omit<BackupSummary, "skipped"> {
+   let feedCount = 0;
+   let bookmarkCount = 0;
+diff --git a/src/lib/exportReminder.ts b/src/lib/exportReminder.ts
+new file mode 100644
+index 0000000..2477b89
+--- /dev/null
++++ b/src/lib/exportReminder.ts
+@@ -0,0 +1,69 @@
++// Monthly reminder to download a full JSON backup.
++//
++// "Last export" is stored per user in Firestore (users/{uid}/data/meta), so it is
++// the same on every device and never mixes up accounts. It is recorded only when a
++// full JSON backup is actually downloaded from Lumen (the OPML export and the
++// automatic safety copy made before a restore do not count).
++//
++// "Remind me later" is a per-device convenience kept in localStorage, per user.
++
++export const EXPORT_INTERVAL_DAYS = 30;
++export const SNOOZE_DAYS = 7;
++
++const DAY_MS = 24 * 60 * 60 * 1000;
++
++export interface ReminderStatus {
++  /** Whole days since the last export; null if none is recorded. */
++  daysSince: number | null;
++  /** True when the reminder should be shown. */
++  due: boolean;
++}
++
++export function reminderStatus(opts: {
++  lastExportAt: Date | null;
++  /** Epoch ms until which the reminder is snoozed on this device. */
++  snoozedUntil: number | null;
++  now?: number;
++}): ReminderStatus {
++  const now = opts.now ?? Date.now();
++  const last = opts.lastExportAt?.getTime() ?? null;
++  const daysSince = last === null ? null : Math.max(0, Math.floor((now - last) / DAY_MS));
++
++  // A date in the future (wrong clock on some device) counts as "just exported".
++  const overdue = last === null || now - last >= EXPORT_INTERVAL_DAYS * DAY_MS;
++  const snoozed = opts.snoozedUntil !== null && now < opts.snoozedUntil;
++  return { daysSince, due: overdue && !snoozed };
++}
++
++/** Parses the stored value; anything that is not a valid date means "never". */
++export function parseExportDate(value: unknown): Date | null {
++  if (typeof value !== "string") return null;
++  const d = new Date(value);
++  return Number.isNaN(d.getTime()) ? null : d;
++}
++
++export function snoozeUntil(now = Date.now()): number {
++  return now + SNOOZE_DAYS * DAY_MS;
++}
++
++// ── Per-device snooze storage ────────────────────────────────────────────────
++
++const snoozeKey = (uid: string) => `lumen:exportReminderSnooze:${uid}`;
++
++export function readSnooze(uid: string): number | null {
++  try {
++    const raw = window.localStorage.getItem(snoozeKey(uid));
++    const n = raw === null ? NaN : Number(raw);
++    return Number.isFinite(n) ? n : null;
++  } catch {
++    return null; // storage blocked or unavailable: the reminder just won't be snoozable
++  }
++}
++
++export function writeSnooze(uid: string, until: number) {
++  try {
++    window.localStorage.setItem(snoozeKey(uid), String(until));
++  } catch {
++    /* ignore */
++  }
++}
+diff --git a/src/lib/useExportReminder.ts b/src/lib/useExportReminder.ts
+new file mode 100644
+index 0000000..23207cc
+--- /dev/null
++++ b/src/lib/useExportReminder.ts
+@@ -0,0 +1,93 @@
++import { useCallback, useEffect, useMemo, useState } from "react";
++import { doc, onSnapshot, setDoc } from "firebase/firestore";
++import { db } from "./firebase";
++import { useAuth } from "./useAuth";
++import {
++  parseExportDate,
++  readSnooze,
++  reminderStatus,
++  snoozeUntil,
++  writeSnooze,
++} from "./exportReminder";
++
++export interface ExportReminder {
++  /** False for guests: there is no account to attach a backup date to. */
++  enabled: boolean;
++  /** The server has told us what is stored (until then nothing is shown). */
++  loaded: boolean;
++  lastExportAt: Date | null;
++  daysSince: number | null;
++  due: boolean;
++  /** Call right after a full JSON backup has been downloaded. */
++  markExported: () => void;
++  /** Hide the reminder on this device for a few days. */
++  snooze: () => void;
++}
++
++export function useExportReminder(): ExportReminder {
++  const { user } = useAuth();
++  const uid = user?.uid ?? null;
++
++  const [loaded, setLoaded] = useState(false);
++  const [lastExportAt, setLastExportAt] = useState<Date | null>(null);
++  const [snoozedUntil, setSnoozedUntil] = useState<number | null>(null);
++
++  useEffect(() => {
++    setLoaded(false);
++    setLastExportAt(null);
++    if (!uid) {
++      setSnoozedUntil(null);
++      return;
++    }
++    setSnoozedUntil(readSnooze(uid));
++
++    const ref = doc(db, "users", uid, "data", "meta");
++    return onSnapshot(
++      ref,
++      // Also report when the cache answer is later confirmed by the server.
++      { includeMetadataChanges: true },
++      (snap) => {
++        // "No document" from an empty local cache proves nothing (offline / slow):
++        // wait for the server, otherwise we would nag someone who did export.
++        if (snap.metadata.fromCache && !snap.exists()) return;
++        setLastExportAt(parseExportDate(snap.data()?.lastJsonExportAt));
++        setLoaded(true);
++      },
++      (e) => console.error("Backup reminder subscription error:", e),
++    );
++  }, [uid]);
++
++  const markExported = useCallback(() => {
++    if (!uid) return;
++    const now = new Date();
++    setLastExportAt(now);
++    // merge: this document may hold other fields in the future.
++    setDoc(
++      doc(db, "users", uid, "data", "meta"),
++      { lastJsonExportAt: now.toISOString() },
++      { merge: true },
++    ).catch((e) => console.error("Could not record the backup date:", e));
++  }, [uid]);
++
++  const snooze = useCallback(() => {
++    if (!uid) return;
++    const until = snoozeUntil();
++    writeSnooze(uid, until);
++    setSnoozedUntil(until);
++  }, [uid]);
++
++  const { daysSince, due } = useMemo(
++    () => reminderStatus({ lastExportAt, snoozedUntil }),
++    [lastExportAt, snoozedUntil],
++  );
++
++  return {
++    enabled: !!uid,
++    loaded,
++    lastExportAt,
++    daysSince,
++    due: !!uid && loaded && due,
++    markExported,
++    snooze,
++  };
++}
+diff --git a/src/routes/index.tsx b/src/routes/index.tsx
+index f83b7e0..5872ace 100644
+--- a/src/routes/index.tsx
++++ b/src/routes/index.tsx
+@@ -40,6 +40,8 @@ import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+ import { StyleMenu } from "@/components/StyleMenu";
+ import { DataDialog } from "@/components/DataDialog";
+ import { SyncBanner, SyncIndicator } from "@/components/SyncStatus";
++import { ExportReminderBanner } from "@/components/ExportReminder";
++import { useExportReminder } from "@/lib/useExportReminder";
+ 
+ 
+ export const Route = createFileRoute("/")({
+@@ -128,6 +130,9 @@ function DigitalClock() {
+ 
+ function Home() {
+   const dash = useDashboard();
++  const exportReminder = useExportReminder();
++  // A backup is meaningful only when what is on screen is what is really stored.
++  const stateIsTrustworthy = dash.sync.status === "synced" || dash.sync.status === "saving";
+   const [newTabOpen, setNewTabOpen] = useState(false);
+   const [newTabName, setNewTabName] = useState("");
+   const [editingTab, setEditingTab] = useState<string | null>(null);
+@@ -212,6 +217,14 @@ function Home() {
+               onImport={dash.importTabs}
+               onReplace={dash.replaceState}
+               backups={dash.backups}
++              exportInfo={
++                exportReminder.enabled && stateIsTrustworthy
++                  ? {
++                      lastExportAt: exportReminder.lastExportAt,
++                      onExported: exportReminder.markExported,
++                    }
++                  : null
++              }
+             />
+             <div className="hidden md:flex items-center gap-1 bg-surface/60 rounded-md p-0.5 border border-border">
+               {[2, 3, 4].map((n) => {
+@@ -313,6 +326,11 @@ function Home() {
+ 
+       <main className="flex-1 p-4 md:p-6">
+         <SyncBanner sync={dash.sync} />
++        <ExportReminderBanner
++          reminder={exportReminder}
++          state={dash.state}
++          stateIsTrustworthy={stateIsTrustworthy}
++        />
+         {dash.activeTab.widgets.length === 0 ? (
+           <EmptyState onAddFeed={dash.addWidget} onAddBookmarks={dash.addBookmarksTile} />
+         ) : (
