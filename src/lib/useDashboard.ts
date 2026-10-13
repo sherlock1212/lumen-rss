@@ -11,6 +11,7 @@ import {
 } from "./dashboardSync";
 import type { DashboardState, DashboardTab, FeedWidget, TileStyle } from "./rss";
 import { uid } from "./utils";
+import { clampColumns, fitToColumns } from "./layout";
 
 function emptyState(): DashboardState {
   const tabId = uid();
@@ -238,13 +239,15 @@ export function useDashboard() {
   );
 
   const setColumns = useCallback((n: number) => {
+    const columns = clampColumns(n);
     userMutate((s) => {
       const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+      if (tab.columns === columns) return s; // nothing to change, nothing to save
       return {
         ...s,
         tabs: s.tabs.map((t) =>
           t.id === tab.id
-            ? { ...t, columns: n, widgets: t.widgets.map((w) => ({ ...w, column: Math.min(w.column, n - 1) })) }
+            ? { ...t, columns, widgets: fitToColumns(t.widgets, columns) }
             : t,
         ),
       };
