@@ -26,9 +26,6 @@ import { FeedCard } from "@/components/FeedCard";
 import { AddItemDialog } from "@/components/AddItemDialog";
 import { BookmarksCard } from "@/components/BookmarksCard";
 import {
-  Columns2,
-  Columns3,
-  Columns4,
   Plus,
   Sparkles,
   X,
@@ -36,8 +33,7 @@ import {
 } from "lucide-react";
 import { UserMenu } from "@/components/UserMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { StyleMenu } from "@/components/StyleMenu";
+import { LayoutMenu } from "@/components/LayoutMenu";
 import { DataDialog } from "@/components/DataDialog";
 import { SyncBanner, SyncIndicator } from "@/components/SyncStatus";
 import { ExportReminderBanner } from "@/components/ExportReminder";
@@ -226,26 +222,9 @@ function Home() {
                   : null
               }
             />
-            <div className="hidden md:flex items-center gap-1 bg-surface/60 rounded-md p-0.5 border border-border">
-              {[2, 3, 4].map((n) => {
-                const Icon = n === 2 ? Columns2 : n === 3 ? Columns3 : Columns4;
-                return (
-                  <button
-                    key={n}
-                    onClick={() => dash.setColumns(n)}
-                    className={`p-1.5 rounded ${
-                      cols === n
-                        ? "bg-primary/20 text-primary border border-primary/40"
-                        : "hover:bg-secondary text-muted-foreground"
-                    }`}
-                    aria-label={`${n} columns`}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </button>
-                );
-              })}
-            </div>
-            <StyleMenu
+            <LayoutMenu
+              columns={cols}
+              onSetColumns={dash.setColumns}
               tabStyle={dash.activeTab.defaultStyle}
               globalStyle={dash.state.globalDefaultStyle ?? "full"}
               highlightNew={dash.state.highlightNew ?? true}
@@ -253,7 +232,6 @@ function Home() {
               onSetGlobalStyle={dash.setGlobalStyle}
               onToggleHighlightNew={dash.setHighlightNew}
             />
-            <ThemeSwitcher />
             <SyncIndicator sync={dash.sync} />
             <UserMenu />
             <DigitalClock />
