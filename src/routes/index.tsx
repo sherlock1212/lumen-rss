@@ -1,27 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
   closestCenter,
-  closestCorners,
   useSensor,
   useSensors,
-  useDroppable,
   type DragEndEvent,
   type DragStartEvent,
-  type DragOverEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   horizontalListSortingStrategy,
-  verticalListSortingStrategy,
   useSortable,
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDashboard } from "@/lib/useDashboard";
+import { computeDropSlot, measureColumns, sameSlot, type DropSlot } from "@/lib/dropSlot";
 import { FeedCard } from "@/components/FeedCard";
 import { AddItemDialog } from "@/components/AddItemDialog";
 import { BookmarksCard } from "@/components/BookmarksCard";
@@ -134,7 +131,12 @@ function Home() {
   const [editingTab, setEditingTab] = useState<string | null>(null);
   const [tabToDelete, setTabToDelete] = useState<{ id: string; name: string } | null>(null);
   const [draggingId, setDraggingId]   = useState<string | null>(null);
-  const [overId, setOverId]           = useState<string | null>(null);
+  // Where the dragged tile would land right now; drives the marker and the final drop.
+  const [slot, setSlot]               = useState<DropSlot | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const pointerRef = useRef<{ x: number; y: number } | null>(null);
+  const frameRef = useRef(0);
+  const stopTrackingRef = useRef<(() => void) | null>(null);
 
   const cols = dash.activeTab.columns;
   const gridClass =
@@ -148,38 +150,77 @@ function Home() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  function handleWidgetDragStart(e: DragStartEvent) {
-    setDraggingId(String(e.active.id));
-    setOverId(null);
+  /** Slot for the pointer's current position, measured from what is on screen right now. */
+  function currentSlot(id: string): DropSlot | null {
+    const p = pointerRef.current;
+    if (!p || !gridRef.current) return null;
+    return computeDropSlot(p, measureColumns(gridRef.current), id);
   }
 
-  function handleWidgetDragOver(e: DragOverEvent) {
-    setOverId(e.over ? String(e.over.id) : null);
+  // While a tile is dragged, follow the pointer (and page scrolling, which moves the
+  // tiles under a still pointer) and keep `slot` up to date, at most once per frame.
+  function startTracking(id: string, start: { x: number; y: number } | null) {
+    pointerRef.current = start;
+    const update = () => {
+      frameRef.current = 0;
+      const next = currentSlot(id);
+      setSlot((prev) => (sameSlot(prev, next) ? prev : next));
+    };
+    const schedule = () => {
+      if (!frameRef.current) frameRef.current = requestAnimationFrame(update);
+    };
+    const onMove = (ev: PointerEvent) => {
+      pointerRef.current = { x: ev.clientX, y: ev.clientY };
+      schedule();
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("scroll", schedule, { capture: true, passive: true });
+    stopTrackingRef.current = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("scroll", schedule, { capture: true });
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
+    };
+    schedule();
+  }
+
+  function stopTracking() {
+    stopTrackingRef.current?.();
+    stopTrackingRef.current = null;
+  }
+
+  useEffect(() => stopTracking, []);
+
+  function handleWidgetDragStart(e: DragStartEvent) {
+    const id = String(e.active.id);
+    setDraggingId(id);
+    const ev = e.activatorEvent as Partial<PointerEvent> | undefined;
+    startTracking(
+      id,
+      typeof ev?.clientX === "number" && typeof ev?.clientY === "number"
+        ? { x: ev.clientX, y: ev.clientY }
+        : null,
+    );
   }
 
   function handleWidgetDragEnd(e: DragEndEvent) {
+    const id = String(e.active.id);
+    // Measure again at the moment of the drop rather than trusting the last marker.
+    const target = currentSlot(id);
+    const p = pointerRef.current;
+    stopTracking();
     setDraggingId(null);
-    setOverId(null);
-    const { active, over } = e;
-    if (!over) return;
-    const activeId = String(active.id);
-    const overId = String(over.id);
-    if (activeId === overId) return;
+    setSlot(null);
+    // Released outside the window: treat it as a cancel.
+    const outside = !p || p.x < 0 || p.y < 0 || p.x > window.innerWidth || p.y > window.innerHeight;
+    if (!target || outside) return;
+    dash.reorderWidgets(id, target.col, target.index);
+  }
 
-    // Dropped on a column droppable (empty area)
-    if (overId.startsWith("col:")) {
-      const col = Number(overId.slice(4));
-      dash.reorderWidgets(activeId, col, -1);
-      return;
-    }
-    // Dropped on another widget
-    const overWidget = dash.activeTab.widgets.find((w) => w.id === overId);
-    if (!overWidget) return;
-    const colItems = dash.activeTab.widgets.filter(
-      (w) => w.column === overWidget.column && w.id !== activeId,
-    );
-    const overIdx = colItems.findIndex((w) => w.id === overId);
-    dash.reorderWidgets(activeId, overWidget.column, overIdx);
+  function handleWidgetDragCancel() {
+    stopTracking();
+    setDraggingId(null);
+    setSlot(null);
   }
 
   function handleTabDragEnd(e: DragEndEvent) {
@@ -314,20 +355,34 @@ function Home() {
         ) : (
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCorners}
+            // The drop position comes from the pointer (see lib/dropSlot.ts), not from dnd-kit.
+            collisionDetection={() => []}
             onDragStart={handleWidgetDragStart}
-            onDragOver={handleWidgetDragOver}
             onDragEnd={handleWidgetDragEnd}
+            onDragCancel={handleWidgetDragCancel}
           >
-            <div className={`grid grid-cols-1 gap-4 ${gridClass}`}>
+            <div ref={gridRef} className={`grid grid-cols-1 gap-4 ${gridClass}`}>
               {Array.from({ length: cols }).map((_, col) => {
                 const items = dash.widgetsByColumn(col);
+                // The tiles the dragged one will be placed among (it is not one of them).
+                const others = items.filter((w) => w.id !== draggingId);
+                const here = slot && slot.col === col ? slot : null;
                 return (
-                  <Column key={col} col={col} ids={items.map((w) => w.id)}>
-                    {items.map((w) => (
+                  <Column
+                    key={col}
+                    col={col}
+                    ids={items.map((w) => w.id)}
+                    active={!!here}
+                    showEmptyMarker={!!here && others.length === 0}
+                  >
+                    {items.map((w) => {
+                      const i = others.findIndex((o) => o.id === w.id);
+                      return (
                       <TileWithIndicator
                         key={w.id}
-                        isOver={overId === w.id && draggingId !== w.id}
+                        id={w.id}
+                        before={!!here && i !== -1 && i === here.index}
+                        after={!!here && i !== -1 && i === others.length - 1 && here.index === others.length}
                       >
                         {w.kind === "bookmarks" ? (
                           <BookmarksCard
@@ -345,7 +400,8 @@ function Home() {
                           />
                         )}
                       </TileWithIndicator>
-                    ))}
+                      );
+                    })}
                   </Column>
                 );
               })}
@@ -382,22 +438,34 @@ function Home() {
 }
 
 
+/** The line (with round ends) that shows where the dragged tile will land. */
+function DropMarker({ className }: { className: string }) {
+  return (
+    <div className={`absolute left-4 right-4 z-10 h-1 pointer-events-none ${className}`}>
+      <div className="absolute inset-0 rounded-full bg-primary shadow-[0_0_10px_3px_var(--color-primary)]" />
+      <div className="absolute -left-1 -top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-background shadow-[0_0_6px_2px_var(--color-primary)]" />
+      <div className="absolute -right-1 -top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-background shadow-[0_0_6px_2px_var(--color-primary)]" />
+    </div>
+  );
+}
+
 function TileWithIndicator({
+  id,
   children,
-  isOver,
+  before,
+  after,
 }: {
+  id: string;
   children: React.ReactNode;
-  isOver: boolean;
+  /** The dragged tile will land just above this one. */
+  before: boolean;
+  /** The dragged tile will land just below this one (it is the last of its column). */
+  after: boolean;
 }) {
   return (
-    <div className="relative">
-      {isOver && (
-        <div className="absolute -top-2.5 left-4 right-4 z-10 h-1 pointer-events-none">
-          <div className="absolute inset-0 rounded-full bg-primary shadow-[0_0_10px_3px_var(--color-primary)]" />
-          <div className="absolute -left-1 -top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-background shadow-[0_0_6px_2px_var(--color-primary)]" />
-          <div className="absolute -right-1 -top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-background shadow-[0_0_6px_2px_var(--color-primary)]" />
-        </div>
-      )}
+    <div className="relative" data-tile-id={id}>
+      {before && <DropMarker className="-top-2.5" />}
+      {after && <DropMarker className="-bottom-2.5" />}
       {children}
     </div>
   );
@@ -432,24 +500,34 @@ function DragGhost({ widget }: { widget: import("@/lib/rss").FeedWidget }) {
   );
 }
 
+// Tiles must not slide around while another one is being dragged: the marker alone
+// says where the tile will land, and sliding tiles would make it jump.
+const noShift = () => null;
+
 function Column({
   col,
   ids,
+  active,
+  showEmptyMarker,
   children,
 }: {
   col: number;
   ids: string[];
+  /** The dragged tile will land in this column. */
+  active: boolean;
+  /** ...and the column has no other tiles, so the marker goes at its top. */
+  showEmptyMarker: boolean;
   children: React.ReactNode;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `col:${col}` });
   return (
-    <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+    <SortableContext items={ids} strategy={noShift}>
       <div
-        ref={setNodeRef}
-        className={`flex flex-col gap-4 min-h-32 rounded-xl transition-colors ${
-          isOver ? "bg-primary/5 outline outline-2 outline-primary/20" : ""
+        data-column={col}
+        className={`relative flex flex-col gap-4 min-h-32 rounded-xl transition-colors ${
+          active ? "bg-primary/5 outline outline-2 outline-primary/20" : ""
         }`}
       >
+        {showEmptyMarker && <DropMarker className="top-2" />}
         {children}
       </div>
     </SortableContext>

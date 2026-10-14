@@ -11,7 +11,7 @@ import {
 } from "./dashboardSync";
 import type { DashboardState, DashboardTab, FeedWidget, TileStyle } from "./rss";
 import { uid } from "./utils";
-import { clampColumns, fitToColumns } from "./layout";
+import { clampColumns, fitToColumns, moveWidget } from "./layout";
 
 function emptyState(): DashboardState {
   const tabId = uid();
@@ -210,28 +210,11 @@ export function useDashboard() {
     (activeId: string, overColumn: number, overIndex: number) => {
       userMutate((s) => {
         const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
-        const moving = tab.widgets.find((w) => w.id === activeId);
-        if (!moving) return s;
-        const without = tab.widgets.filter((w) => w.id !== activeId);
-        const updated: FeedWidget = { ...moving, column: overColumn };
-        const colItems = without.filter((w) => w.column === overColumn);
-        const insertAt = overIndex < 0 ? colItems.length : overIndex;
-        colItems.splice(insertAt, 0, updated);
-        const result: FeedWidget[] = [];
-        const consumed = new Set<string>();
-        for (const w of without) {
-          if (w.column === overColumn) {
-            if (consumed.has("col")) continue;
-            consumed.add("col");
-            result.push(...colItems);
-          } else {
-            result.push(w);
-          }
-        }
-        if (!consumed.has("col")) result.push(...colItems);
+        const widgets = moveWidget(tab.widgets, activeId, overColumn, overIndex);
+        if (widgets === tab.widgets) return s; // dropped where it already was: nothing to save
         return {
           ...s,
-          tabs: s.tabs.map((t) => (t.id === tab.id ? { ...t, widgets: result } : t)),
+          tabs: s.tabs.map((t) => (t.id === tab.id ? { ...t, widgets } : t)),
         };
       });
     },

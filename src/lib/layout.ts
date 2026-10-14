@@ -47,3 +47,42 @@ export function fitToColumns(widgets: FeedWidget[], columns: number): FeedWidget
 
   return [...kept, ...moved];
 }
+
+/**
+ * Moves one tile to `column`, at position `index` among that column's OTHER tiles
+ * (0 = first; anything outside 0..n, e.g. -1, = last). Every other tile keeps its
+ * column and its relative order.
+ *
+ * Returns the same array when the move would change nothing, so dropping a tile back
+ * where it was neither re-renders nor triggers a save.
+ */
+export function moveWidget(
+  widgets: FeedWidget[],
+  activeId: string,
+  column: number,
+  index: number,
+): FeedWidget[] {
+  const moving = widgets.find((w) => w.id === activeId);
+  if (!moving) return widgets;
+
+  const others = widgets.filter((w) => w.id !== activeId);
+  const target = others.filter((w) => w.column === column);
+  const at = Number.isInteger(index) && index >= 0 && index <= target.length ? index : target.length;
+
+  const moved: FeedWidget = moving.column === column ? moving : { ...moving, column };
+  const before = target[at]; // the tile the moved one lands in front of, if any
+  let result: FeedWidget[];
+  if (before) {
+    const pos = others.indexOf(before);
+    result = [...others.slice(0, pos), moved, ...others.slice(pos)];
+  } else {
+    // Last in its column: right after the column's current last tile, or at the end.
+    const last = target[target.length - 1];
+    const pos = last ? others.indexOf(last) + 1 : others.length;
+    result = [...others.slice(0, pos), moved, ...others.slice(pos)];
+  }
+
+  const order = (list: FeedWidget[]) => list.filter((w) => w.column === column).map((w) => w.id).join("|");
+  if (moving.column === column && order(result) === order(widgets)) return widgets;
+  return result;
+}
