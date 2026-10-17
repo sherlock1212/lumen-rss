@@ -12,6 +12,7 @@ import {
 import type { DashboardState, DashboardTab, FeedWidget, TileStyle } from "./rss";
 import { uid } from "./utils";
 import { clampColumns, fitToColumns, moveWidget } from "./layout";
+import { readActiveTab, withActiveTab, writeActiveTab } from "./activeTab";
 
 function emptyState(): DashboardState {
   const tabId = uid();
@@ -55,6 +56,9 @@ export function useDashboard() {
   // what every mutation starts from. `syncRef` is the live Firestore sync, if signed in.
   const stateRef = useRef(state);
   const syncRef = useRef<DashboardSync | null>(null);
+  // Always the current user, also for callbacks created on an earlier render.
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
 
   const applyState = useCallback((next: DashboardState) => {
     stateRef.current = next;
@@ -82,7 +86,12 @@ export function useDashboard() {
     const starter = starterState();
     const dashSync = new DashboardSync(firestoreBackend(db, userId), {
       onRemote: (remote) => {
-        const next = remote ?? starter;
+        // Keep the tab the user has open (it is not saved in the database): first the
+        // one currently shown, then the one remembered on this device, then the saved one.
+        const next = withActiveTab(remote ?? starter, [
+          stateRef.current.activeTabId,
+          readActiveTab(userId),
+        ]);
         if (JSON.stringify(next) !== JSON.stringify(stateRef.current)) applyState(next);
       },
       onStatus: (status, issue) => setSync({ status, issue }),
@@ -135,6 +144,10 @@ export function useDashboard() {
       const next = updater(prev);
       if (next === prev) return;
       applyState(next);
+      // A new tab / import / restore switches to a tab: remember it on this device.
+      if (userIdRef.current && next.activeTabId !== prev.activeTabId) {
+        writeActiveTab(userIdRef.current, next.activeTabId);
+      }
       dashSync?.schedule(next);
     },
     [applyState],
@@ -277,9 +290,16 @@ export function useDashboard() {
     });
   }, []);
 
-  const setActiveTab = useCallback((tabId: string) => {
-    userMutate((s) => ({ ...s, activeTabId: tabId }));
-  }, []);
+  // Switching tab changes what is shown, not what is saved: no database write.
+  const setActiveTab = useCallback(
+    (tabId: string) => {
+      const prev = stateRef.current;
+      if (tabId === prev.activeTabId || !prev.tabs.some((t) => t.id === tabId)) return;
+      applyState({ ...prev, activeTabId: tabId });
+      if (userIdRef.current) writeActiveTab(userIdRef.current, tabId);
+    },
+    [applyState],
+  );
 
   const setTabStyle = useCallback((style: TileStyle) => {
     userMutate((s) => {
@@ -352,6 +372,7 @@ export function useDashboard() {
       // unreadable, but still only after the server has confirmed it.
       if (dashSync && !dashSync.schedule(next, { force: true })) return;
       applyState(next);
+      if (userIdRef.current) writeActiveTab(userIdRef.current, next.activeTabId);
     },
     [applyState],
   );

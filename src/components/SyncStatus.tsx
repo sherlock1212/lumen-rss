@@ -1,53 +1,74 @@
 import { AlertTriangle, Check, CloudOff, Loader2, UserX } from "lucide-react";
 import type { SyncInfo } from "@/lib/useDashboard";
 
-/** Small pill next to the account button: tells the user whether their work is saved. */
+/**
+ * Small round indicator next to the account button: tells the user whether their
+ * work is saved. The normal states (saved / saving / loading) are icon-only, the
+ * text is kept for screen readers and the tooltip. Problems keep a visible label.
+ */
 export function SyncIndicator({ sync }: { sync: SyncInfo }) {
   const { status } = sync;
   const base =
-    "hidden md:inline-flex h-7 items-center gap-1.5 px-2.5 rounded-full border text-[11px] font-medium select-none";
+    "hidden md:inline-flex h-7 items-center justify-center rounded-full border text-[11px] font-medium select-none";
+  const quiet = `${base} w-7 border-border text-muted-foreground`;
+  const warn = `${base} gap-1.5 px-2.5 border-amber-500/40 text-amber-500`;
 
   if (status === "synced") {
     return (
-      <span className={`${base} border-border text-muted-foreground`} title="All changes are saved">
-        <Check className="h-3 w-3 text-primary" /> Saved
+      <span role="status" className={quiet} title="All changes are saved">
+        <Check className="h-3.5 w-3.5 text-primary" />
+        <span className="sr-only">Saved</span>
       </span>
     );
   }
   if (status === "loading") {
     return (
-      <span className={`${base} border-border text-muted-foreground`} title="Loading your dashboard">
-        <Loader2 className="h-3 w-3 animate-spin" /> Loading
+      <span role="status" className={quiet} title="Loading your dashboard">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <span className="sr-only">Loading</span>
       </span>
     );
   }
   if (status === "saving") {
     const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+    if (offline) {
+      return (
+        <span
+          role="status"
+          className={warn}
+          title="You are offline: changes will be saved when you reconnect"
+        >
+          <Loader2 className="h-3 w-3 animate-spin" /> Offline
+        </span>
+      );
+    }
     return (
-      <span
-        className={`${base} border-amber-500/40 text-amber-500`}
-        title={offline ? "You are offline: changes will be saved when you reconnect" : "Saving your changes"}
-      >
-        <Loader2 className="h-3 w-3 animate-spin" /> {offline ? "Offline" : "Saving…"}
+      <span role="status" className={quiet} title="Saving your changes">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <span className="sr-only">Saving</span>
       </span>
     );
   }
   if (status === "guest") {
     return (
-      <span className={`${base} border-amber-500/40 text-amber-500`} title="Sign in to save your dashboard">
+      <span role="status" className={warn} title="Sign in to save your dashboard">
         <UserX className="h-3 w-3" /> Not saved
       </span>
     );
   }
   if (status === "offline") {
     return (
-      <span className={`${base} border-amber-500/40 text-amber-500`} title="Can't reach your saved dashboard">
+      <span role="status" className={warn} title="Can't reach your saved dashboard">
         <CloudOff className="h-3 w-3" /> Offline
       </span>
     );
   }
   return (
-    <span className={`${base} border-destructive/40 text-destructive`} title="Your latest changes are not saved">
+    <span
+      role="status"
+      className={`${base} gap-1.5 px-2.5 border-destructive/40 text-destructive`}
+      title="Your latest changes are not saved"
+    >
       <AlertTriangle className="h-3 w-3" /> Not saved
     </span>
   );
