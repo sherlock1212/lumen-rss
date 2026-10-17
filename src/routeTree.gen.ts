@@ -10,22 +10,22 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiFeedRouteImport } from './routes/api/feed'
 import { Route as ApiDiscoverFeedRouteImport } from './routes/api/discover-feed'
+import { Route as ApiFeedRouteImport } from './routes/api/feed'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiFeedRoute = ApiFeedRouteImport.update({
-  id: '/api/feed',
-  path: '/api/feed',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiDiscoverFeedRoute = ApiDiscoverFeedRouteImport.update({
   id: '/api/discover-feed',
   path: '/api/discover-feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFeedRoute = ApiFeedRouteImport.update({
+  id: '/api/feed',
+  path: '/api/feed',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -68,18 +68,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/feed': {
-      id: '/api/feed'
-      path: '/api/feed'
-      fullPath: '/api/feed'
-      preLoaderRoute: typeof ApiFeedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/discover-feed': {
       id: '/api/discover-feed'
       path: '/api/discover-feed'
       fullPath: '/api/discover-feed'
       preLoaderRoute: typeof ApiDiscoverFeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/feed': {
+      id: '/api/feed'
+      path: '/api/feed'
+      fullPath: '/api/feed'
+      preLoaderRoute: typeof ApiFeedRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
