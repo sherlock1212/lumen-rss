@@ -1,0 +1,10 @@
+{
+  // Used only by `npm run deploy`, after `vite build`.
+  // Keep name / compatibility_* in sync with wrangler.jsonc (which is used by the dev/build step).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lumen-rss",
+  "compatibility_date": "2025-09-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "dist/server/server.js",
+  "assets": { "directory": "dist/client" }
+}
