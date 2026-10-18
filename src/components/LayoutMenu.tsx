@@ -14,7 +14,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { THEMES, useTheme } from "@/lib/useTheme";
-import { MAX_COLUMNS, MIN_COLUMNS } from "@/lib/opml";
+import { MAX_COLUMNS, MIN_COLUMNS } from "@/lib/columns";
 import type { TileStyle } from "@/lib/rss";
 
 const STYLES: { value: TileStyle; label: string; icon: typeof Rows3 }[] = [

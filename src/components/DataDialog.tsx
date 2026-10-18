@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Upload, Download, X, Loader2, Database, ArrowLeft, AlertTriangle } from "lucide-react";
-import { buildOpml, parseOpml } from "@/lib/opml";
 import type { BackupInfo, BackupsApi } from "@/lib/dashboardSync";
 import {
   buildBackupJson,
@@ -114,6 +113,8 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
         setPending(parseBackup(text));
         setPendingSource("Lumen backup file");
       } else {
+        // Loaded on demand: the XML parser is only needed when importing.
+        const { parseOpml } = await import("@/lib/opml");
         const result = parseOpml(text);
         onImport(result.tabs);
         const parts = [plural(result.tabs.length, "tab"), plural(result.feedCount, "feed")];
@@ -184,7 +185,8 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
     setConfirmReplace(false);
   }
 
-  function handleExportOpml() {
+  async function handleExportOpml() {
+    const { buildOpml } = await import("@/lib/opml");
     downloadFile(buildOpml(state), `lumen-export-${timestamp()}.opml`, "application/xml");
   }
 

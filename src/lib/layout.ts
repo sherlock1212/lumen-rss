@@ -1,5 +1,5 @@
 import type { FeedWidget } from "./rss";
-import { MAX_COLUMNS, MIN_COLUMNS } from "./opml";
+import { MAX_COLUMNS, MIN_COLUMNS } from "./columns";
 
 /** Keeps a requested column count inside what the UI supports. */
 export function clampColumns(n: number): number {

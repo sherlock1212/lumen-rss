@@ -13,7 +13,7 @@
 // because whatever it returns ends up in the app state and then in Firestore.
 
 import type { Bookmark, DashboardState, DashboardTab, FeedWidget, TileStyle } from "./rss";
-import { MAX_COLUMNS, MIN_COLUMNS } from "./opml";
+import { MAX_COLUMNS, MIN_COLUMNS } from "./columns";
 import { uid } from "./utils";
 
 export const BACKUP_APP = "lumen-rss";

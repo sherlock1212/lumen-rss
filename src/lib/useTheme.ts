@@ -3,16 +3,27 @@ import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./useAuth";
 
-export type ThemeId = "aurora" | "cyber" | "slate" | "daylight";
+import { DEFAULT_THEME, THEMES, THEME_STORAGE_KEY, isTheme, type ThemeId } from "./themeConfig";
 
-export const THEMES: { id: ThemeId; name: string; description: string }[] = [
-  { id: "aurora", name: "Aurora", description: "Deep dark with mint glow" },
-  { id: "cyber", name: "Cyber Neon", description: "Black with neon magenta" },
-  { id: "slate", name: "Slate", description: "Medium dark, calm blue" },
-  { id: "daylight", name: "Daylight", description: "Clean light theme" },
-];
+export { THEMES };
+export type { ThemeId };
 
-const DEFAULT_THEME: ThemeId = "aurora";
+export function readCachedTheme(): ThemeId {
+  try {
+    const v = localStorage.getItem(THEME_STORAGE_KEY);
+    return isTheme(v) ? v : DEFAULT_THEME;
+  } catch {
+    return DEFAULT_THEME;
+  }
+}
+
+function cacheTheme(id: ThemeId) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, id);
+  } catch {
+    // private mode / storage blocked: the theme still works, just without the shortcut
+  }
+}
 
 function applyTheme(id: ThemeId) {
   if (typeof document === "undefined") return;
@@ -21,7 +32,9 @@ function applyTheme(id: ThemeId) {
 
 export function useTheme() {
   const { user } = useAuth();
-  const [theme, setThemeState] = useState<ThemeId>(DEFAULT_THEME);
+  const [theme, setThemeState] = useState<ThemeId>(() =>
+    typeof window === "undefined" ? DEFAULT_THEME : readCachedTheme(),
+  );
 
   // true while we are hydrating from Firestore — don't persist during hydration
   const hydratingRef = useRef(false);
@@ -31,14 +44,16 @@ export function useTheme() {
   // Apply theme to DOM immediately on every change
   useEffect(() => {
     applyTheme(theme);
+    cacheTheme(theme);
   }, [theme]);
 
   // Subscribe to Firestore prefs doc
   useEffect(() => {
     if (!user) {
+      // Signed out (or still checking): keep the remembered theme instead of
+      // flashing the default one.
       loadedForUidRef.current = null;
       hydratingRef.current = true;
-      setThemeState(DEFAULT_THEME);
       return;
     }
     const ref = doc(db, "users", user.uid, "data", "prefs");

@@ -15,8 +15,8 @@ import { XMLParser } from "fast-xml-parser";
 import type { Bookmark, DashboardState, DashboardTab, FeedWidget } from "./rss";
 import { uid } from "./utils";
 
-export const MIN_COLUMNS = 2;
-export const MAX_COLUMNS = 4;
+import { MIN_COLUMNS, MAX_COLUMNS } from "./columns";
+export { MIN_COLUMNS, MAX_COLUMNS };
 
 // ── Import ───────────────────────────────────────────────────────────────────
 
