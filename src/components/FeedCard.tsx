@@ -16,6 +16,7 @@ import {
 import { ConfirmDialog } from "./ConfirmDialog";
 import { useVisited } from "@/lib/useVisited";
 import { useSeenItems } from "@/lib/useSeenItems";
+import { useAutoRefresh } from "@/lib/useAutoRefresh";
 
 /** Ricava l'origin del sito dal link del feed, dal primo articolo, o dall'URL del feed stesso. */
 function resolveSiteUrl(
@@ -79,14 +80,6 @@ interface Props {
   onUpdate: (patch: Partial<FeedWidget>) => void;
 }
 
-const REFRESH_MS = 10 * 60 * 1000;
-
-function hashStr(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
-
 function timeAgo(iso?: string): string {
   if (!iso) return "";
   const d = new Date(iso).getTime();
@@ -131,19 +124,12 @@ export function FeedCard({ widget, effectiveStyle, highlightNew, onRemove, onUpd
     refetchOnWindowFocus: false,
   });
 
-  useEffect(() => {
-    const offset = hashStr(widget.id) % REFRESH_MS;
-    let interval: ReturnType<typeof setInterval> | undefined;
-    const timeout = setTimeout(() => {
-      query.refetch();
-      interval = setInterval(() => query.refetch(), REFRESH_MS);
-    }, offset);
-    return () => {
-      clearTimeout(timeout);
-      if (interval) clearInterval(interval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.id]);
+  useAutoRefresh({
+    id: widget.id,
+    lastUpdated: Math.max(query.dataUpdatedAt, query.errorUpdatedAt),
+    fetching: query.isFetching,
+    refetch: query.refetch,
+  });
 
   // Whenever fetched data updates, recompute newly-arrived links.
   const dataKey = query.data?.fetchedAt;

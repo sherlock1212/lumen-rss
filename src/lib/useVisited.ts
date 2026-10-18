@@ -2,6 +2,7 @@ import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./useAuth";
+import { linkId, toLinkId } from "./linkId";
 
 const MAX = 5000;
 const SAVE_DEBOUNCE_MS = 1500;
@@ -13,6 +14,7 @@ const SAVE_DEBOUNCE_MS = 1500;
  */
 const store: {
   uid: string | null;
+  /** Compact ids (see linkId), not full addresses. */
   links: Set<string>;
   loaded: boolean;
   dirty: boolean;
@@ -77,7 +79,8 @@ function bind(uid: string | null) {
       // An empty answer from the local cache is not "nothing saved": wait for the
       // server, otherwise we would later overwrite the real list with a partial one.
       if (snap.metadata.fromCache && !snap.exists()) return;
-      const remote = (snap.data() as { links?: string[] } | undefined)?.links ?? [];
+      // Older saves hold full addresses: convert them, so both formats are understood.
+      const remote = ((snap.data() as { links?: string[] } | undefined)?.links ?? []).map(toLinkId);
       // Keep marks made locally that are not saved yet.
       const hadLocal = store.links.size > 0 && (store.dirty || !store.loaded);
       const merged = new Set(remote);
@@ -119,10 +122,12 @@ export function useVisited() {
   // Re-render whenever the shared set changes.
   useSyncExternalStore(subscribe, getVersion, getVersion);
 
-  const isVisited = useCallback((link: string) => store.links.has(link), []);
+  const isVisited = useCallback((link: string) => store.links.has(linkId(link)), []);
   const markVisited = useCallback((link: string) => {
-    if (!link || store.links.has(link)) return;
-    store.links.add(link);
+    if (!link) return;
+    const id = linkId(link);
+    if (store.links.has(id)) return;
+    store.links.add(id);
     notify();
     scheduleSave();
   }, []);

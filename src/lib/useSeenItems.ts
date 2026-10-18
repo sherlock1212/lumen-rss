@@ -13,6 +13,8 @@ type SeenMap = Record<string, string[]>;
 const cache: {
   uid: string | null;
   map: SeenMap;
+  /** Feeds changed here and not yet saved: a snapshot must not overwrite them. */
+  dirtyFeeds: Set<string>;
   loaded: boolean;
   subscribers: Set<() => void>;
   unsub: (() => void) | null;
@@ -20,6 +22,7 @@ const cache: {
 } = {
   uid: null,
   map: {},
+  dirtyFeeds: new Set(),
   loaded: false,
   subscribers: new Set(),
   unsub: null,
@@ -35,6 +38,8 @@ function scheduleSave() {
   if (cache.saveTimer) clearTimeout(cache.saveTimer);
   const uid = cache.uid;
   cache.saveTimer = setTimeout(() => {
+    cache.saveTimer = null;
+    cache.dirtyFeeds.clear();
     setDoc(doc(db, "users", uid, "data", "seen"), { map: cache.map }).catch((e) =>
       console.error("Seen items save failed:", e),
     );
@@ -53,6 +58,7 @@ function bind(uid: string | null) {
   }
   cache.uid = uid;
   cache.map = {};
+  cache.dirtyFeeds.clear();
   cache.loaded = false;
   if (!uid) {
     notify();
@@ -65,7 +71,10 @@ function bind(uid: string | null) {
       // server, otherwise we would later overwrite the real data with a partial map.
       if (snap.metadata.fromCache && !snap.exists()) return;
       const data = snap.data() as { map?: SeenMap } | undefined;
-      cache.map = data?.map ?? {};
+      const remote = data?.map ?? {};
+      // Keep what this device changed and has not saved yet.
+      for (const f of cache.dirtyFeeds) if (cache.map[f]) remote[f] = cache.map[f];
+      cache.map = remote;
       cache.loaded = true;
       notify();
     },
@@ -99,9 +108,18 @@ export function useSeenItems(feedUrl: string) {
         const prevSet = new Set(prev);
         for (const l of links) if (l && !prevSet.has(l)) newSet.add(l);
       }
+      // Write only when the list of entries really changed: a refresh that brings
+      // the same entries costs no database write.
       if (canPersist) {
-        cache.map[feedUrl] = links.slice(0, MAX_PER_FEED);
-        scheduleSave();
+        const next = links.slice(0, MAX_PER_FEED);
+        const prevSet = prev ? new Set(prev) : null;
+        const same =
+          prevSet !== null && prev!.length === next.length && next.every((l) => prevSet.has(l));
+        if (!same) {
+          cache.map[feedUrl] = next;
+          cache.dirtyFeeds.add(feedUrl);
+          scheduleSave();
+        }
       }
       return newSet;
     },
