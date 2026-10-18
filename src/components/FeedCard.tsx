@@ -17,7 +17,6 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { useVisited } from "@/lib/useVisited";
 import { useSeenItems } from "@/lib/useSeenItems";
 
-
 /** Ricava l'origin del sito dal link del feed, dal primo articolo, o dall'URL del feed stesso. */
 function resolveSiteUrl(
   feedLink: string | undefined,
@@ -29,7 +28,9 @@ function resolveSiteUrl(
     try {
       const { origin } = new URL(candidate);
       if (origin && origin !== "null") return origin;
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   }
   return null;
 }
@@ -45,7 +46,7 @@ function FeedFavicon({ siteUrl }: { siteUrl: string | null }) {
   useEffect(() => {
     triedDirect.current = false;
     setSrc(googleUrl);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siteUrl]);
 
   function handleError() {
@@ -100,13 +101,7 @@ function timeAgo(iso?: string): string {
   return `${dd}d`;
 }
 
-export function FeedCard({
-  widget,
-  effectiveStyle,
-  highlightNew,
-  onRemove,
-  onUpdate,
-}: Props) {
+export function FeedCard({ widget, effectiveStyle, highlightNew, onRemove, onUpdate }: Props) {
   const [editing, setEditing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const style = effectiveStyle;
@@ -119,14 +114,9 @@ export function FeedCard({
   const [fading, setFading] = useState(false);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: widget.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: widget.id,
+  });
 
   const dragStyle = {
     transform: CSS.Transform.toString(transform),
@@ -208,11 +198,7 @@ export function FeedCard({
       }
     })();
 
-  const siteUrl = resolveSiteUrl(
-    query.data?.link,
-    query.data?.items?.[0]?.link,
-    widget.url,
-  );
+  const siteUrl = resolveSiteUrl(query.data?.link, query.data?.items?.[0]?.link, widget.url);
 
   const itemPadding = useMemo(() => {
     switch (style) {
@@ -233,8 +219,8 @@ export function FeedCard({
     style === "mini"
       ? "max-h-64"
       : style === "compact" || style === "comfortable"
-      ? "max-h-80"
-      : "max-h-[28rem]";
+        ? "max-h-80"
+        : "max-h-[28rem]";
 
   return (
     <div
@@ -266,9 +252,7 @@ export function FeedCard({
             {title}
           </a>
         ) : (
-          <h3 className="font-display font-semibold text-sm truncate flex-1">
-            {title}
-          </h3>
+          <h3 className="font-display font-semibold text-sm truncate flex-1">{title}</h3>
         )}
         <div className="flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
           <button
@@ -291,9 +275,7 @@ export function FeedCard({
             className="p-1.5 rounded hover:bg-secondary"
             aria-label="Refresh"
           >
-            <RefreshCw
-              className={`h-3.5 w-3.5 ${query.isFetching ? "animate-spin" : ""}`}
-            />
+            <RefreshCw className={`h-3.5 w-3.5 ${query.isFetching ? "animate-spin" : ""}`} />
           </button>
           <button
             onClick={() => setConfirmOpen(true)}
@@ -434,9 +416,7 @@ export function FeedCard({
               );
             })}
             {query.data.items.length === 0 && (
-              <p className="p-4 text-xs text-muted-foreground">
-                No items in this feed.
-              </p>
+              <p className="p-4 text-xs text-muted-foreground">No items in this feed.</p>
             )}
           </ul>
         )}

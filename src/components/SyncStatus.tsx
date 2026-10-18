@@ -117,7 +117,10 @@ export function SyncBanner({ sync }: { sync: SyncInfo }) {
       ? "border-destructive/40 bg-destructive/10 text-foreground"
       : "border-amber-500/40 bg-amber-500/10 text-foreground";
   return (
-    <div role="status" className={`mb-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${tone}`}>
+    <div
+      role="status"
+      className={`mb-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${tone}`}
+    >
       <AlertTriangle
         className={`h-4 w-4 mt-0.5 shrink-0 ${content.tone === "danger" ? "text-destructive" : "text-amber-500"}`}
       />

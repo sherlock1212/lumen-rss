@@ -44,11 +44,7 @@ export function UserMenu() {
         title={error ?? "Sign in with Google"}
         className="hover-border h-9 inline-flex items-center gap-1.5 px-3 rounded-md border border-border bg-surface/60 text-foreground text-sm font-medium disabled:opacity-50"
       >
-        {busy ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <LogIn className="h-4 w-4" />
-        )}
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
         Sign in
       </button>
     );

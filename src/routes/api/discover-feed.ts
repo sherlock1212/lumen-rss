@@ -121,9 +121,7 @@ export const Route = createFileRoute("/api/discover-feed")({
           }
 
           const origin = new URL(first?.finalUrl ?? parsed.toString()).origin;
-          const toProbe = [
-            ...new Set([...discovered, ...FEED_PATHS.map((p) => `${origin}${p}`)]),
-          ];
+          const toProbe = [...new Set([...discovered, ...FEED_PATHS.map((p) => `${origin}${p}`)])];
 
           // Probe with limited concurrency; stop at the first confirmed feed or when out of time
           const found: string[] = [];

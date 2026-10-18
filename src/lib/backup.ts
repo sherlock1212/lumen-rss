@@ -12,26 +12,14 @@
 // parseBackup() never trusts its input: every field is validated and repaired,
 // because whatever it returns ends up in the app state and then in Firestore.
 
-import type {
-  Bookmark,
-  DashboardState,
-  DashboardTab,
-  FeedWidget,
-  TileStyle,
-} from "./rss";
+import type { Bookmark, DashboardState, DashboardTab, FeedWidget, TileStyle } from "./rss";
 import { MAX_COLUMNS, MIN_COLUMNS } from "./opml";
 import { uid } from "./utils";
 
 export const BACKUP_APP = "lumen-rss";
 export const BACKUP_VERSION = 1;
 
-const TILE_STYLES: readonly TileStyle[] = [
-  "full",
-  "condensed",
-  "compact",
-  "comfortable",
-  "mini",
-];
+const TILE_STYLES: readonly TileStyle[] = ["full", "condensed", "compact", "comfortable", "mini"];
 
 export interface BackupSummary {
   tabCount: number;
@@ -129,10 +117,7 @@ const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
  * added to the app in the future is not silently dropped — and then erased from
  * Firestore on the next save — by a normaliser that predates it.
  */
-function extras(
-  raw: Record<string, unknown>,
-  known: readonly string[],
-): Record<string, unknown> {
+function extras(raw: Record<string, unknown>, known: readonly string[]): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(raw)) {
     if (known.includes(k) || UNSAFE_KEYS.has(k)) continue;
@@ -151,15 +136,7 @@ const STATE_KEYS = [
   "schemaVersion",
 ] as const;
 const TAB_KEYS = ["id", "name", "columns", "widgets", "defaultStyle"] as const;
-const WIDGET_KEYS = [
-  "id",
-  "kind",
-  "url",
-  "customTitle",
-  "column",
-  "style",
-  "bookmarks",
-] as const;
+const WIDGET_KEYS = ["id", "kind", "url", "customTitle", "column", "style", "bookmarks"] as const;
 
 /** Returns `id` if it is a usable, not-yet-seen string; otherwise a fresh one. */
 function uniqueId(id: unknown, seen: Set<string>): string {
@@ -184,17 +161,11 @@ function normalizeBookmarks(raw: unknown, seen: Set<string>): Bookmark[] {
   return out;
 }
 
-function normalizeWidget(
-  raw: unknown,
-  columns: number,
-  seen: Set<string>,
-): FeedWidget | null {
+function normalizeWidget(raw: unknown, columns: number, seen: Set<string>): FeedWidget | null {
   if (!isObject(raw)) return null;
 
   const col = Number(raw.column);
-  const column = Number.isFinite(col)
-    ? Math.min(Math.max(Math.floor(col), 0), columns - 1)
-    : 0;
+  const column = Number.isFinite(col) ? Math.min(Math.max(Math.floor(col), 0), columns - 1) : 0;
   const customTitle = str(raw.customTitle) || undefined;
   const widgetStyle = style(raw.style);
 
@@ -321,9 +292,7 @@ export function withFreshIds(tabs: DashboardTab[]): DashboardTab[] {
     widgets: t.widgets.map((w) => ({
       ...w,
       id: uid(),
-      ...(w.bookmarks
-        ? { bookmarks: w.bookmarks.map((b) => ({ ...b, id: uid() })) }
-        : {}),
+      ...(w.bookmarks ? { bookmarks: w.bookmarks.map((b) => ({ ...b, id: uid() })) } : {}),
     })),
   }));
 }

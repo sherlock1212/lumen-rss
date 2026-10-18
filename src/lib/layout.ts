@@ -35,8 +35,8 @@ export function fitToColumns(widgets: FeedWidget[], columns: number): FeedWidget
     .filter(({ w }) => !fits(w))
     .sort(
       (a, b) =>
-        (Number.isFinite(a.w.column) ? a.w.column : 0) - (Number.isFinite(b.w.column) ? b.w.column : 0) ||
-        a.index - b.index,
+        (Number.isFinite(a.w.column) ? a.w.column : 0) -
+          (Number.isFinite(b.w.column) ? b.w.column : 0) || a.index - b.index,
     );
 
   const moved = displaced.map(({ w }) => {
@@ -67,7 +67,8 @@ export function moveWidget(
 
   const others = widgets.filter((w) => w.id !== activeId);
   const target = others.filter((w) => w.column === column);
-  const at = Number.isInteger(index) && index >= 0 && index <= target.length ? index : target.length;
+  const at =
+    Number.isInteger(index) && index >= 0 && index <= target.length ? index : target.length;
 
   const moved: FeedWidget = moving.column === column ? moving : { ...moving, column };
   const before = target[at]; // the tile the moved one lands in front of, if any
@@ -82,7 +83,11 @@ export function moveWidget(
     result = [...others.slice(0, pos), moved, ...others.slice(pos)];
   }
 
-  const order = (list: FeedWidget[]) => list.filter((w) => w.column === column).map((w) => w.id).join("|");
+  const order = (list: FeedWidget[]) =>
+    list
+      .filter((w) => w.column === column)
+      .map((w) => w.id)
+      .join("|");
   if (moving.column === column && order(result) === order(widgets)) return widgets;
   return result;
 }

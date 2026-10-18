@@ -17,7 +17,11 @@ function uid() {
 
 function BookmarkFavicon({ url }: { url: string }) {
   const origin = (() => {
-    try { return new URL(url).origin; } catch { return null; }
+    try {
+      return new URL(url).origin;
+    } catch {
+      return null;
+    }
   })();
   const googleUrl = origin
     ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(origin)}&sz=32`
@@ -61,14 +65,9 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
 
   const bookmarks: Bookmark[] = widget.bookmarks ?? [];
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: widget.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: widget.id,
+  });
 
   const dragStyle = {
     transform: CSS.Transform.toString(transform),
@@ -90,14 +89,21 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
     if (!normalized.startsWith("http://") && !normalized.startsWith("https://")) {
       normalized = `https://${normalized}`;
     }
-    try { new URL(normalized); } catch {
+    try {
+      new URL(normalized);
+    } catch {
       setAddError("Invalid URL");
       return;
     }
-    const title = newTitle.trim() || (() => {
-      try { return new URL(normalized).hostname.replace(/^www\./, ""); }
-      catch { return normalized; }
-    })();
+    const title =
+      newTitle.trim() ||
+      (() => {
+        try {
+          return new URL(normalized).hostname.replace(/^www\./, "");
+        } catch {
+          return normalized;
+        }
+      })();
     onUpdate({ bookmarks: [...bookmarks, { id: uid(), url: normalized, title }] });
     setNewUrl("");
     setNewTitle("");
@@ -133,7 +139,13 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
 
         {/* Editable title */}
         {editingTitle ? (
-          <form onSubmit={(e) => { e.preventDefault(); saveTitle(); }} className="flex-1 flex gap-1">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveTitle();
+            }}
+            className="flex-1 flex gap-1"
+          >
             <input
               autoFocus
               value={titleDraft}
@@ -145,7 +157,10 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
         ) : (
           <span
             className="font-display font-semibold text-sm truncate flex-1 cursor-text"
-            onDoubleClick={() => { setTitleDraft(widget.customTitle ?? "Favourites"); setEditingTitle(true); }}
+            onDoubleClick={() => {
+              setTitleDraft(widget.customTitle ?? "Favourites");
+              setEditingTitle(true);
+            }}
             title="Double-click to rename"
           >
             {widget.customTitle ?? "Favourites"}
@@ -155,14 +170,22 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
         {/* Toolbar */}
         <div className="flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
           <button
-            onClick={() => { setTitleDraft(widget.customTitle ?? "Favourites"); setEditingTitle(true); }}
+            onClick={() => {
+              setTitleDraft(widget.customTitle ?? "Favourites");
+              setEditingTitle(true);
+            }}
             className="p-1.5 rounded hover:bg-secondary"
             aria-label="Rename"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
-            onClick={() => { setAddOpen(true); setNewUrl(""); setNewTitle(""); setAddError(null); }}
+            onClick={() => {
+              setAddOpen(true);
+              setNewUrl("");
+              setNewTitle("");
+              setAddError(null);
+            }}
             className="p-1.5 rounded hover:bg-secondary"
             aria-label="Add bookmark"
           >
@@ -229,7 +252,10 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
               autoFocus
               type="text"
               value={newUrl}
-              onChange={(e) => { setNewUrl(e.target.value); setAddError(null); }}
+              onChange={(e) => {
+                setNewUrl(e.target.value);
+                setAddError(null);
+              }}
               placeholder="URL (e.g. https://example.com)"
               className="w-full bg-input border border-border rounded px-2 py-1.5 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
             />

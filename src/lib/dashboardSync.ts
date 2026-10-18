@@ -27,11 +27,7 @@ import {
   setDoc,
   type Firestore,
 } from "firebase/firestore";
-import {
-  normalizeDashboardState,
-  summarizeState,
-  type ParsedBackup,
-} from "./backup";
+import { normalizeDashboardState, summarizeState, type ParsedBackup } from "./backup";
 import type { DashboardState } from "./rss";
 
 export const SCHEMA_VERSION = 1;
@@ -59,10 +55,7 @@ export interface RemoteSnapshot {
 }
 
 export interface DashboardBackend {
-  subscribe(
-    onSnap: (s: RemoteSnapshot) => void,
-    onError: (e: unknown) => void,
-  ): () => void;
+  subscribe(onSnap: (s: RemoteSnapshot) => void, onError: (e: unknown) => void): () => void;
   write(payload: Record<string, unknown>): Promise<void>;
 }
 

@@ -9,14 +9,14 @@ interface Props {
 }
 
 const PRESETS = [
-  { name: "Hacker News",  url: "https://hnrss.org/frontpage" },
-  { name: "The Verge",    url: "https://www.theverge.com/rss/index.xml" },
-  { name: "TechCrunch",   url: "https://techcrunch.com/feed/" },
-  { name: "NASA",         url: "https://www.nasa.gov/news-release/feed/" },
-  { name: "BBC World",    url: "http://feeds.bbci.co.uk/news/world/rss.xml" },
-  { name: "Wired",        url: "https://www.wired.com/feed/rss" },
+  { name: "Hacker News", url: "https://hnrss.org/frontpage" },
+  { name: "The Verge", url: "https://www.theverge.com/rss/index.xml" },
+  { name: "TechCrunch", url: "https://techcrunch.com/feed/" },
+  { name: "NASA", url: "https://www.nasa.gov/news-release/feed/" },
+  { name: "BBC World", url: "http://feeds.bbci.co.uk/news/world/rss.xml" },
+  { name: "Wired", url: "https://www.wired.com/feed/rss" },
   { name: "Ars Technica", url: "http://feeds.arstechnica.com/arstechnica/index" },
-  { name: "CSS-Tricks",   url: "https://css-tricks.com/feed/" },
+  { name: "CSS-Tricks", url: "https://css-tricks.com/feed/" },
 ];
 
 function looksLikeFeedUrl(url: string): boolean {
@@ -62,22 +62,33 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, []);
 
   function reset() {
-    setUrl(""); setError(null); setCandidates([]); setLoading(false);
+    setUrl("");
+    setError(null);
+    setCandidates([]);
+    setLoading(false);
   }
 
-  function close() { reset(); onClose(); }
+  function close() {
+    reset();
+    onClose();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const raw = url.trim();
     if (!raw) return;
-    setLoading(true); setError(null); setCandidates([]);
+    setLoading(true);
+    setError(null);
+    setCandidates([]);
     try {
-      const normalised = raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
+      const normalised =
+        raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
       if (looksLikeFeedUrl(normalised)) {
         const feed = await fetchFeed(normalised);
         onAddFeed(normalised, feed.title);
@@ -100,7 +111,8 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
   }
 
   async function handlePickCandidate(c: { url: string; title: string | null }) {
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     try {
       const feed = await fetchFeed(c.url).catch(() => null);
       onAddFeed(c.url, feed?.title ?? c.title ?? undefined);
@@ -147,7 +159,10 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
               </div>
             </button>
             <button
-              onClick={() => { onAddBookmarks(); close(); }}
+              onClick={() => {
+                onAddBookmarks();
+                close();
+              }}
               className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition group"
             >
               <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
@@ -172,7 +187,11 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
                   required
                   autoFocus
                   value={url}
-                  onChange={(e) => { setUrl(e.target.value); setError(null); setCandidates([]); }}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    setError(null);
+                    setCandidates([]);
+                  }}
                   placeholder="https://example.com  or  https://example.com/feed.xml"
                   className="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
                 />
@@ -215,12 +234,17 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
             )}
 
             <div className="px-5 pb-5">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Or pick a popular feed</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                Or pick a popular feed
+              </p>
               <div className="flex flex-wrap gap-2">
                 {PRESETS.map((p) => (
                   <button
                     key={p.url}
-                    onClick={() => { onAddFeed(p.url, p.name); close(); }}
+                    onClick={() => {
+                      onAddFeed(p.url, p.name);
+                      close();
+                    }}
                     className="px-3 py-1.5 rounded-full text-xs bg-secondary hover:bg-accent hover:text-accent-foreground transition border border-border"
                   >
                     + {p.name}

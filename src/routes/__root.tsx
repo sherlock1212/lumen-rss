@@ -76,8 +76,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Lumen — A modern RSS reader" },
       {
         name: "description",
-        content:
-          "A modern customizable RSS dashboard. Build your own personal start page.",
+        content: "A modern customizable RSS dashboard. Build your own personal start page.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -154,8 +154,7 @@ export function useDashboard() {
   );
 
   // ── Selectors / derived state ─────────────────────────────────────────────
-  const activeTab =
-    state.tabs.find((t) => t.id === state.activeTabId) ?? state.tabs[0];
+  const activeTab = state.tabs.find((t) => t.id === state.activeTabId) ?? state.tabs[0];
 
   // ── Mutations ─────────────────────────────────────────────────────────────
 
@@ -166,16 +165,16 @@ export function useDashboard() {
         tabs: s.tabs.map((t) => (t.id === tabId ? updater(t) : t)),
       }));
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [userMutate],
   );
 
   const addWidget = useCallback(
     (url: string, customTitle?: string) => {
       userMutate((s) => {
         const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
-        const counts = Array.from({ length: tab.columns }, (_, i) =>
-          tab.widgets.filter((w) => w.column === i).length,
+        const counts = Array.from(
+          { length: tab.columns },
+          (_, i) => tab.widgets.filter((w) => w.column === i).length,
         );
         const col = counts.indexOf(Math.min(...counts));
         return {
@@ -188,36 +187,43 @@ export function useDashboard() {
         };
       });
     },
-    [],
+    [userMutate],
   );
 
-  const removeWidget = useCallback((widgetId: string) => {
-    userMutate((s) => {
-      const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
-      return {
-        ...s,
-        tabs: s.tabs.map((t) =>
-          t.id === tab.id
-            ? { ...t, widgets: t.widgets.filter((w) => w.id !== widgetId) }
-            : t,
-        ),
-      };
-    });
-  }, []);
+  const removeWidget = useCallback(
+    (widgetId: string) => {
+      userMutate((s) => {
+        const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+        return {
+          ...s,
+          tabs: s.tabs.map((t) =>
+            t.id === tab.id ? { ...t, widgets: t.widgets.filter((w) => w.id !== widgetId) } : t,
+          ),
+        };
+      });
+    },
+    [userMutate],
+  );
 
-  const updateWidget = useCallback((widgetId: string, patch: Partial<FeedWidget>) => {
-    userMutate((s) => {
-      const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
-      return {
-        ...s,
-        tabs: s.tabs.map((t) =>
-          t.id === tab.id
-            ? { ...t, widgets: t.widgets.map((w) => w.id === widgetId ? { ...w, ...patch } : w) }
-            : t,
-        ),
-      };
-    });
-  }, []);
+  const updateWidget = useCallback(
+    (widgetId: string, patch: Partial<FeedWidget>) => {
+      userMutate((s) => {
+        const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+        return {
+          ...s,
+          tabs: s.tabs.map((t) =>
+            t.id === tab.id
+              ? {
+                  ...t,
+                  widgets: t.widgets.map((w) => (w.id === widgetId ? { ...w, ...patch } : w)),
+                }
+              : t,
+          ),
+        };
+      });
+    },
+    [userMutate],
+  );
 
   const reorderWidgets = useCallback(
     (activeId: string, overColumn: number, overIndex: number) => {
@@ -231,64 +237,77 @@ export function useDashboard() {
         };
       });
     },
-    [],
+    [userMutate],
   );
 
-  const setColumns = useCallback((n: number) => {
-    const columns = clampColumns(n);
-    userMutate((s) => {
-      const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
-      if (tab.columns === columns) return s; // nothing to change, nothing to save
-      return {
+  const setColumns = useCallback(
+    (n: number) => {
+      const columns = clampColumns(n);
+      userMutate((s) => {
+        const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+        if (tab.columns === columns) return s; // nothing to change, nothing to save
+        return {
+          ...s,
+          tabs: s.tabs.map((t) =>
+            t.id === tab.id ? { ...t, columns, widgets: fitToColumns(t.widgets, columns) } : t,
+          ),
+        };
+      });
+    },
+    [userMutate],
+  );
+
+  const addTab = useCallback(
+    (name: string) => {
+      const id = uid();
+      userMutate((s) => ({
         ...s,
-        tabs: s.tabs.map((t) =>
-          t.id === tab.id
-            ? { ...t, columns, widgets: fitToColumns(t.widgets, columns) }
-            : t,
-        ),
-      };
-    });
-  }, []);
+        tabs: [...s.tabs, { id, name, columns: 3, widgets: [] }],
+        activeTabId: id,
+      }));
+    },
+    [userMutate],
+  );
 
-  const addTab = useCallback((name: string) => {
-    const id = uid();
-    userMutate((s) => ({
-      ...s,
-      tabs: [...s.tabs, { id, name, columns: 3, widgets: [] }],
-      activeTabId: id,
-    }));
-  }, []);
+  const removeTab = useCallback(
+    (tabId: string) => {
+      userMutate((s) => {
+        if (s.tabs.length <= 1) return s;
+        const tabs = s.tabs.filter((t) => t.id !== tabId);
+        return {
+          ...s,
+          tabs,
+          activeTabId: s.activeTabId === tabId ? tabs[0].id : s.activeTabId,
+        };
+      });
+    },
+    [userMutate],
+  );
 
-  const removeTab = useCallback((tabId: string) => {
-    userMutate((s) => {
-      if (s.tabs.length <= 1) return s;
-      const tabs = s.tabs.filter((t) => t.id !== tabId);
-      return {
+  const renameTab = useCallback(
+    (tabId: string, name: string) => {
+      userMutate((s) => ({
         ...s,
-        tabs,
-        activeTabId: s.activeTabId === tabId ? tabs[0].id : s.activeTabId,
-      };
-    });
-  }, []);
+        tabs: s.tabs.map((t) => (t.id === tabId ? { ...t, name } : t)),
+      }));
+    },
+    [userMutate],
+  );
 
-  const renameTab = useCallback((tabId: string, name: string) => {
-    userMutate((s) => ({
-      ...s,
-      tabs: s.tabs.map((t) => (t.id === tabId ? { ...t, name } : t)),
-    }));
-  }, []);
-
-  const reorderTabs = useCallback((activeId: string, overId: string) => {
-    userMutate((s) => {
-      const oldIdx = s.tabs.findIndex((t) => t.id === activeId);
-      const newIdx = s.tabs.findIndex((t) => t.id === overId);
-      if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) return s;
-      const tabs = [...s.tabs];
-      const [moved] = tabs.splice(oldIdx, 1);
-      tabs.splice(newIdx, 0, moved);
-      return { ...s, tabs };
-    });
-  }, []);
+  const reorderTabs = useCallback(
+    (activeId: string, overId: string) => {
+      userMutate((s) => {
+        const oldIdx = s.tabs.findIndex((t) => t.id === activeId);
+        const newIdx = s.tabs.findIndex((t) => t.id === overId);
+        if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) return s;
+        const tabs = [...s.tabs];
+        const [moved] = tabs.splice(oldIdx, 1);
+        tabs.splice(newIdx, 0, moved);
+        return { ...s, tabs };
+      });
+    },
+    [userMutate],
+  );
 
   // Switching tab changes what is shown, not what is saved: no database write.
   const setActiveTab = useCallback(
@@ -301,41 +320,55 @@ export function useDashboard() {
     [applyState],
   );
 
-  const setTabStyle = useCallback((style: TileStyle) => {
-    userMutate((s) => {
-      const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
-      return {
+  const setTabStyle = useCallback(
+    (style: TileStyle) => {
+      userMutate((s) => {
+        const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+        return {
+          ...s,
+          tabs: s.tabs.map((t) =>
+            t.id === tab.id
+              ? {
+                  ...t,
+                  defaultStyle: style,
+                  widgets: t.widgets.map((w) => ({ ...w, style: undefined })),
+                }
+              : t,
+          ),
+        };
+      });
+    },
+    [userMutate],
+  );
+
+  const setGlobalStyle = useCallback(
+    (style: TileStyle) => {
+      userMutate((s) => ({
         ...s,
-        tabs: s.tabs.map((t) =>
-          t.id === tab.id
-            ? { ...t, defaultStyle: style, widgets: t.widgets.map((w) => ({ ...w, style: undefined })) }
-            : t,
-        ),
-      };
-    });
-  }, []);
+        globalDefaultStyle: style,
+        tabs: s.tabs.map((t) => ({
+          ...t,
+          defaultStyle: undefined,
+          widgets: t.widgets.map((w) => ({ ...w, style: undefined })),
+        })),
+      }));
+    },
+    [userMutate],
+  );
 
-  const setGlobalStyle = useCallback((style: TileStyle) => {
-    userMutate((s) => ({
-      ...s,
-      globalDefaultStyle: style,
-      tabs: s.tabs.map((t) => ({
-        ...t,
-        defaultStyle: undefined,
-        widgets: t.widgets.map((w) => ({ ...w, style: undefined })),
-      })),
-    }));
-  }, []);
-
-  const setHighlightNew = useCallback((v: boolean) => {
-    userMutate((s) => ({ ...s, highlightNew: v }));
-  }, []);
+  const setHighlightNew = useCallback(
+    (v: boolean) => {
+      userMutate((s) => ({ ...s, highlightNew: v }));
+    },
+    [userMutate],
+  );
 
   const addBookmarksTile = useCallback(() => {
     userMutate((s) => {
       const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
-      const counts = Array.from({ length: tab.columns }, (_, i) =>
-        tab.widgets.filter((w) => w.column === i).length,
+      const counts = Array.from(
+        { length: tab.columns },
+        (_, i) => tab.widgets.filter((w) => w.column === i).length,
       );
       const col = counts.indexOf(Math.min(...counts));
       return {
@@ -346,23 +379,33 @@ export function useDashboard() {
                 ...t,
                 widgets: [
                   ...t.widgets,
-                  { id: Math.random().toString(36).slice(2, 10), kind: "bookmarks" as const, url: "", customTitle: "Favourites", column: col, bookmarks: [] },
+                  {
+                    id: Math.random().toString(36).slice(2, 10),
+                    kind: "bookmarks" as const,
+                    url: "",
+                    customTitle: "Favourites",
+                    column: col,
+                    bookmarks: [],
+                  },
                 ],
               }
             : t,
         ),
       };
     });
-  }, []);
+  }, [userMutate]);
 
-  const importTabs = useCallback((newTabs: DashboardTab[]) => {
-    if (newTabs.length === 0) return;
-    userMutate((s) => ({
-      ...s,
-      tabs: [...s.tabs, ...newTabs],
-      activeTabId: newTabs[0].id,
-    }));
-  }, []);
+  const importTabs = useCallback(
+    (newTabs: DashboardTab[]) => {
+      if (newTabs.length === 0) return;
+      userMutate((s) => ({
+        ...s,
+        tabs: [...s.tabs, ...newTabs],
+        activeTabId: newTabs[0].id,
+      }));
+    },
+    [userMutate],
+  );
 
   /** Replace the whole dashboard (used by "restore from JSON backup"). */
   const replaceState = useCallback(
@@ -386,10 +429,7 @@ export function useDashboard() {
     [activeTab.defaultStyle, state.globalDefaultStyle],
   );
 
-  const backups = useMemo(
-    () => (userId ? firestoreBackups(db, userId) : null),
-    [userId],
-  );
+  const backups = useMemo(() => (userId ? firestoreBackups(db, userId) : null), [userId]);
 
   return {
     state,

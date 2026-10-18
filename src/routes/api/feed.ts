@@ -46,12 +46,9 @@ export const Route = createFileRoute("/api/feed")({
           const feed = normalizeLinks(parsed, finalUrl);
           feed.items = feed.items.slice(0, 30);
 
-          return jsonResponse(
-            request,
-            { ...feed, fetchedAt: new Date().toISOString() },
-            200,
-            { "Cache-Control": "public, max-age=300" },
-          );
+          return jsonResponse(request, { ...feed, fetchedAt: new Date().toISOString() }, 200, {
+            "Cache-Control": "public, max-age=300",
+          });
         } catch (e) {
           return errorResponse(request, e);
         }

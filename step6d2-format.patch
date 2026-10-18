@@ -1,0 +1,1827 @@
+diff --git a/src/components/AddItemDialog.tsx b/src/components/AddItemDialog.tsx
+index c2dba23..e33eb34 100644
+--- a/src/components/AddItemDialog.tsx
++++ b/src/components/AddItemDialog.tsx
+@@ -9,14 +9,14 @@ interface Props {
+ }
+ 
+ const PRESETS = [
+-  { name: "Hacker News",  url: "https://hnrss.org/frontpage" },
+-  { name: "The Verge",    url: "https://www.theverge.com/rss/index.xml" },
+-  { name: "TechCrunch",   url: "https://techcrunch.com/feed/" },
+-  { name: "NASA",         url: "https://www.nasa.gov/news-release/feed/" },
+-  { name: "BBC World",    url: "http://feeds.bbci.co.uk/news/world/rss.xml" },
+-  { name: "Wired",        url: "https://www.wired.com/feed/rss" },
++  { name: "Hacker News", url: "https://hnrss.org/frontpage" },
++  { name: "The Verge", url: "https://www.theverge.com/rss/index.xml" },
++  { name: "TechCrunch", url: "https://techcrunch.com/feed/" },
++  { name: "NASA", url: "https://www.nasa.gov/news-release/feed/" },
++  { name: "BBC World", url: "http://feeds.bbci.co.uk/news/world/rss.xml" },
++  { name: "Wired", url: "https://www.wired.com/feed/rss" },
+   { name: "Ars Technica", url: "http://feeds.arstechnica.com/arstechnica/index" },
+-  { name: "CSS-Tricks",   url: "https://css-tricks.com/feed/" },
++  { name: "CSS-Tricks", url: "https://css-tricks.com/feed/" },
+ ];
+ 
+ function looksLikeFeedUrl(url: string): boolean {
+@@ -62,22 +62,33 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
+ 
+   useEffect(() => {
+     document.body.style.overflow = "hidden";
+-    return () => { document.body.style.overflow = ""; };
++    return () => {
++      document.body.style.overflow = "";
++    };
+   }, []);
+ 
+   function reset() {
+-    setUrl(""); setError(null); setCandidates([]); setLoading(false);
++    setUrl("");
++    setError(null);
++    setCandidates([]);
++    setLoading(false);
+   }
+ 
+-  function close() { reset(); onClose(); }
++  function close() {
++    reset();
++    onClose();
++  }
+ 
+   async function handleSubmit(e: React.FormEvent) {
+     e.preventDefault();
+     const raw = url.trim();
+     if (!raw) return;
+-    setLoading(true); setError(null); setCandidates([]);
++    setLoading(true);
++    setError(null);
++    setCandidates([]);
+     try {
+-      const normalised = raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
++      const normalised =
++        raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
+       if (looksLikeFeedUrl(normalised)) {
+         const feed = await fetchFeed(normalised);
+         onAddFeed(normalised, feed.title);
+@@ -100,7 +111,8 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
+   }
+ 
+   async function handlePickCandidate(c: { url: string; title: string | null }) {
+-    setLoading(true); setError(null);
++    setLoading(true);
++    setError(null);
+     try {
+       const feed = await fetchFeed(c.url).catch(() => null);
+       onAddFeed(c.url, feed?.title ?? c.title ?? undefined);
+@@ -147,7 +159,10 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
+               </div>
+             </button>
+             <button
+-              onClick={() => { onAddBookmarks(); close(); }}
++              onClick={() => {
++                onAddBookmarks();
++                close();
++              }}
+               className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition group"
+             >
+               <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
+@@ -172,7 +187,11 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
+                   required
+                   autoFocus
+                   value={url}
+-                  onChange={(e) => { setUrl(e.target.value); setError(null); setCandidates([]); }}
++                  onChange={(e) => {
++                    setUrl(e.target.value);
++                    setError(null);
++                    setCandidates([]);
++                  }}
+                   placeholder="https://example.com  or  https://example.com/feed.xml"
+                   className="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
+                 />
+@@ -215,12 +234,17 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
+             )}
+ 
+             <div className="px-5 pb-5">
+-              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Or pick a popular feed</p>
++              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
++                Or pick a popular feed
++              </p>
+               <div className="flex flex-wrap gap-2">
+                 {PRESETS.map((p) => (
+                   <button
+                     key={p.url}
+-                    onClick={() => { onAddFeed(p.url, p.name); close(); }}
++                    onClick={() => {
++                      onAddFeed(p.url, p.name);
++                      close();
++                    }}
+                     className="px-3 py-1.5 rounded-full text-xs bg-secondary hover:bg-accent hover:text-accent-foreground transition border border-border"
+                   >
+                     + {p.name}
+diff --git a/src/components/BookmarksCard.tsx b/src/components/BookmarksCard.tsx
+index 55c4a96..0cece64 100644
+--- a/src/components/BookmarksCard.tsx
++++ b/src/components/BookmarksCard.tsx
+@@ -17,7 +17,11 @@ function uid() {
+ 
+ function BookmarkFavicon({ url }: { url: string }) {
+   const origin = (() => {
+-    try { return new URL(url).origin; } catch { return null; }
++    try {
++      return new URL(url).origin;
++    } catch {
++      return null;
++    }
+   })();
+   const googleUrl = origin
+     ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(origin)}&sz=32`
+@@ -61,14 +65,9 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
+ 
+   const bookmarks: Bookmark[] = widget.bookmarks ?? [];
+ 
+-  const {
+-    attributes,
+-    listeners,
+-    setNodeRef,
+-    transform,
+-    transition,
+-    isDragging,
+-  } = useSortable({ id: widget.id });
++  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
++    id: widget.id,
++  });
+ 
+   const dragStyle = {
+     transform: CSS.Transform.toString(transform),
+@@ -90,14 +89,21 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
+     if (!normalized.startsWith("http://") && !normalized.startsWith("https://")) {
+       normalized = `https://${normalized}`;
+     }
+-    try { new URL(normalized); } catch {
++    try {
++      new URL(normalized);
++    } catch {
+       setAddError("Invalid URL");
+       return;
+     }
+-    const title = newTitle.trim() || (() => {
+-      try { return new URL(normalized).hostname.replace(/^www\./, ""); }
+-      catch { return normalized; }
+-    })();
++    const title =
++      newTitle.trim() ||
++      (() => {
++        try {
++          return new URL(normalized).hostname.replace(/^www\./, "");
++        } catch {
++          return normalized;
++        }
++      })();
+     onUpdate({ bookmarks: [...bookmarks, { id: uid(), url: normalized, title }] });
+     setNewUrl("");
+     setNewTitle("");
+@@ -133,7 +139,13 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
+ 
+         {/* Editable title */}
+         {editingTitle ? (
+-          <form onSubmit={(e) => { e.preventDefault(); saveTitle(); }} className="flex-1 flex gap-1">
++          <form
++            onSubmit={(e) => {
++              e.preventDefault();
++              saveTitle();
++            }}
++            className="flex-1 flex gap-1"
++          >
+             <input
+               autoFocus
+               value={titleDraft}
+@@ -145,7 +157,10 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
+         ) : (
+           <span
+             className="font-display font-semibold text-sm truncate flex-1 cursor-text"
+-            onDoubleClick={() => { setTitleDraft(widget.customTitle ?? "Favourites"); setEditingTitle(true); }}
++            onDoubleClick={() => {
++              setTitleDraft(widget.customTitle ?? "Favourites");
++              setEditingTitle(true);
++            }}
+             title="Double-click to rename"
+           >
+             {widget.customTitle ?? "Favourites"}
+@@ -155,14 +170,22 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
+         {/* Toolbar */}
+         <div className="flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
+           <button
+-            onClick={() => { setTitleDraft(widget.customTitle ?? "Favourites"); setEditingTitle(true); }}
++            onClick={() => {
++              setTitleDraft(widget.customTitle ?? "Favourites");
++              setEditingTitle(true);
++            }}
+             className="p-1.5 rounded hover:bg-secondary"
+             aria-label="Rename"
+           >
+             <Pencil className="h-3.5 w-3.5" />
+           </button>
+           <button
+-            onClick={() => { setAddOpen(true); setNewUrl(""); setNewTitle(""); setAddError(null); }}
++            onClick={() => {
++              setAddOpen(true);
++              setNewUrl("");
++              setNewTitle("");
++              setAddError(null);
++            }}
+             className="p-1.5 rounded hover:bg-secondary"
+             aria-label="Add bookmark"
+           >
+@@ -229,7 +252,10 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
+               autoFocus
+               type="text"
+               value={newUrl}
+-              onChange={(e) => { setNewUrl(e.target.value); setAddError(null); }}
++              onChange={(e) => {
++                setNewUrl(e.target.value);
++                setAddError(null);
++              }}
+               placeholder="URL (e.g. https://example.com)"
+               className="w-full bg-input border border-border rounded px-2 py-1.5 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
+             />
+diff --git a/src/components/ConfirmDialog.tsx b/src/components/ConfirmDialog.tsx
+index 073e134..23e60ca 100644
+--- a/src/components/ConfirmDialog.tsx
++++ b/src/components/ConfirmDialog.tsx
+@@ -35,9 +35,7 @@ export function ConfirmDialog({
+       <AlertDialogContent className="glass border-border">
+         <AlertDialogHeader>
+           <AlertDialogTitle className="font-display">{title}</AlertDialogTitle>
+-          {description && (
+-            <AlertDialogDescription>{description}</AlertDialogDescription>
+-          )}
++          {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
+         </AlertDialogHeader>
+         <AlertDialogFooter>
+           <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+diff --git a/src/components/DataDialog.tsx b/src/components/DataDialog.tsx
+index e7e40df..e0d07b0 100644
+--- a/src/components/DataDialog.tsx
++++ b/src/components/DataDialog.tsx
+@@ -92,7 +92,9 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+ 
+   useEffect(() => {
+     document.body.style.overflow = "hidden";
+-    return () => { document.body.style.overflow = ""; };
++    return () => {
++      document.body.style.overflow = "";
++    };
+   }, []);
+ 
+   function resetImport() {
+@@ -114,16 +116,11 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+       } else {
+         const result = parseOpml(text);
+         onImport(result.tabs);
+-        const parts = [
+-          plural(result.tabs.length, "tab"),
+-          plural(result.feedCount, "feed"),
+-        ];
++        const parts = [plural(result.tabs.length, "tab"), plural(result.feedCount, "feed")];
+         if (result.bookmarkCount) parts.push(plural(result.bookmarkCount, "bookmark"));
+         setSummary(
+           `Imported ${parts.join(", ")}.` +
+-            (result.skipped
+-              ? ` Skipped ${plural(result.skipped, "unsupported item")}.`
+-              : ""),
++            (result.skipped ? ` Skipped ${plural(result.skipped, "unsupported item")}.` : ""),
+         );
+       }
+     } catch (e) {
+@@ -198,8 +195,7 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+ 
+   const current = summarizeState(state);
+ 
+-  const title =
+-    mode === "choose" ? "Import / Export" : mode === "import" ? "Import" : "Export";
++  const title = mode === "choose" ? "Import / Export" : mode === "import" ? "Import" : "Export";
+ 
+   return createPortal(
+     <div
+@@ -218,7 +214,10 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+           <div className="flex items-center gap-2">
+             {mode !== "choose" && (
+               <button
+-                onClick={() => { setMode("choose"); resetImport(); }}
++                onClick={() => {
++                  setMode("choose");
++                  resetImport();
++                }}
+                 className="p-1.5 -ml-1.5 rounded hover:bg-secondary"
+                 aria-label="Back"
+               >
+@@ -286,12 +285,12 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+                 <ul className="text-sm text-muted-foreground space-y-1.5 list-disc pl-5">
+                   <li>
+                     <strong>Lumen backup (.json)</strong> — restores everything: tabs, feeds,
+-                    bookmarks and display settings. You choose whether to add it to or replace
+-                    your current dashboard.
++                    bookmarks and display settings. You choose whether to add it to or replace your
++                    current dashboard.
+                   </li>
+                   <li>
+-                    <strong>OPML (.opml / .xml)</strong> — a feed list from Lumen or another
+-                    reader. Each top-level group becomes a new tab, added next to yours.
++                    <strong>OPML (.opml / .xml)</strong> — a feed list from Lumen or another reader.
++                    Each top-level group becomes a new tab, added next to yours.
+                   </li>
+                   <li>
+                     <strong>uStart.org export (.xml)</strong> — imported like OPML; columns and
+@@ -318,9 +317,9 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+                     <div>
+                       <p className="font-semibold text-sm">Automatic backups</p>
+                       <p className="text-xs text-muted-foreground mt-0.5">
+-                        Lumen keeps a daily copy of your dashboard in your account (the last
+-                        14 days). Each copy is taken the first time you open Lumen that day,
+-                        before any change.
++                        Lumen keeps a daily copy of your dashboard in your account (the last 14
++                        days). Each copy is taken the first time you open Lumen that day, before any
++                        change.
+                       </p>
+                     </div>
+                     {backupList === null ? (
+@@ -334,7 +333,8 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+                       </button>
+                     ) : backupList.length === 0 ? (
+                       <p className="text-xs text-muted-foreground">
+-                        No automatic backups yet. The first one is created the next time you open Lumen.
++                        No automatic backups yet. The first one is created the next time you open
++                        Lumen.
+                       </p>
+                     ) : (
+                       <ul className="space-y-1.5">
+@@ -350,7 +350,9 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+                                 {plural(b.tabCount, "tab")} · {plural(b.feedCount, "feed")} ·{" "}
+                                 {plural(b.bookmarkCount, "bookmark")}
+                               </span>
+-                              {backupBusy === b.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
++                              {backupBusy === b.id && (
++                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
++                              )}
+                             </button>
+                           </li>
+                         ))}
+@@ -386,8 +388,8 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+                   >
+                     <p className="font-semibold text-sm">Add as new tabs</p>
+                     <p className="text-xs text-muted-foreground mt-0.5">
+-                      Keeps everything you have now and adds the tabs from the backup.
+-                      Display settings are not changed.
++                      Keeps everything you have now and adds the tabs from the backup. Display
++                      settings are not changed.
+                     </p>
+                   </button>
+                   <button
+@@ -396,8 +398,8 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+                   >
+                     <p className="font-semibold text-sm">Replace everything</p>
+                     <p className="text-xs text-muted-foreground mt-0.5">
+-                      Restores the dashboard exactly as in the backup, including display
+-                      settings. Your current tabs are removed.
++                      Restores the dashboard exactly as in the backup, including display settings.
++                      Your current tabs are removed.
+                     </p>
+                   </button>
+                 </div>
+@@ -418,8 +420,8 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+                   <p>
+                     This replaces your current {plural(current.tabCount, "tab")},{" "}
+                     {plural(current.feedCount, "feed")} and{" "}
+-                    {plural(current.bookmarkCount, "bookmark")} with the backup. A backup of
+-                    your current dashboard is downloaded automatically first.
++                    {plural(current.bookmarkCount, "bookmark")} with the backup. A backup of your
++                    current dashboard is downloaded automatically first.
+                   </p>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+@@ -463,15 +465,23 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
+             <div className="rounded-lg border border-border bg-secondary/30 p-4 flex gap-6">
+               <div className="text-center">
+                 <p className="text-2xl font-bold font-display text-primary">{current.tabCount}</p>
+-                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">Tabs</p>
++                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">
++                  Tabs
++                </p>
+               </div>
+               <div className="text-center">
+                 <p className="text-2xl font-bold font-display text-primary">{current.feedCount}</p>
+-                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">Feeds</p>
++                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">
++                  Feeds
++                </p>
+               </div>
+               <div className="text-center">
+-                <p className="text-2xl font-bold font-display text-primary">{current.bookmarkCount}</p>
+-                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">Bookmarks</p>
++                <p className="text-2xl font-bold font-display text-primary">
++                  {current.bookmarkCount}
++                </p>
++                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">
++                  Bookmarks
++                </p>
+               </div>
+             </div>
+ 
+diff --git a/src/components/EditFeedDialog.tsx b/src/components/EditFeedDialog.tsx
+index 33c1955..5f90454 100644
+--- a/src/components/EditFeedDialog.tsx
++++ b/src/components/EditFeedDialog.tsx
+@@ -12,22 +12,20 @@ interface Props {
+ }
+ 
+ const STYLES: { value: TileStyle; label: string; desc: string }[] = [
+-  { value: "full",        label: "Full",        desc: "Title, excerpt & meta" },
+-  { value: "condensed",   label: "Condensed",   desc: "Title + date, no wrapping" },
+-  { value: "compact",     label: "Compact",     desc: "Tight one-line list" },
++  { value: "full", label: "Full", desc: "Title, excerpt & meta" },
++  { value: "condensed", label: "Condensed", desc: "Title + date, no wrapping" },
++  { value: "compact", label: "Compact", desc: "Tight one-line list" },
+   { value: "comfortable", label: "Comfortable", desc: "Compact but titles wrap" },
+-  { value: "mini",        label: "Mini",        desc: "Smallest, ultra-dense" },
++  { value: "mini", label: "Mini", desc: "Smallest, ultra-dense" },
+ ];
+ 
+ export function EditFeedDialog({ widget, open, onClose, onSave, effectiveStyle }: Props) {
+   // Initialise from widget; re-sync whenever the dialog opens or widget changes.
+   const [title, setTitle] = useState(widget.customTitle ?? "");
+-  const [url,   setUrl]   = useState(widget.url);
++  const [url, setUrl] = useState(widget.url);
+   // Show the widget-level override if set, otherwise fall back to the effective
+   // (inherited) style so the user sees what is actually applied.
+-  const [style, setStyle] = useState<TileStyle>(
+-    widget.style ?? effectiveStyle ?? "full"
+-  );
++  const [style, setStyle] = useState<TileStyle>(widget.style ?? effectiveStyle ?? "full");
+ 
+   useEffect(() => {
+     if (open) {
+@@ -51,7 +49,9 @@ export function EditFeedDialog({ widget, open, onClose, onSave, effectiveStyle }
+   useEffect(() => {
+     if (!open) return;
+     document.body.style.overflow = "hidden";
+-    return () => { document.body.style.overflow = ""; };
++    return () => {
++      document.body.style.overflow = "";
++    };
+   }, [open]);
+ 
+   if (!open || typeof document === "undefined") return null;
+@@ -127,10 +127,17 @@ export function EditFeedDialog({ widget, open, onClose, onSave, effectiveStyle }
+           </div>
+ 
+           <div className="flex justify-end gap-2 pt-2">
+-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-md text-sm hover:bg-secondary">
++            <button
++              type="button"
++              onClick={onClose}
++              className="px-4 py-2 rounded-md text-sm hover:bg-secondary"
++            >
+               Cancel
+             </button>
+-            <button type="submit" className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
++            <button
++              type="submit"
++              className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
++            >
+               Save
+             </button>
+           </div>
+diff --git a/src/components/FeedCard.tsx b/src/components/FeedCard.tsx
+index e06c09d..d1d70c5 100644
+--- a/src/components/FeedCard.tsx
++++ b/src/components/FeedCard.tsx
+@@ -17,7 +17,6 @@ import { ConfirmDialog } from "./ConfirmDialog";
+ import { useVisited } from "@/lib/useVisited";
+ import { useSeenItems } from "@/lib/useSeenItems";
+ 
+-
+ /** Ricava l'origin del sito dal link del feed, dal primo articolo, o dall'URL del feed stesso. */
+ function resolveSiteUrl(
+   feedLink: string | undefined,
+@@ -29,7 +28,9 @@ function resolveSiteUrl(
+     try {
+       const { origin } = new URL(candidate);
+       if (origin && origin !== "null") return origin;
+-    } catch { /* skip */ }
++    } catch {
++      /* skip */
++    }
+   }
+   return null;
+ }
+@@ -45,7 +46,7 @@ function FeedFavicon({ siteUrl }: { siteUrl: string | null }) {
+   useEffect(() => {
+     triedDirect.current = false;
+     setSrc(googleUrl);
+-  // eslint-disable-next-line react-hooks/exhaustive-deps
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [siteUrl]);
+ 
+   function handleError() {
+@@ -100,13 +101,7 @@ function timeAgo(iso?: string): string {
+   return `${dd}d`;
+ }
+ 
+-export function FeedCard({
+-  widget,
+-  effectiveStyle,
+-  highlightNew,
+-  onRemove,
+-  onUpdate,
+-}: Props) {
++export function FeedCard({ widget, effectiveStyle, highlightNew, onRemove, onUpdate }: Props) {
+   const [editing, setEditing] = useState(false);
+   const [confirmOpen, setConfirmOpen] = useState(false);
+   const style = effectiveStyle;
+@@ -119,14 +114,9 @@ export function FeedCard({
+   const [fading, setFading] = useState(false);
+   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+ 
+-  const {
+-    attributes,
+-    listeners,
+-    setNodeRef,
+-    transform,
+-    transition,
+-    isDragging,
+-  } = useSortable({ id: widget.id });
++  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
++    id: widget.id,
++  });
+ 
+   const dragStyle = {
+     transform: CSS.Transform.toString(transform),
+@@ -208,11 +198,7 @@ export function FeedCard({
+       }
+     })();
+ 
+-  const siteUrl = resolveSiteUrl(
+-    query.data?.link,
+-    query.data?.items?.[0]?.link,
+-    widget.url,
+-  );
++  const siteUrl = resolveSiteUrl(query.data?.link, query.data?.items?.[0]?.link, widget.url);
+ 
+   const itemPadding = useMemo(() => {
+     switch (style) {
+@@ -233,8 +219,8 @@ export function FeedCard({
+     style === "mini"
+       ? "max-h-64"
+       : style === "compact" || style === "comfortable"
+-      ? "max-h-80"
+-      : "max-h-[28rem]";
++        ? "max-h-80"
++        : "max-h-[28rem]";
+ 
+   return (
+     <div
+@@ -266,9 +252,7 @@ export function FeedCard({
+             {title}
+           </a>
+         ) : (
+-          <h3 className="font-display font-semibold text-sm truncate flex-1">
+-            {title}
+-          </h3>
++          <h3 className="font-display font-semibold text-sm truncate flex-1">{title}</h3>
+         )}
+         <div className="flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
+           <button
+@@ -291,9 +275,7 @@ export function FeedCard({
+             className="p-1.5 rounded hover:bg-secondary"
+             aria-label="Refresh"
+           >
+-            <RefreshCw
+-              className={`h-3.5 w-3.5 ${query.isFetching ? "animate-spin" : ""}`}
+-            />
++            <RefreshCw className={`h-3.5 w-3.5 ${query.isFetching ? "animate-spin" : ""}`} />
+           </button>
+           <button
+             onClick={() => setConfirmOpen(true)}
+@@ -434,9 +416,7 @@ export function FeedCard({
+               );
+             })}
+             {query.data.items.length === 0 && (
+-              <p className="p-4 text-xs text-muted-foreground">
+-                No items in this feed.
+-              </p>
++              <p className="p-4 text-xs text-muted-foreground">No items in this feed.</p>
+             )}
+           </ul>
+         )}
+diff --git a/src/components/LayoutMenu.tsx b/src/components/LayoutMenu.tsx
+index db99a56..29f108d 100644
+--- a/src/components/LayoutMenu.tsx
++++ b/src/components/LayoutMenu.tsx
+@@ -50,7 +50,15 @@ interface Props {
+   onToggleHighlightNew: (v: boolean) => void;
+ }
+ 
+-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
++function Section({
++  title,
++  hint,
++  children,
++}: {
++  title: string;
++  hint?: string;
++  children: React.ReactNode;
++}) {
+   return (
+     <section className="space-y-2">
+       <div className="flex items-baseline justify-between gap-2">
+@@ -194,7 +202,9 @@ export function LayoutMenu({
+                   />
+                   <span className="flex min-w-0 flex-1 flex-col text-left leading-tight">
+                     <span className="text-sm">{t.name}</span>
+-                    <span className="truncate text-[10px] text-muted-foreground">{t.description}</span>
++                    <span className="truncate text-[10px] text-muted-foreground">
++                      {t.description}
++                    </span>
+                   </span>
+                   {active && <Check className="h-4 w-4 text-primary" />}
+                 </button>
+diff --git a/src/components/SyncStatus.tsx b/src/components/SyncStatus.tsx
+index 6da9f7d..d32e5c3 100644
+--- a/src/components/SyncStatus.tsx
++++ b/src/components/SyncStatus.tsx
+@@ -117,7 +117,10 @@ export function SyncBanner({ sync }: { sync: SyncInfo }) {
+       ? "border-destructive/40 bg-destructive/10 text-foreground"
+       : "border-amber-500/40 bg-amber-500/10 text-foreground";
+   return (
+-    <div role="status" className={`mb-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${tone}`}>
++    <div
++      role="status"
++      className={`mb-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${tone}`}
++    >
+       <AlertTriangle
+         className={`h-4 w-4 mt-0.5 shrink-0 ${content.tone === "danger" ? "text-destructive" : "text-amber-500"}`}
+       />
+diff --git a/src/components/UserMenu.tsx b/src/components/UserMenu.tsx
+index 4b02601..a6f070d 100644
+--- a/src/components/UserMenu.tsx
++++ b/src/components/UserMenu.tsx
+@@ -44,11 +44,7 @@ export function UserMenu() {
+         title={error ?? "Sign in with Google"}
+         className="hover-border h-9 inline-flex items-center gap-1.5 px-3 rounded-md border border-border bg-surface/60 text-foreground text-sm font-medium disabled:opacity-50"
+       >
+-        {busy ? (
+-          <Loader2 className="h-4 w-4 animate-spin" />
+-        ) : (
+-          <LogIn className="h-4 w-4" />
+-        )}
++        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
+         Sign in
+       </button>
+     );
+diff --git a/src/lib/backup.ts b/src/lib/backup.ts
+index 21098c7..13b7fce 100644
+--- a/src/lib/backup.ts
++++ b/src/lib/backup.ts
+@@ -12,26 +12,14 @@
+ // parseBackup() never trusts its input: every field is validated and repaired,
+ // because whatever it returns ends up in the app state and then in Firestore.
+ 
+-import type {
+-  Bookmark,
+-  DashboardState,
+-  DashboardTab,
+-  FeedWidget,
+-  TileStyle,
+-} from "./rss";
++import type { Bookmark, DashboardState, DashboardTab, FeedWidget, TileStyle } from "./rss";
+ import { MAX_COLUMNS, MIN_COLUMNS } from "./opml";
+ import { uid } from "./utils";
+ 
+ export const BACKUP_APP = "lumen-rss";
+ export const BACKUP_VERSION = 1;
+ 
+-const TILE_STYLES: readonly TileStyle[] = [
+-  "full",
+-  "condensed",
+-  "compact",
+-  "comfortable",
+-  "mini",
+-];
++const TILE_STYLES: readonly TileStyle[] = ["full", "condensed", "compact", "comfortable", "mini"];
+ 
+ export interface BackupSummary {
+   tabCount: number;
+@@ -129,10 +117,7 @@ const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+  * added to the app in the future is not silently dropped — and then erased from
+  * Firestore on the next save — by a normaliser that predates it.
+  */
+-function extras(
+-  raw: Record<string, unknown>,
+-  known: readonly string[],
+-): Record<string, unknown> {
++function extras(raw: Record<string, unknown>, known: readonly string[]): Record<string, unknown> {
+   const out: Record<string, unknown> = {};
+   for (const [k, v] of Object.entries(raw)) {
+     if (known.includes(k) || UNSAFE_KEYS.has(k)) continue;
+@@ -151,15 +136,7 @@ const STATE_KEYS = [
+   "schemaVersion",
+ ] as const;
+ const TAB_KEYS = ["id", "name", "columns", "widgets", "defaultStyle"] as const;
+-const WIDGET_KEYS = [
+-  "id",
+-  "kind",
+-  "url",
+-  "customTitle",
+-  "column",
+-  "style",
+-  "bookmarks",
+-] as const;
++const WIDGET_KEYS = ["id", "kind", "url", "customTitle", "column", "style", "bookmarks"] as const;
+ 
+ /** Returns `id` if it is a usable, not-yet-seen string; otherwise a fresh one. */
+ function uniqueId(id: unknown, seen: Set<string>): string {
+@@ -184,17 +161,11 @@ function normalizeBookmarks(raw: unknown, seen: Set<string>): Bookmark[] {
+   return out;
+ }
+ 
+-function normalizeWidget(
+-  raw: unknown,
+-  columns: number,
+-  seen: Set<string>,
+-): FeedWidget | null {
++function normalizeWidget(raw: unknown, columns: number, seen: Set<string>): FeedWidget | null {
+   if (!isObject(raw)) return null;
+ 
+   const col = Number(raw.column);
+-  const column = Number.isFinite(col)
+-    ? Math.min(Math.max(Math.floor(col), 0), columns - 1)
+-    : 0;
++  const column = Number.isFinite(col) ? Math.min(Math.max(Math.floor(col), 0), columns - 1) : 0;
+   const customTitle = str(raw.customTitle) || undefined;
+   const widgetStyle = style(raw.style);
+ 
+@@ -321,9 +292,7 @@ export function withFreshIds(tabs: DashboardTab[]): DashboardTab[] {
+     widgets: t.widgets.map((w) => ({
+       ...w,
+       id: uid(),
+-      ...(w.bookmarks
+-        ? { bookmarks: w.bookmarks.map((b) => ({ ...b, id: uid() })) }
+-        : {}),
++      ...(w.bookmarks ? { bookmarks: w.bookmarks.map((b) => ({ ...b, id: uid() })) } : {}),
+     })),
+   }));
+ }
+diff --git a/src/lib/dashboardSync.ts b/src/lib/dashboardSync.ts
+index af62e39..bda8140 100644
+--- a/src/lib/dashboardSync.ts
++++ b/src/lib/dashboardSync.ts
+@@ -27,11 +27,7 @@ import {
+   setDoc,
+   type Firestore,
+ } from "firebase/firestore";
+-import {
+-  normalizeDashboardState,
+-  summarizeState,
+-  type ParsedBackup,
+-} from "./backup";
++import { normalizeDashboardState, summarizeState, type ParsedBackup } from "./backup";
+ import type { DashboardState } from "./rss";
+ 
+ export const SCHEMA_VERSION = 1;
+@@ -59,10 +55,7 @@ export interface RemoteSnapshot {
+ }
+ 
+ export interface DashboardBackend {
+-  subscribe(
+-    onSnap: (s: RemoteSnapshot) => void,
+-    onError: (e: unknown) => void,
+-  ): () => void;
++  subscribe(onSnap: (s: RemoteSnapshot) => void, onError: (e: unknown) => void): () => void;
+   write(payload: Record<string, unknown>): Promise<void>;
+ }
+ 
+diff --git a/src/lib/dropSlot.ts b/src/lib/dropSlot.ts
+index 0753abb..3549c84 100644
+--- a/src/lib/dropSlot.ts
++++ b/src/lib/dropSlot.ts
+@@ -79,10 +79,19 @@ export function sameSlot(a: DropSlot | null, b: DropSlot | null): boolean {
+ export function measureColumns(root: ParentNode): ColumnBox[] {
+   return Array.from(root.querySelectorAll<HTMLElement>("[data-column]")).map((el) => {
+     const r = el.getBoundingClientRect();
+-    const tiles = Array.from(el.querySelectorAll<HTMLElement>(":scope > [data-tile-id]")).map((t) => {
+-      const b = t.getBoundingClientRect();
+-      return { id: t.dataset.tileId ?? "", top: b.top, bottom: b.bottom };
+-    });
+-    return { col: Number(el.dataset.column), left: r.left, right: r.right, top: r.top, bottom: r.bottom, tiles };
++    const tiles = Array.from(el.querySelectorAll<HTMLElement>(":scope > [data-tile-id]")).map(
++      (t) => {
++        const b = t.getBoundingClientRect();
++        return { id: t.dataset.tileId ?? "", top: b.top, bottom: b.bottom };
++      },
++    );
++    return {
++      col: Number(el.dataset.column),
++      left: r.left,
++      right: r.right,
++      top: r.top,
++      bottom: r.bottom,
++      tiles,
++    };
+   });
+ }
+diff --git a/src/lib/feedParse.ts b/src/lib/feedParse.ts
+index 95ef087..65e11cf 100644
+--- a/src/lib/feedParse.ts
++++ b/src/lib/feedParse.ts
+@@ -21,28 +21,48 @@ export interface FeedResult {
+ 
+ // Named HTML entities that appear most often in feed content
+ const HTML_ENTITIES: Record<string, string> = {
+-  amp: "&", lt: "<", gt: ">", quot: "\"", apos: "'",
+-  nbsp: "\u00a0", ndash: "\u2013", mdash: "\u2014",
+-  lsquo: "\u2018", rsquo: "\u2019", sbquo: "\u201a",
+-  ldquo: "\u201c", rdquo: "\u201d", bdquo: "\u201e",
+-  laquo: "\u00ab", raquo: "\u00bb", hellip: "\u2026",
+-  copy: "\u00a9", reg: "\u00ae", trade: "\u2122",
+-  euro: "\u20ac", pound: "\u00a3", yen: "\u00a5",
++  amp: "&",
++  lt: "<",
++  gt: ">",
++  quot: '"',
++  apos: "'",
++  nbsp: "\u00a0",
++  ndash: "\u2013",
++  mdash: "\u2014",
++  lsquo: "\u2018",
++  rsquo: "\u2019",
++  sbquo: "\u201a",
++  ldquo: "\u201c",
++  rdquo: "\u201d",
++  bdquo: "\u201e",
++  laquo: "\u00ab",
++  raquo: "\u00bb",
++  hellip: "\u2026",
++  copy: "\u00a9",
++  reg: "\u00ae",
++  trade: "\u2122",
++  euro: "\u20ac",
++  pound: "\u00a3",
++  yen: "\u00a5",
+ };
+ 
+ function decodeEntities(s: string): string {
+-  return s
+-    // Numeric decimal: &#8217; &#039;
+-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+-    // Numeric hex: &#x2019;
+-    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+-    // Named: &rsquo; &amp; etc.
+-    .replace(/&([a-z]+);/gi, (match, name) => HTML_ENTITIES[name.toLowerCase()] ?? match);
++  return (
++    s
++      // Numeric decimal: &#8217; &#039;
++      .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
++      // Numeric hex: &#x2019;
++      .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
++      // Named: &rsquo; &amp; etc.
++      .replace(/&([a-z]+);/gi, (match, name) => HTML_ENTITIES[name.toLowerCase()] ?? match)
++  );
+ }
+ 
+ function stripHtml(s: string, max = 220): string {
+   if (!s) return "";
+-  const text = decodeEntities(String(s).replace(/<[^>]*>/g, "")).replace(/\s+/g, " ").trim();
++  const text = decodeEntities(String(s).replace(/<[^>]*>/g, ""))
++    .replace(/\s+/g, " ")
++    .trim();
+   return text.length > max ? text.slice(0, max) + "…" : text;
+ }
+ 
+@@ -120,8 +140,7 @@ export function parseFeed(xml: string): FeedResult {
+         link: pickLink(e.link),
+         pubDate: toText(e.updated ?? e.published) || undefined,
+         description: stripHtml(toText(e.summary ?? e.content)),
+-        author:
+-          toText((authorNode as Record<string, unknown> | undefined)?.name) || undefined,
++        author: toText((authorNode as Record<string, unknown> | undefined)?.name) || undefined,
+       };
+     });
+     return {
+diff --git a/src/lib/feedProxy.ts b/src/lib/feedProxy.ts
+index f22b043..512fd06 100644
+--- a/src/lib/feedProxy.ts
++++ b/src/lib/feedProxy.ts
+@@ -108,7 +108,16 @@ function isPrivateIPv4(host: string): boolean {
+   );
+ }
+ 
+-const BLOCKED_SUFFIXES = [".localhost", ".local", ".internal", ".lan", ".home", ".corp", ".home.arpa", ".intranet"];
++const BLOCKED_SUFFIXES = [
++  ".localhost",
++  ".local",
++  ".internal",
++  ".lan",
++  ".home",
++  ".corp",
++  ".home.arpa",
++  ".intranet",
++];
+ 
+ export function assertPublicUrl(u: URL): void {
+   if (u.protocol !== "http:" && u.protocol !== "https:") throw new ProxyError("Invalid protocol");
+@@ -120,7 +129,11 @@ export function assertPublicUrl(u: URL): void {
+   if (host.startsWith("[")) throw new ProxyError("Address not allowed");
+   if (isPrivateIPv4(host)) throw new ProxyError("Address not allowed");
+   // Bare single-label names (localhost, intranet, db...) and internal suffixes.
+-  if (!host.includes(".") || host === "localhost" || BLOCKED_SUFFIXES.some((s) => host.endsWith(s))) {
++  if (
++    !host.includes(".") ||
++    host === "localhost" ||
++    BLOCKED_SUFFIXES.some((s) => host.endsWith(s))
++  ) {
+     throw new ProxyError("Address not allowed");
+   }
+ }
+diff --git a/src/lib/layout.ts b/src/lib/layout.ts
+index 0697959..dc285d6 100644
+--- a/src/lib/layout.ts
++++ b/src/lib/layout.ts
+@@ -35,8 +35,8 @@ export function fitToColumns(widgets: FeedWidget[], columns: number): FeedWidget
+     .filter(({ w }) => !fits(w))
+     .sort(
+       (a, b) =>
+-        (Number.isFinite(a.w.column) ? a.w.column : 0) - (Number.isFinite(b.w.column) ? b.w.column : 0) ||
+-        a.index - b.index,
++        (Number.isFinite(a.w.column) ? a.w.column : 0) -
++          (Number.isFinite(b.w.column) ? b.w.column : 0) || a.index - b.index,
+     );
+ 
+   const moved = displaced.map(({ w }) => {
+@@ -67,7 +67,8 @@ export function moveWidget(
+ 
+   const others = widgets.filter((w) => w.id !== activeId);
+   const target = others.filter((w) => w.column === column);
+-  const at = Number.isInteger(index) && index >= 0 && index <= target.length ? index : target.length;
++  const at =
++    Number.isInteger(index) && index >= 0 && index <= target.length ? index : target.length;
+ 
+   const moved: FeedWidget = moving.column === column ? moving : { ...moving, column };
+   const before = target[at]; // the tile the moved one lands in front of, if any
+@@ -82,7 +83,11 @@ export function moveWidget(
+     result = [...others.slice(0, pos), moved, ...others.slice(pos)];
+   }
+ 
+-  const order = (list: FeedWidget[]) => list.filter((w) => w.column === column).map((w) => w.id).join("|");
++  const order = (list: FeedWidget[]) =>
++    list
++      .filter((w) => w.column === column)
++      .map((w) => w.id)
++      .join("|");
+   if (moving.column === column && order(result) === order(widgets)) return widgets;
+   return result;
+ }
+diff --git a/src/lib/opml.ts b/src/lib/opml.ts
+index 966592e..939dcdf 100644
+--- a/src/lib/opml.ts
++++ b/src/lib/opml.ts
+@@ -109,25 +109,17 @@ export function parseOpml(xml: string): ImportResult {
+ 
+   // If the file has no top-level group outlines (just flat feeds), wrap them
+   // all in a single "Imported" tab.
+-  const hasTabs = rootChildren.some(
+-    (o) => !o["@_xmlUrl"] && (o["@_title"] || o["@_text"]),
+-  );
++  const hasTabs = rootChildren.some((o) => !o["@_xmlUrl"] && (o["@_title"] || o["@_text"]));
+   const tabSources = hasTabs
+     ? rootChildren.filter((o) => !o["@_xmlUrl"])
+     : [{ "@_title": "Imported", outline: rootChildren } as RawOutline];
+ 
+   for (const tabNode of tabSources) {
+-    const name =
+-      (tabNode["@_title"] || tabNode["@_text"] || "Imported").trim() ||
+-      "Imported";
++    const name = (tabNode["@_title"] || tabNode["@_text"] || "Imported").trim() || "Imported";
+ 
+     const items = toArray<RawOutline>(tabNode.outline);
+-    const feeds = items.filter(
+-      (o) => (o["@_type"] === "rss" || o["@_xmlUrl"]) && o["@_xmlUrl"],
+-    );
+-    const favTiles = items.filter(
+-      (o) => o["@_type"] === "favourites" && !o["@_xmlUrl"],
+-    );
++    const feeds = items.filter((o) => (o["@_type"] === "rss" || o["@_xmlUrl"]) && o["@_xmlUrl"]);
++    const favTiles = items.filter((o) => o["@_type"] === "favourites" && !o["@_xmlUrl"]);
+ 
+     if (feeds.length === 0 && favTiles.length === 0) continue;
+ 
+@@ -136,8 +128,7 @@ export function parseOpml(xml: string): ImportResult {
+     let maxCol = 0;
+     const positioned = [...feeds, ...favTiles].map((node, order) => {
+       const pos = parsePseudoJson(node["@_pos"]);
+-      const col =
+-        typeof pos.col === "number" && pos.col >= 0 ? Math.floor(pos.col) : 0;
++      const col = typeof pos.col === "number" && pos.col >= 0 ? Math.floor(pos.col) : 0;
+       const row = typeof pos.row === "number" ? pos.row : 0;
+       if (col > maxCol) maxCol = col;
+       return { node, col, row, order };
+@@ -145,10 +136,7 @@ export function parseOpml(xml: string): ImportResult {
+     const declared = Number.parseInt(asString(tabNode["@_lumenColumns"]), 10);
+     const columns = Math.max(
+       MIN_COLUMNS,
+-      Math.min(
+-        MAX_COLUMNS,
+-        Number.isFinite(declared) ? declared : maxCol + 1,
+-      ),
++      Math.min(MAX_COLUMNS, Number.isFinite(declared) ? declared : maxCol + 1),
+     );
+ 
+     // Sort by column, then row; `order` keeps document order for ties.
+@@ -164,7 +152,8 @@ export function parseOpml(xml: string): ImportResult {
+           id: uid(),
+           kind: "bookmarks",
+           url: "",
+-          customTitle: (asString(node["@_text"]) || asString(node["@_title"])).trim() || "Favourites",
++          customTitle:
++            (asString(node["@_text"]) || asString(node["@_title"])).trim() || "Favourites",
+           column,
+           bookmarks,
+         });
+@@ -199,11 +188,7 @@ export function parseOpml(xml: string): ImportResult {
+ // ── Export ───────────────────────────────────────────────────────────────────
+ 
+ const esc = (s: string) =>
+-  s
+-    .replace(/&/g, "&amp;")
+-    .replace(/</g, "&lt;")
+-    .replace(/>/g, "&gt;")
+-    .replace(/"/g, "&quot;");
++  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+ 
+ export function buildOpml(state: DashboardState): string {
+   const tabsXml = state.tabs
+@@ -222,8 +207,7 @@ export function buildOpml(state: DashboardState): string {
+           if (w.kind === "bookmarks") {
+             const bkXml = (w.bookmarks ?? [])
+               .map(
+-                (b) =>
+-                  `      <outline type="link" text="${esc(b.title)}" url="${esc(b.url)}" />`,
++                (b) => `      <outline type="link" text="${esc(b.title)}" url="${esc(b.url)}" />`,
+               )
+               .join("\n");
+             return `    <outline text="${esc(w.customTitle ?? "Favourites")}" type="favourites"${pos}>\n${bkXml}\n    </outline>`;
+diff --git a/src/lib/useDashboard.ts b/src/lib/useDashboard.ts
+index dd40358..2502b53 100644
+--- a/src/lib/useDashboard.ts
++++ b/src/lib/useDashboard.ts
+@@ -154,8 +154,7 @@ export function useDashboard() {
+   );
+ 
+   // ── Selectors / derived state ─────────────────────────────────────────────
+-  const activeTab =
+-    state.tabs.find((t) => t.id === state.activeTabId) ?? state.tabs[0];
++  const activeTab = state.tabs.find((t) => t.id === state.activeTabId) ?? state.tabs[0];
+ 
+   // ── Mutations ─────────────────────────────────────────────────────────────
+ 
+@@ -173,8 +172,9 @@ export function useDashboard() {
+     (url: string, customTitle?: string) => {
+       userMutate((s) => {
+         const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+-        const counts = Array.from({ length: tab.columns }, (_, i) =>
+-          tab.widgets.filter((w) => w.column === i).length,
++        const counts = Array.from(
++          { length: tab.columns },
++          (_, i) => tab.widgets.filter((w) => w.column === i).length,
+         );
+         const col = counts.indexOf(Math.min(...counts));
+         return {
+@@ -190,33 +190,40 @@ export function useDashboard() {
+     [userMutate],
+   );
+ 
+-  const removeWidget = useCallback((widgetId: string) => {
+-    userMutate((s) => {
+-      const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+-      return {
+-        ...s,
+-        tabs: s.tabs.map((t) =>
+-          t.id === tab.id
+-            ? { ...t, widgets: t.widgets.filter((w) => w.id !== widgetId) }
+-            : t,
+-        ),
+-      };
+-    });
+-  }, [userMutate]);
++  const removeWidget = useCallback(
++    (widgetId: string) => {
++      userMutate((s) => {
++        const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
++        return {
++          ...s,
++          tabs: s.tabs.map((t) =>
++            t.id === tab.id ? { ...t, widgets: t.widgets.filter((w) => w.id !== widgetId) } : t,
++          ),
++        };
++      });
++    },
++    [userMutate],
++  );
+ 
+-  const updateWidget = useCallback((widgetId: string, patch: Partial<FeedWidget>) => {
+-    userMutate((s) => {
+-      const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+-      return {
+-        ...s,
+-        tabs: s.tabs.map((t) =>
+-          t.id === tab.id
+-            ? { ...t, widgets: t.widgets.map((w) => w.id === widgetId ? { ...w, ...patch } : w) }
+-            : t,
+-        ),
+-      };
+-    });
+-  }, [userMutate]);
++  const updateWidget = useCallback(
++    (widgetId: string, patch: Partial<FeedWidget>) => {
++      userMutate((s) => {
++        const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
++        return {
++          ...s,
++          tabs: s.tabs.map((t) =>
++            t.id === tab.id
++              ? {
++                  ...t,
++                  widgets: t.widgets.map((w) => (w.id === widgetId ? { ...w, ...patch } : w)),
++                }
++              : t,
++          ),
++        };
++      });
++    },
++    [userMutate],
++  );
+ 
+   const reorderWidgets = useCallback(
+     (activeId: string, overColumn: number, overIndex: number) => {
+@@ -233,61 +240,74 @@ export function useDashboard() {
+     [userMutate],
+   );
+ 
+-  const setColumns = useCallback((n: number) => {
+-    const columns = clampColumns(n);
+-    userMutate((s) => {
+-      const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+-      if (tab.columns === columns) return s; // nothing to change, nothing to save
+-      return {
++  const setColumns = useCallback(
++    (n: number) => {
++      const columns = clampColumns(n);
++      userMutate((s) => {
++        const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
++        if (tab.columns === columns) return s; // nothing to change, nothing to save
++        return {
++          ...s,
++          tabs: s.tabs.map((t) =>
++            t.id === tab.id ? { ...t, columns, widgets: fitToColumns(t.widgets, columns) } : t,
++          ),
++        };
++      });
++    },
++    [userMutate],
++  );
++
++  const addTab = useCallback(
++    (name: string) => {
++      const id = uid();
++      userMutate((s) => ({
+         ...s,
+-        tabs: s.tabs.map((t) =>
+-          t.id === tab.id
+-            ? { ...t, columns, widgets: fitToColumns(t.widgets, columns) }
+-            : t,
+-        ),
+-      };
+-    });
+-  }, [userMutate]);
++        tabs: [...s.tabs, { id, name, columns: 3, widgets: [] }],
++        activeTabId: id,
++      }));
++    },
++    [userMutate],
++  );
+ 
+-  const addTab = useCallback((name: string) => {
+-    const id = uid();
+-    userMutate((s) => ({
+-      ...s,
+-      tabs: [...s.tabs, { id, name, columns: 3, widgets: [] }],
+-      activeTabId: id,
+-    }));
+-  }, [userMutate]);
++  const removeTab = useCallback(
++    (tabId: string) => {
++      userMutate((s) => {
++        if (s.tabs.length <= 1) return s;
++        const tabs = s.tabs.filter((t) => t.id !== tabId);
++        return {
++          ...s,
++          tabs,
++          activeTabId: s.activeTabId === tabId ? tabs[0].id : s.activeTabId,
++        };
++      });
++    },
++    [userMutate],
++  );
+ 
+-  const removeTab = useCallback((tabId: string) => {
+-    userMutate((s) => {
+-      if (s.tabs.length <= 1) return s;
+-      const tabs = s.tabs.filter((t) => t.id !== tabId);
+-      return {
++  const renameTab = useCallback(
++    (tabId: string, name: string) => {
++      userMutate((s) => ({
+         ...s,
+-        tabs,
+-        activeTabId: s.activeTabId === tabId ? tabs[0].id : s.activeTabId,
+-      };
+-    });
+-  }, [userMutate]);
+-
+-  const renameTab = useCallback((tabId: string, name: string) => {
+-    userMutate((s) => ({
+-      ...s,
+-      tabs: s.tabs.map((t) => (t.id === tabId ? { ...t, name } : t)),
+-    }));
+-  }, [userMutate]);
++        tabs: s.tabs.map((t) => (t.id === tabId ? { ...t, name } : t)),
++      }));
++    },
++    [userMutate],
++  );
+ 
+-  const reorderTabs = useCallback((activeId: string, overId: string) => {
+-    userMutate((s) => {
+-      const oldIdx = s.tabs.findIndex((t) => t.id === activeId);
+-      const newIdx = s.tabs.findIndex((t) => t.id === overId);
+-      if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) return s;
+-      const tabs = [...s.tabs];
+-      const [moved] = tabs.splice(oldIdx, 1);
+-      tabs.splice(newIdx, 0, moved);
+-      return { ...s, tabs };
+-    });
+-  }, [userMutate]);
++  const reorderTabs = useCallback(
++    (activeId: string, overId: string) => {
++      userMutate((s) => {
++        const oldIdx = s.tabs.findIndex((t) => t.id === activeId);
++        const newIdx = s.tabs.findIndex((t) => t.id === overId);
++        if (oldIdx < 0 || newIdx < 0 || oldIdx === newIdx) return s;
++        const tabs = [...s.tabs];
++        const [moved] = tabs.splice(oldIdx, 1);
++        tabs.splice(newIdx, 0, moved);
++        return { ...s, tabs };
++      });
++    },
++    [userMutate],
++  );
+ 
+   // Switching tab changes what is shown, not what is saved: no database write.
+   const setActiveTab = useCallback(
+@@ -300,41 +320,55 @@ export function useDashboard() {
+     [applyState],
+   );
+ 
+-  const setTabStyle = useCallback((style: TileStyle) => {
+-    userMutate((s) => {
+-      const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+-      return {
+-        ...s,
+-        tabs: s.tabs.map((t) =>
+-          t.id === tab.id
+-            ? { ...t, defaultStyle: style, widgets: t.widgets.map((w) => ({ ...w, style: undefined })) }
+-            : t,
+-        ),
+-      };
+-    });
+-  }, [userMutate]);
++  const setTabStyle = useCallback(
++    (style: TileStyle) => {
++      userMutate((s) => {
++        const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
++        return {
++          ...s,
++          tabs: s.tabs.map((t) =>
++            t.id === tab.id
++              ? {
++                  ...t,
++                  defaultStyle: style,
++                  widgets: t.widgets.map((w) => ({ ...w, style: undefined })),
++                }
++              : t,
++          ),
++        };
++      });
++    },
++    [userMutate],
++  );
+ 
+-  const setGlobalStyle = useCallback((style: TileStyle) => {
+-    userMutate((s) => ({
+-      ...s,
+-      globalDefaultStyle: style,
+-      tabs: s.tabs.map((t) => ({
+-        ...t,
+-        defaultStyle: undefined,
+-        widgets: t.widgets.map((w) => ({ ...w, style: undefined })),
+-      })),
+-    }));
+-  }, [userMutate]);
++  const setGlobalStyle = useCallback(
++    (style: TileStyle) => {
++      userMutate((s) => ({
++        ...s,
++        globalDefaultStyle: style,
++        tabs: s.tabs.map((t) => ({
++          ...t,
++          defaultStyle: undefined,
++          widgets: t.widgets.map((w) => ({ ...w, style: undefined })),
++        })),
++      }));
++    },
++    [userMutate],
++  );
+ 
+-  const setHighlightNew = useCallback((v: boolean) => {
+-    userMutate((s) => ({ ...s, highlightNew: v }));
+-  }, [userMutate]);
++  const setHighlightNew = useCallback(
++    (v: boolean) => {
++      userMutate((s) => ({ ...s, highlightNew: v }));
++    },
++    [userMutate],
++  );
+ 
+   const addBookmarksTile = useCallback(() => {
+     userMutate((s) => {
+       const tab = s.tabs.find((t) => t.id === s.activeTabId) ?? s.tabs[0];
+-      const counts = Array.from({ length: tab.columns }, (_, i) =>
+-        tab.widgets.filter((w) => w.column === i).length,
++      const counts = Array.from(
++        { length: tab.columns },
++        (_, i) => tab.widgets.filter((w) => w.column === i).length,
+       );
+       const col = counts.indexOf(Math.min(...counts));
+       return {
+@@ -345,7 +379,14 @@ export function useDashboard() {
+                 ...t,
+                 widgets: [
+                   ...t.widgets,
+-                  { id: Math.random().toString(36).slice(2, 10), kind: "bookmarks" as const, url: "", customTitle: "Favourites", column: col, bookmarks: [] },
++                  {
++                    id: Math.random().toString(36).slice(2, 10),
++                    kind: "bookmarks" as const,
++                    url: "",
++                    customTitle: "Favourites",
++                    column: col,
++                    bookmarks: [],
++                  },
+                 ],
+               }
+             : t,
+@@ -354,14 +395,17 @@ export function useDashboard() {
+     });
+   }, [userMutate]);
+ 
+-  const importTabs = useCallback((newTabs: DashboardTab[]) => {
+-    if (newTabs.length === 0) return;
+-    userMutate((s) => ({
+-      ...s,
+-      tabs: [...s.tabs, ...newTabs],
+-      activeTabId: newTabs[0].id,
+-    }));
+-  }, [userMutate]);
++  const importTabs = useCallback(
++    (newTabs: DashboardTab[]) => {
++      if (newTabs.length === 0) return;
++      userMutate((s) => ({
++        ...s,
++        tabs: [...s.tabs, ...newTabs],
++        activeTabId: newTabs[0].id,
++      }));
++    },
++    [userMutate],
++  );
+ 
+   /** Replace the whole dashboard (used by "restore from JSON backup"). */
+   const replaceState = useCallback(
+@@ -385,10 +429,7 @@ export function useDashboard() {
+     [activeTab.defaultStyle, state.globalDefaultStyle],
+   );
+ 
+-  const backups = useMemo(
+-    () => (userId ? firestoreBackups(db, userId) : null),
+-    [userId],
+-  );
++  const backups = useMemo(() => (userId ? firestoreBackups(db, userId) : null), [userId]);
+ 
+   return {
+     state,
+diff --git a/src/lib/useSeenItems.ts b/src/lib/useSeenItems.ts
+index 528f1e1..4a8dba4 100644
+--- a/src/lib/useSeenItems.ts
++++ b/src/lib/useSeenItems.ts
+@@ -35,8 +35,8 @@ function scheduleSave() {
+   if (cache.saveTimer) clearTimeout(cache.saveTimer);
+   const uid = cache.uid;
+   cache.saveTimer = setTimeout(() => {
+-    setDoc(doc(db, "users", uid, "data", "seen"), { map: cache.map }).catch(
+-      (e) => console.error("Seen items save failed:", e),
++    setDoc(doc(db, "users", uid, "data", "seen"), { map: cache.map }).catch((e) =>
++      console.error("Seen items save failed:", e),
+     );
+   }, SAVE_DEBOUNCE_MS);
+ }
+diff --git a/src/lib/useTheme.ts b/src/lib/useTheme.ts
+index 44991d3..a5d4534 100644
+--- a/src/lib/useTheme.ts
++++ b/src/lib/useTheme.ts
+@@ -47,9 +47,7 @@ export function useTheme() {
+       (snap) => {
+         const data = snap.data() as { theme?: ThemeId } | undefined;
+         const t =
+-          data?.theme && THEMES.some((x) => x.id === data.theme)
+-            ? data.theme!
+-            : DEFAULT_THEME;
++          data?.theme && THEMES.some((x) => x.id === data.theme) ? data.theme! : DEFAULT_THEME;
+         // Mark as hydrating BEFORE calling setThemeState so the save-effect
+         // triggered by this state change is skipped
+         hydratingRef.current = true;
+@@ -73,9 +71,7 @@ export function useTheme() {
+     }
+ 
+     const ref = doc(db, "users", user.uid, "data", "prefs");
+-    setDoc(ref, { theme }, { merge: true }).catch((e) =>
+-      console.error("Theme save failed:", e),
+-    );
++    setDoc(ref, { theme }, { merge: true }).catch((e) => console.error("Theme save failed:", e));
+   }, [theme, user]);
+ 
+   const setTheme = useCallback((id: ThemeId) => {
+diff --git a/src/routes/__root.tsx b/src/routes/__root.tsx
+index 72ef2f4..abb973b 100644
+--- a/src/routes/__root.tsx
++++ b/src/routes/__root.tsx
+@@ -76,8 +76,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+       { title: "Lumen — A modern RSS reader" },
+       {
+         name: "description",
+-        content:
+-          "A modern customizable RSS dashboard. Build your own personal start page.",
++        content: "A modern customizable RSS dashboard. Build your own personal start page.",
+       },
+       { property: "og:type", content: "website" },
+       { name: "twitter:card", content: "summary" },
+diff --git a/src/routes/api/discover-feed.ts b/src/routes/api/discover-feed.ts
+index 90c5f93..cd09b72 100644
+--- a/src/routes/api/discover-feed.ts
++++ b/src/routes/api/discover-feed.ts
+@@ -121,9 +121,7 @@ export const Route = createFileRoute("/api/discover-feed")({
+           }
+ 
+           const origin = new URL(first?.finalUrl ?? parsed.toString()).origin;
+-          const toProbe = [
+-            ...new Set([...discovered, ...FEED_PATHS.map((p) => `${origin}${p}`)]),
+-          ];
++          const toProbe = [...new Set([...discovered, ...FEED_PATHS.map((p) => `${origin}${p}`)])];
+ 
+           // Probe with limited concurrency; stop at the first confirmed feed or when out of time
+           const found: string[] = [];
+diff --git a/src/routes/api/feed.ts b/src/routes/api/feed.ts
+index 71f11e2..f2e891b 100644
+--- a/src/routes/api/feed.ts
++++ b/src/routes/api/feed.ts
+@@ -46,12 +46,9 @@ export const Route = createFileRoute("/api/feed")({
+           const feed = normalizeLinks(parsed, finalUrl);
+           feed.items = feed.items.slice(0, 30);
+ 
+-          return jsonResponse(
+-            request,
+-            { ...feed, fetchedAt: new Date().toISOString() },
+-            200,
+-            { "Cache-Control": "public, max-age=300" },
+-          );
++          return jsonResponse(request, { ...feed, fetchedAt: new Date().toISOString() }, 200, {
++            "Cache-Control": "public, max-age=300",
++          });
+         } catch (e) {
+           return errorResponse(request, e);
+         }
+diff --git a/src/routes/index.tsx b/src/routes/index.tsx
+index 7df5e8d..b700163 100644
+--- a/src/routes/index.tsx
++++ b/src/routes/index.tsx
+@@ -22,12 +22,7 @@ import { computeDropSlot, measureColumns, sameSlot, type DropSlot } from "@/lib/
+ import { FeedCard } from "@/components/FeedCard";
+ import { AddItemDialog } from "@/components/AddItemDialog";
+ import { BookmarksCard } from "@/components/BookmarksCard";
+-import {
+-  Plus,
+-  Sparkles,
+-  X,
+-  Pencil,
+-} from "lucide-react";
++import { Plus, Sparkles, X, Pencil } from "lucide-react";
+ import { UserMenu } from "@/components/UserMenu";
+ import { ConfirmDialog } from "@/components/ConfirmDialog";
+ import { LayoutMenu } from "@/components/LayoutMenu";
+@@ -36,7 +31,6 @@ import { SyncBanner, SyncIndicator } from "@/components/SyncStatus";
+ import { ExportReminderBanner } from "@/components/ExportReminder";
+ import { useExportReminder } from "@/lib/useExportReminder";
+ 
+-
+ export const Route = createFileRoute("/")({
+   ssr: false,
+   head: () => ({
+@@ -64,10 +58,13 @@ function DigitalClock() {
+   useEffect(() => {
+     let interval: ReturnType<typeof setInterval>;
+     // Align to the next full second so the display doesn't lag
+-    const timeout = setTimeout(() => {
+-      setNow(new Date());
+-      interval = setInterval(() => setNow(new Date()), 1000);
+-    }, 1000 - (Date.now() % 1000));
++    const timeout = setTimeout(
++      () => {
++        setNow(new Date());
++        interval = setInterval(() => setNow(new Date()), 1000);
++      },
++      1000 - (Date.now() % 1000),
++    );
+     return () => {
+       clearTimeout(timeout);
+       clearInterval(interval);
+@@ -84,27 +81,31 @@ function DigitalClock() {
+   });
+ 
+   return (
+-    <div className="hidden md:flex flex-col items-end leading-none select-none gap-1"
+-         aria-label="Current time">
++    <div
++      className="hidden md:flex flex-col items-end leading-none select-none gap-1"
++      aria-label="Current time"
++    >
+       {/* Time row */}
+       <span
+         className="font-mono text-xl font-bold"
+         style={{
+           color: "var(--color-foreground)",
+-          textShadow: "0 0 10px var(--color-primary), 0 0 24px color-mix(in oklab, var(--color-primary) 50%, transparent)",
++          textShadow:
++            "0 0 10px var(--color-primary), 0 0 24px color-mix(in oklab, var(--color-primary) 50%, transparent)",
+           letterSpacing: "0.1em",
+         }}
+       >
+         {hh}
+-        <span
+-          className="animate-pulse"
+-          style={{ color: "var(--color-primary)", opacity: 0.8 }}
+-        >:</span>
++        <span className="animate-pulse" style={{ color: "var(--color-primary)", opacity: 0.8 }}>
++          :
++        </span>
+         {mm}
+         <span
+           className="text-sm font-medium ml-0.5"
+           style={{ color: "var(--color-primary)", opacity: 0.65 }}
+-        >{ss}</span>
++        >
++          {ss}
++        </span>
+       </span>
+       {/* Date row */}
+       <span
+@@ -130,9 +131,9 @@ function Home() {
+   const [newTabName, setNewTabName] = useState("");
+   const [editingTab, setEditingTab] = useState<string | null>(null);
+   const [tabToDelete, setTabToDelete] = useState<{ id: string; name: string } | null>(null);
+-  const [draggingId, setDraggingId]   = useState<string | null>(null);
++  const [draggingId, setDraggingId] = useState<string | null>(null);
+   // Where the dragged tile would land right now; drives the marker and the final drop.
+-  const [slot, setSlot]               = useState<DropSlot | null>(null);
++  const [slot, setSlot] = useState<DropSlot | null>(null);
+   const gridRef = useRef<HTMLDivElement>(null);
+   const pointerRef = useRef<{ x: number; y: number } | null>(null);
+   const frameRef = useRef(0);
+@@ -143,12 +144,10 @@ function Home() {
+     cols === 2
+       ? "md:grid-cols-2"
+       : cols === 4
+-      ? "md:grid-cols-2 lg:grid-cols-4"
+-      : "md:grid-cols-2 lg:grid-cols-3";
++        ? "md:grid-cols-2 lg:grid-cols-4"
++        : "md:grid-cols-2 lg:grid-cols-3";
+ 
+-  const sensors = useSensors(
+-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+-  );
++  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+ 
+   /** Slot for the pointer's current position, measured from what is on screen right now. */
+   function currentSlot(id: string): DropSlot | null {
+@@ -238,9 +237,7 @@ function Home() {
+               <Sparkles className="h-5 w-5 text-white drop-shadow" />
+             </div>
+             <div>
+-              <h1 className="font-display text-lg font-bold leading-none text-gradient">
+-                Lumen
+-              </h1>
++              <h1 className="font-display text-lg font-bold leading-none text-gradient">Lumen</h1>
+               <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                 RSS Dashboard
+               </p>
+@@ -279,7 +276,6 @@ function Home() {
+           </div>
+         </div>
+ 
+-
+         {/* Tabs */}
+         <DndContext
+           sensors={sensors}
+@@ -378,28 +374,33 @@ function Home() {
+                     {items.map((w) => {
+                       const i = others.findIndex((o) => o.id === w.id);
+                       return (
+-                      <TileWithIndicator
+-                        key={w.id}
+-                        id={w.id}
+-                        before={!!here && i !== -1 && i === here.index}
+-                        after={!!here && i !== -1 && i === others.length - 1 && here.index === others.length}
+-                      >
+-                        {w.kind === "bookmarks" ? (
+-                          <BookmarksCard
+-                            widget={w}
+-                            onRemove={() => dash.removeWidget(w.id)}
+-                            onUpdate={(patch) => dash.updateWidget(w.id, patch)}
+-                          />
+-                        ) : (
+-                          <FeedCard
+-                            widget={w}
+-                            effectiveStyle={dash.resolveStyle(w)}
+-                            highlightNew={dash.state.highlightNew ?? true}
+-                            onRemove={() => dash.removeWidget(w.id)}
+-                            onUpdate={(patch) => dash.updateWidget(w.id, patch)}
+-                          />
+-                        )}
+-                      </TileWithIndicator>
++                        <TileWithIndicator
++                          key={w.id}
++                          id={w.id}
++                          before={!!here && i !== -1 && i === here.index}
++                          after={
++                            !!here &&
++                            i !== -1 &&
++                            i === others.length - 1 &&
++                            here.index === others.length
++                          }
++                        >
++                          {w.kind === "bookmarks" ? (
++                            <BookmarksCard
++                              widget={w}
++                              onRemove={() => dash.removeWidget(w.id)}
++                              onUpdate={(patch) => dash.updateWidget(w.id, patch)}
++                            />
++                          ) : (
++                            <FeedCard
++                              widget={w}
++                              effectiveStyle={dash.resolveStyle(w)}
++                              highlightNew={dash.state.highlightNew ?? true}
++                              onRemove={() => dash.removeWidget(w.id)}
++                              onUpdate={(patch) => dash.updateWidget(w.id, patch)}
++                            />
++                          )}
++                        </TileWithIndicator>
+                       );
+                     })}
+                   </Column>
+@@ -424,9 +425,7 @@ function Home() {
+         onOpenChange={(o) => !o && setTabToDelete(null)}
+         title="Delete this tab?"
+         description={
+-          tabToDelete
+-            ? `"${tabToDelete.name}" and all its feeds will be permanently removed.`
+-            : ""
++          tabToDelete ? `"${tabToDelete.name}" and all its feeds will be permanently removed.` : ""
+         }
+         onConfirm={() => {
+           if (tabToDelete) dash.removeTab(tabToDelete.id);
+@@ -437,7 +436,6 @@ function Home() {
+   );
+ }
+ 
+-
+ /** The line (with round ends) that shows where the dragged tile will land. */
+ function DropMarker({ className }: { className: string }) {
+   return (
+@@ -482,10 +480,28 @@ function DragGhost({ widget }: { widget: import("@/lib/rss").FeedWidget }) {
+     >
+       <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface/50">
+         <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0 opacity-80">
+-          {isBookmarks
+-            ? <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+-            : <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+-          }
++          {isBookmarks ? (
++            <svg
++              xmlns="http://www.w3.org/2000/svg"
++              className="h-3.5 w-3.5 text-white fill-current"
++              viewBox="0 0 24 24"
++            >
++              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
++            </svg>
++          ) : (
++            <svg
++              xmlns="http://www.w3.org/2000/svg"
++              className="h-3.5 w-3.5 text-white"
++              viewBox="0 0 24 24"
++              fill="none"
++              stroke="currentColor"
++              strokeWidth="2"
++            >
++              <path d="M4 11a9 9 0 0 1 9 9" />
++              <path d="M4 4a16 16 0 0 1 16 16" />
++              <circle cx="5" cy="19" r="1" />
++            </svg>
++          )}
+         </div>
+         <span className="font-display font-semibold text-sm truncate flex-1 text-foreground/80">
+           {label}
+@@ -493,7 +509,11 @@ function DragGhost({ widget }: { widget: import("@/lib/rss").FeedWidget }) {
+       </div>
+       <div className="px-4 py-3 space-y-2">
+         {[0.75, 0.55, 0.65].map((w, i) => (
+-          <div key={i} className="h-2.5 rounded bg-secondary/50 animate-pulse" style={{ width: `${w * 100}%` }} />
++          <div
++            key={i}
++            className="h-2.5 rounded bg-secondary/50 animate-pulse"
++            style={{ width: `${w * 100}%` }}
++          />
+         ))}
+       </div>
+     </div>
+@@ -555,14 +575,9 @@ function SortableTab({
+   onFinishEdit: (name: string | null) => void;
+   onRemove: () => void;
+ }) {
+-  const {
+-    attributes,
+-    listeners,
+-    setNodeRef,
+-    transform,
+-    transition,
+-    isDragging,
+-  } = useSortable({ id });
++  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
++    id,
++  });
+ 
+   const style = {
+     transform: CSS.Transform.toString(transform),
+@@ -586,8 +601,7 @@ function SortableTab({
+           defaultValue={name}
+           onBlur={(e) => onFinishEdit(e.target.value || name)}
+           onKeyDown={(e) => {
+-            if (e.key === "Enter")
+-              onFinishEdit((e.target as HTMLInputElement).value || name);
++            if (e.key === "Enter") onFinishEdit((e.target as HTMLInputElement).value || name);
+             if (e.key === "Escape") onFinishEdit(null);
+           }}
+           className="bg-transparent outline-none border-b border-primary w-24"
+@@ -638,12 +652,10 @@ function EmptyState({
+       <div className="h-16 w-16 rounded-2xl flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] mb-5">
+         <Sparkles className="h-7 w-7 text-primary-foreground" />
+       </div>
+-      <h2 className="font-display text-2xl font-bold mb-2">
+-        Your dashboard is empty
+-      </h2>
++      <h2 className="font-display text-2xl font-bold mb-2">Your dashboard is empty</h2>
+       <p className="text-muted-foreground max-w-md mb-6">
+-        Add your first RSS or Atom feed to start tracking what matters. We fetch
+-        everything server-side, so CORS never gets in the way.
++        Add your first RSS or Atom feed to start tracking what matters. We fetch everything
++        server-side, so CORS never gets in the way.
+       </p>
+       <AddItemDialog onAddFeed={onAddFeed} onAddBookmarks={onAddBookmarks} />
+     </div>
+diff --git a/src/server.ts b/src/server.ts
+index 2451322..b9308fd 100644
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -12,7 +12,7 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
+ async function getServerEntry(): Promise<ServerEntry> {
+   if (!serverEntryPromise) {
+     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
+-      (m) => ((m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry)),
++      (m) => (m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry),
+     );
+   }
+   return serverEntryPromise;

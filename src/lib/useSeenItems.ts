@@ -35,8 +35,8 @@ function scheduleSave() {
   if (cache.saveTimer) clearTimeout(cache.saveTimer);
   const uid = cache.uid;
   cache.saveTimer = setTimeout(() => {
-    setDoc(doc(db, "users", uid, "data", "seen"), { map: cache.map }).catch(
-      (e) => console.error("Seen items save failed:", e),
+    setDoc(doc(db, "users", uid, "data", "seen"), { map: cache.map }).catch((e) =>
+      console.error("Seen items save failed:", e),
     );
   }, SAVE_DEBOUNCE_MS);
 }

@@ -108,7 +108,16 @@ function isPrivateIPv4(host: string): boolean {
   );
 }
 
-const BLOCKED_SUFFIXES = [".localhost", ".local", ".internal", ".lan", ".home", ".corp", ".home.arpa", ".intranet"];
+const BLOCKED_SUFFIXES = [
+  ".localhost",
+  ".local",
+  ".internal",
+  ".lan",
+  ".home",
+  ".corp",
+  ".home.arpa",
+  ".intranet",
+];
 
 export function assertPublicUrl(u: URL): void {
   if (u.protocol !== "http:" && u.protocol !== "https:") throw new ProxyError("Invalid protocol");
@@ -120,7 +129,11 @@ export function assertPublicUrl(u: URL): void {
   if (host.startsWith("[")) throw new ProxyError("Address not allowed");
   if (isPrivateIPv4(host)) throw new ProxyError("Address not allowed");
   // Bare single-label names (localhost, intranet, db...) and internal suffixes.
-  if (!host.includes(".") || host === "localhost" || BLOCKED_SUFFIXES.some((s) => host.endsWith(s))) {
+  if (
+    !host.includes(".") ||
+    host === "localhost" ||
+    BLOCKED_SUFFIXES.some((s) => host.endsWith(s))
+  ) {
     throw new ProxyError("Address not allowed");
   }
 }

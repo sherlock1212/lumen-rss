@@ -22,12 +22,7 @@ import { computeDropSlot, measureColumns, sameSlot, type DropSlot } from "@/lib/
 import { FeedCard } from "@/components/FeedCard";
 import { AddItemDialog } from "@/components/AddItemDialog";
 import { BookmarksCard } from "@/components/BookmarksCard";
-import {
-  Plus,
-  Sparkles,
-  X,
-  Pencil,
-} from "lucide-react";
+import { Plus, Sparkles, X, Pencil } from "lucide-react";
 import { UserMenu } from "@/components/UserMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { LayoutMenu } from "@/components/LayoutMenu";
@@ -35,7 +30,6 @@ import { DataDialog } from "@/components/DataDialog";
 import { SyncBanner, SyncIndicator } from "@/components/SyncStatus";
 import { ExportReminderBanner } from "@/components/ExportReminder";
 import { useExportReminder } from "@/lib/useExportReminder";
-
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -64,10 +58,13 @@ function DigitalClock() {
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     // Align to the next full second so the display doesn't lag
-    const timeout = setTimeout(() => {
-      setNow(new Date());
-      interval = setInterval(() => setNow(new Date()), 1000);
-    }, 1000 - (Date.now() % 1000));
+    const timeout = setTimeout(
+      () => {
+        setNow(new Date());
+        interval = setInterval(() => setNow(new Date()), 1000);
+      },
+      1000 - (Date.now() % 1000),
+    );
     return () => {
       clearTimeout(timeout);
       clearInterval(interval);
@@ -84,27 +81,31 @@ function DigitalClock() {
   });
 
   return (
-    <div className="hidden md:flex flex-col items-end leading-none select-none gap-1"
-         aria-label="Current time">
+    <div
+      className="hidden md:flex flex-col items-end leading-none select-none gap-1"
+      aria-label="Current time"
+    >
       {/* Time row */}
       <span
         className="font-mono text-xl font-bold"
         style={{
           color: "var(--color-foreground)",
-          textShadow: "0 0 10px var(--color-primary), 0 0 24px color-mix(in oklab, var(--color-primary) 50%, transparent)",
+          textShadow:
+            "0 0 10px var(--color-primary), 0 0 24px color-mix(in oklab, var(--color-primary) 50%, transparent)",
           letterSpacing: "0.1em",
         }}
       >
         {hh}
-        <span
-          className="animate-pulse"
-          style={{ color: "var(--color-primary)", opacity: 0.8 }}
-        >:</span>
+        <span className="animate-pulse" style={{ color: "var(--color-primary)", opacity: 0.8 }}>
+          :
+        </span>
         {mm}
         <span
           className="text-sm font-medium ml-0.5"
           style={{ color: "var(--color-primary)", opacity: 0.65 }}
-        >{ss}</span>
+        >
+          {ss}
+        </span>
       </span>
       {/* Date row */}
       <span
@@ -130,9 +131,9 @@ function Home() {
   const [newTabName, setNewTabName] = useState("");
   const [editingTab, setEditingTab] = useState<string | null>(null);
   const [tabToDelete, setTabToDelete] = useState<{ id: string; name: string } | null>(null);
-  const [draggingId, setDraggingId]   = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   // Where the dragged tile would land right now; drives the marker and the final drop.
-  const [slot, setSlot]               = useState<DropSlot | null>(null);
+  const [slot, setSlot] = useState<DropSlot | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const pointerRef = useRef<{ x: number; y: number } | null>(null);
   const frameRef = useRef(0);
@@ -143,12 +144,10 @@ function Home() {
     cols === 2
       ? "md:grid-cols-2"
       : cols === 4
-      ? "md:grid-cols-2 lg:grid-cols-4"
-      : "md:grid-cols-2 lg:grid-cols-3";
+        ? "md:grid-cols-2 lg:grid-cols-4"
+        : "md:grid-cols-2 lg:grid-cols-3";
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   /** Slot for the pointer's current position, measured from what is on screen right now. */
   function currentSlot(id: string): DropSlot | null {
@@ -238,9 +237,7 @@ function Home() {
               <Sparkles className="h-5 w-5 text-white drop-shadow" />
             </div>
             <div>
-              <h1 className="font-display text-lg font-bold leading-none text-gradient">
-                Lumen
-              </h1>
+              <h1 className="font-display text-lg font-bold leading-none text-gradient">Lumen</h1>
               <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                 RSS Dashboard
               </p>
@@ -278,7 +275,6 @@ function Home() {
             <DigitalClock />
           </div>
         </div>
-
 
         {/* Tabs */}
         <DndContext
@@ -378,28 +374,33 @@ function Home() {
                     {items.map((w) => {
                       const i = others.findIndex((o) => o.id === w.id);
                       return (
-                      <TileWithIndicator
-                        key={w.id}
-                        id={w.id}
-                        before={!!here && i !== -1 && i === here.index}
-                        after={!!here && i !== -1 && i === others.length - 1 && here.index === others.length}
-                      >
-                        {w.kind === "bookmarks" ? (
-                          <BookmarksCard
-                            widget={w}
-                            onRemove={() => dash.removeWidget(w.id)}
-                            onUpdate={(patch) => dash.updateWidget(w.id, patch)}
-                          />
-                        ) : (
-                          <FeedCard
-                            widget={w}
-                            effectiveStyle={dash.resolveStyle(w)}
-                            highlightNew={dash.state.highlightNew ?? true}
-                            onRemove={() => dash.removeWidget(w.id)}
-                            onUpdate={(patch) => dash.updateWidget(w.id, patch)}
-                          />
-                        )}
-                      </TileWithIndicator>
+                        <TileWithIndicator
+                          key={w.id}
+                          id={w.id}
+                          before={!!here && i !== -1 && i === here.index}
+                          after={
+                            !!here &&
+                            i !== -1 &&
+                            i === others.length - 1 &&
+                            here.index === others.length
+                          }
+                        >
+                          {w.kind === "bookmarks" ? (
+                            <BookmarksCard
+                              widget={w}
+                              onRemove={() => dash.removeWidget(w.id)}
+                              onUpdate={(patch) => dash.updateWidget(w.id, patch)}
+                            />
+                          ) : (
+                            <FeedCard
+                              widget={w}
+                              effectiveStyle={dash.resolveStyle(w)}
+                              highlightNew={dash.state.highlightNew ?? true}
+                              onRemove={() => dash.removeWidget(w.id)}
+                              onUpdate={(patch) => dash.updateWidget(w.id, patch)}
+                            />
+                          )}
+                        </TileWithIndicator>
                       );
                     })}
                   </Column>
@@ -424,9 +425,7 @@ function Home() {
         onOpenChange={(o) => !o && setTabToDelete(null)}
         title="Delete this tab?"
         description={
-          tabToDelete
-            ? `"${tabToDelete.name}" and all its feeds will be permanently removed.`
-            : ""
+          tabToDelete ? `"${tabToDelete.name}" and all its feeds will be permanently removed.` : ""
         }
         onConfirm={() => {
           if (tabToDelete) dash.removeTab(tabToDelete.id);
@@ -436,7 +435,6 @@ function Home() {
     </div>
   );
 }
-
 
 /** The line (with round ends) that shows where the dragged tile will land. */
 function DropMarker({ className }: { className: string }) {
@@ -482,10 +480,28 @@ function DragGhost({ widget }: { widget: import("@/lib/rss").FeedWidget }) {
     >
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface/50">
         <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0 opacity-80">
-          {isBookmarks
-            ? <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            : <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
-          }
+          {isBookmarks ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-3.5 w-3.5 text-white fill-current"
+              viewBox="0 0 24 24"
+            >
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-3.5 w-3.5 text-white"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M4 11a9 9 0 0 1 9 9" />
+              <path d="M4 4a16 16 0 0 1 16 16" />
+              <circle cx="5" cy="19" r="1" />
+            </svg>
+          )}
         </div>
         <span className="font-display font-semibold text-sm truncate flex-1 text-foreground/80">
           {label}
@@ -493,7 +509,11 @@ function DragGhost({ widget }: { widget: import("@/lib/rss").FeedWidget }) {
       </div>
       <div className="px-4 py-3 space-y-2">
         {[0.75, 0.55, 0.65].map((w, i) => (
-          <div key={i} className="h-2.5 rounded bg-secondary/50 animate-pulse" style={{ width: `${w * 100}%` }} />
+          <div
+            key={i}
+            className="h-2.5 rounded bg-secondary/50 animate-pulse"
+            style={{ width: `${w * 100}%` }}
+          />
         ))}
       </div>
     </div>
@@ -555,14 +575,9 @@ function SortableTab({
   onFinishEdit: (name: string | null) => void;
   onRemove: () => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -586,8 +601,7 @@ function SortableTab({
           defaultValue={name}
           onBlur={(e) => onFinishEdit(e.target.value || name)}
           onKeyDown={(e) => {
-            if (e.key === "Enter")
-              onFinishEdit((e.target as HTMLInputElement).value || name);
+            if (e.key === "Enter") onFinishEdit((e.target as HTMLInputElement).value || name);
             if (e.key === "Escape") onFinishEdit(null);
           }}
           className="bg-transparent outline-none border-b border-primary w-24"
@@ -638,12 +652,10 @@ function EmptyState({
       <div className="h-16 w-16 rounded-2xl flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] mb-5">
         <Sparkles className="h-7 w-7 text-primary-foreground" />
       </div>
-      <h2 className="font-display text-2xl font-bold mb-2">
-        Your dashboard is empty
-      </h2>
+      <h2 className="font-display text-2xl font-bold mb-2">Your dashboard is empty</h2>
       <p className="text-muted-foreground max-w-md mb-6">
-        Add your first RSS or Atom feed to start tracking what matters. We fetch
-        everything server-side, so CORS never gets in the way.
+        Add your first RSS or Atom feed to start tracking what matters. We fetch everything
+        server-side, so CORS never gets in the way.
       </p>
       <AddItemDialog onAddFeed={onAddFeed} onAddBookmarks={onAddBookmarks} />
     </div>

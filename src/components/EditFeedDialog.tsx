@@ -12,22 +12,20 @@ interface Props {
 }
 
 const STYLES: { value: TileStyle; label: string; desc: string }[] = [
-  { value: "full",        label: "Full",        desc: "Title, excerpt & meta" },
-  { value: "condensed",   label: "Condensed",   desc: "Title + date, no wrapping" },
-  { value: "compact",     label: "Compact",     desc: "Tight one-line list" },
+  { value: "full", label: "Full", desc: "Title, excerpt & meta" },
+  { value: "condensed", label: "Condensed", desc: "Title + date, no wrapping" },
+  { value: "compact", label: "Compact", desc: "Tight one-line list" },
   { value: "comfortable", label: "Comfortable", desc: "Compact but titles wrap" },
-  { value: "mini",        label: "Mini",        desc: "Smallest, ultra-dense" },
+  { value: "mini", label: "Mini", desc: "Smallest, ultra-dense" },
 ];
 
 export function EditFeedDialog({ widget, open, onClose, onSave, effectiveStyle }: Props) {
   // Initialise from widget; re-sync whenever the dialog opens or widget changes.
   const [title, setTitle] = useState(widget.customTitle ?? "");
-  const [url,   setUrl]   = useState(widget.url);
+  const [url, setUrl] = useState(widget.url);
   // Show the widget-level override if set, otherwise fall back to the effective
   // (inherited) style so the user sees what is actually applied.
-  const [style, setStyle] = useState<TileStyle>(
-    widget.style ?? effectiveStyle ?? "full"
-  );
+  const [style, setStyle] = useState<TileStyle>(widget.style ?? effectiveStyle ?? "full");
 
   useEffect(() => {
     if (open) {
@@ -51,7 +49,9 @@ export function EditFeedDialog({ widget, open, onClose, onSave, effectiveStyle }
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   if (!open || typeof document === "undefined") return null;
@@ -127,10 +127,17 @@ export function EditFeedDialog({ widget, open, onClose, onSave, effectiveStyle }
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-md text-sm hover:bg-secondary">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-md text-sm hover:bg-secondary"
+            >
               Cancel
             </button>
-            <button type="submit" className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+            >
               Save
             </button>
           </div>

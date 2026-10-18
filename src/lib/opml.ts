@@ -109,25 +109,17 @@ export function parseOpml(xml: string): ImportResult {
 
   // If the file has no top-level group outlines (just flat feeds), wrap them
   // all in a single "Imported" tab.
-  const hasTabs = rootChildren.some(
-    (o) => !o["@_xmlUrl"] && (o["@_title"] || o["@_text"]),
-  );
+  const hasTabs = rootChildren.some((o) => !o["@_xmlUrl"] && (o["@_title"] || o["@_text"]));
   const tabSources = hasTabs
     ? rootChildren.filter((o) => !o["@_xmlUrl"])
     : [{ "@_title": "Imported", outline: rootChildren } as RawOutline];
 
   for (const tabNode of tabSources) {
-    const name =
-      (tabNode["@_title"] || tabNode["@_text"] || "Imported").trim() ||
-      "Imported";
+    const name = (tabNode["@_title"] || tabNode["@_text"] || "Imported").trim() || "Imported";
 
     const items = toArray<RawOutline>(tabNode.outline);
-    const feeds = items.filter(
-      (o) => (o["@_type"] === "rss" || o["@_xmlUrl"]) && o["@_xmlUrl"],
-    );
-    const favTiles = items.filter(
-      (o) => o["@_type"] === "favourites" && !o["@_xmlUrl"],
-    );
+    const feeds = items.filter((o) => (o["@_type"] === "rss" || o["@_xmlUrl"]) && o["@_xmlUrl"]);
+    const favTiles = items.filter((o) => o["@_type"] === "favourites" && !o["@_xmlUrl"]);
 
     if (feeds.length === 0 && favTiles.length === 0) continue;
 
@@ -136,8 +128,7 @@ export function parseOpml(xml: string): ImportResult {
     let maxCol = 0;
     const positioned = [...feeds, ...favTiles].map((node, order) => {
       const pos = parsePseudoJson(node["@_pos"]);
-      const col =
-        typeof pos.col === "number" && pos.col >= 0 ? Math.floor(pos.col) : 0;
+      const col = typeof pos.col === "number" && pos.col >= 0 ? Math.floor(pos.col) : 0;
       const row = typeof pos.row === "number" ? pos.row : 0;
       if (col > maxCol) maxCol = col;
       return { node, col, row, order };
@@ -145,10 +136,7 @@ export function parseOpml(xml: string): ImportResult {
     const declared = Number.parseInt(asString(tabNode["@_lumenColumns"]), 10);
     const columns = Math.max(
       MIN_COLUMNS,
-      Math.min(
-        MAX_COLUMNS,
-        Number.isFinite(declared) ? declared : maxCol + 1,
-      ),
+      Math.min(MAX_COLUMNS, Number.isFinite(declared) ? declared : maxCol + 1),
     );
 
     // Sort by column, then row; `order` keeps document order for ties.
@@ -164,7 +152,8 @@ export function parseOpml(xml: string): ImportResult {
           id: uid(),
           kind: "bookmarks",
           url: "",
-          customTitle: (asString(node["@_text"]) || asString(node["@_title"])).trim() || "Favourites",
+          customTitle:
+            (asString(node["@_text"]) || asString(node["@_title"])).trim() || "Favourites",
           column,
           bookmarks,
         });
@@ -199,11 +188,7 @@ export function parseOpml(xml: string): ImportResult {
 // ── Export ───────────────────────────────────────────────────────────────────
 
 const esc = (s: string) =>
-  s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 export function buildOpml(state: DashboardState): string {
   const tabsXml = state.tabs
@@ -222,8 +207,7 @@ export function buildOpml(state: DashboardState): string {
           if (w.kind === "bookmarks") {
             const bkXml = (w.bookmarks ?? [])
               .map(
-                (b) =>
-                  `      <outline type="link" text="${esc(b.title)}" url="${esc(b.url)}" />`,
+                (b) => `      <outline type="link" text="${esc(b.title)}" url="${esc(b.url)}" />`,
               )
               .join("\n");
             return `    <outline text="${esc(w.customTitle ?? "Favourites")}" type="favourites"${pos}>\n${bkXml}\n    </outline>`;

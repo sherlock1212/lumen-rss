@@ -47,9 +47,7 @@ export function useTheme() {
       (snap) => {
         const data = snap.data() as { theme?: ThemeId } | undefined;
         const t =
-          data?.theme && THEMES.some((x) => x.id === data.theme)
-            ? data.theme!
-            : DEFAULT_THEME;
+          data?.theme && THEMES.some((x) => x.id === data.theme) ? data.theme! : DEFAULT_THEME;
         // Mark as hydrating BEFORE calling setThemeState so the save-effect
         // triggered by this state change is skipped
         hydratingRef.current = true;
@@ -73,9 +71,7 @@ export function useTheme() {
     }
 
     const ref = doc(db, "users", user.uid, "data", "prefs");
-    setDoc(ref, { theme }, { merge: true }).catch((e) =>
-      console.error("Theme save failed:", e),
-    );
+    setDoc(ref, { theme }, { merge: true }).catch((e) => console.error("Theme save failed:", e));
   }, [theme, user]);
 
   const setTheme = useCallback((id: ThemeId) => {

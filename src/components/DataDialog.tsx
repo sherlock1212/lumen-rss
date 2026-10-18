@@ -92,7 +92,9 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, []);
 
   function resetImport() {
@@ -114,16 +116,11 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
       } else {
         const result = parseOpml(text);
         onImport(result.tabs);
-        const parts = [
-          plural(result.tabs.length, "tab"),
-          plural(result.feedCount, "feed"),
-        ];
+        const parts = [plural(result.tabs.length, "tab"), plural(result.feedCount, "feed")];
         if (result.bookmarkCount) parts.push(plural(result.bookmarkCount, "bookmark"));
         setSummary(
           `Imported ${parts.join(", ")}.` +
-            (result.skipped
-              ? ` Skipped ${plural(result.skipped, "unsupported item")}.`
-              : ""),
+            (result.skipped ? ` Skipped ${plural(result.skipped, "unsupported item")}.` : ""),
         );
       }
     } catch (e) {
@@ -198,8 +195,7 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
 
   const current = summarizeState(state);
 
-  const title =
-    mode === "choose" ? "Import / Export" : mode === "import" ? "Import" : "Export";
+  const title = mode === "choose" ? "Import / Export" : mode === "import" ? "Import" : "Export";
 
   return createPortal(
     <div
@@ -218,7 +214,10 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
           <div className="flex items-center gap-2">
             {mode !== "choose" && (
               <button
-                onClick={() => { setMode("choose"); resetImport(); }}
+                onClick={() => {
+                  setMode("choose");
+                  resetImport();
+                }}
                 className="p-1.5 -ml-1.5 rounded hover:bg-secondary"
                 aria-label="Back"
               >
@@ -286,12 +285,12 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
                 <ul className="text-sm text-muted-foreground space-y-1.5 list-disc pl-5">
                   <li>
                     <strong>Lumen backup (.json)</strong> — restores everything: tabs, feeds,
-                    bookmarks and display settings. You choose whether to add it to or replace
-                    your current dashboard.
+                    bookmarks and display settings. You choose whether to add it to or replace your
+                    current dashboard.
                   </li>
                   <li>
-                    <strong>OPML (.opml / .xml)</strong> — a feed list from Lumen or another
-                    reader. Each top-level group becomes a new tab, added next to yours.
+                    <strong>OPML (.opml / .xml)</strong> — a feed list from Lumen or another reader.
+                    Each top-level group becomes a new tab, added next to yours.
                   </li>
                   <li>
                     <strong>uStart.org export (.xml)</strong> — imported like OPML; columns and
@@ -318,9 +317,9 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
                     <div>
                       <p className="font-semibold text-sm">Automatic backups</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Lumen keeps a daily copy of your dashboard in your account (the last
-                        14 days). Each copy is taken the first time you open Lumen that day,
-                        before any change.
+                        Lumen keeps a daily copy of your dashboard in your account (the last 14
+                        days). Each copy is taken the first time you open Lumen that day, before any
+                        change.
                       </p>
                     </div>
                     {backupList === null ? (
@@ -334,7 +333,8 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
                       </button>
                     ) : backupList.length === 0 ? (
                       <p className="text-xs text-muted-foreground">
-                        No automatic backups yet. The first one is created the next time you open Lumen.
+                        No automatic backups yet. The first one is created the next time you open
+                        Lumen.
                       </p>
                     ) : (
                       <ul className="space-y-1.5">
@@ -350,7 +350,9 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
                                 {plural(b.tabCount, "tab")} · {plural(b.feedCount, "feed")} ·{" "}
                                 {plural(b.bookmarkCount, "bookmark")}
                               </span>
-                              {backupBusy === b.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                              {backupBusy === b.id && (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              )}
                             </button>
                           </li>
                         ))}
@@ -386,8 +388,8 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
                   >
                     <p className="font-semibold text-sm">Add as new tabs</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Keeps everything you have now and adds the tabs from the backup.
-                      Display settings are not changed.
+                      Keeps everything you have now and adds the tabs from the backup. Display
+                      settings are not changed.
                     </p>
                   </button>
                   <button
@@ -396,8 +398,8 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
                   >
                     <p className="font-semibold text-sm">Replace everything</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Restores the dashboard exactly as in the backup, including display
-                      settings. Your current tabs are removed.
+                      Restores the dashboard exactly as in the backup, including display settings.
+                      Your current tabs are removed.
                     </p>
                   </button>
                 </div>
@@ -418,8 +420,8 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
                   <p>
                     This replaces your current {plural(current.tabCount, "tab")},{" "}
                     {plural(current.feedCount, "feed")} and{" "}
-                    {plural(current.bookmarkCount, "bookmark")} with the backup. A backup of
-                    your current dashboard is downloaded automatically first.
+                    {plural(current.bookmarkCount, "bookmark")} with the backup. A backup of your
+                    current dashboard is downloaded automatically first.
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -463,15 +465,23 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
             <div className="rounded-lg border border-border bg-secondary/30 p-4 flex gap-6">
               <div className="text-center">
                 <p className="text-2xl font-bold font-display text-primary">{current.tabCount}</p>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">Tabs</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">
+                  Tabs
+                </p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold font-display text-primary">{current.feedCount}</p>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">Feeds</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">
+                  Feeds
+                </p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold font-display text-primary">{current.bookmarkCount}</p>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">Bookmarks</p>
+                <p className="text-2xl font-bold font-display text-primary">
+                  {current.bookmarkCount}
+                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">
+                  Bookmarks
+                </p>
               </div>
             </div>
 

@@ -79,10 +79,19 @@ export function sameSlot(a: DropSlot | null, b: DropSlot | null): boolean {
 export function measureColumns(root: ParentNode): ColumnBox[] {
   return Array.from(root.querySelectorAll<HTMLElement>("[data-column]")).map((el) => {
     const r = el.getBoundingClientRect();
-    const tiles = Array.from(el.querySelectorAll<HTMLElement>(":scope > [data-tile-id]")).map((t) => {
-      const b = t.getBoundingClientRect();
-      return { id: t.dataset.tileId ?? "", top: b.top, bottom: b.bottom };
-    });
-    return { col: Number(el.dataset.column), left: r.left, right: r.right, top: r.top, bottom: r.bottom, tiles };
+    const tiles = Array.from(el.querySelectorAll<HTMLElement>(":scope > [data-tile-id]")).map(
+      (t) => {
+        const b = t.getBoundingClientRect();
+        return { id: t.dataset.tileId ?? "", top: b.top, bottom: b.bottom };
+      },
+    );
+    return {
+      col: Number(el.dataset.column),
+      left: r.left,
+      right: r.right,
+      top: r.top,
+      bottom: r.bottom,
+      tiles,
+    };
   });
 }

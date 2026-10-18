@@ -50,7 +50,15 @@ interface Props {
   onToggleHighlightNew: (v: boolean) => void;
 }
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Section({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="space-y-2">
       <div className="flex items-baseline justify-between gap-2">
@@ -194,7 +202,9 @@ export function LayoutMenu({
                   />
                   <span className="flex min-w-0 flex-1 flex-col text-left leading-tight">
                     <span className="text-sm">{t.name}</span>
-                    <span className="truncate text-[10px] text-muted-foreground">{t.description}</span>
+                    <span className="truncate text-[10px] text-muted-foreground">
+                      {t.description}
+                    </span>
                   </span>
                   {active && <Check className="h-4 w-4 text-primary" />}
                 </button>
