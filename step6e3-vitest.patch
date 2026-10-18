@@ -1,0 +1,4245 @@
+diff --git a/eslint.config.js b/eslint.config.js
+index be4075b..1ff39a9 100644
+--- a/eslint.config.js
++++ b/eslint.config.js
+@@ -36,5 +36,10 @@ export default tseslint.config(
+       "@typescript-eslint/no-unused-vars": "off",
+     },
+   },
++  {
++    // Tests build deliberately loose fakes (Firestore snapshots, Requests...).
++    files: ["src/**/*.test.{ts,tsx}", "src/test/**"],
++    rules: { "@typescript-eslint/no-explicit-any": "off" },
++  },
+   eslintPluginPrettier,
+ );
+diff --git a/package-lock.json b/package-lock.json
+index 678cf8c..06c7476 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -44,13 +44,22 @@
+         "eslint-plugin-react-hooks": "^5.2.0",
+         "eslint-plugin-react-refresh": "^0.4.20",
+         "globals": "^15.15.0",
++        "jsdom": "^27.4.0",
+         "prettier": "^3.7.3",
+         "typescript": "^5.8.3",
+         "typescript-eslint": "^8.56.1",
+         "vite": "^7.3.1",
++        "vitest": "^4.1.12",
+         "wrangler": "^4.151.1"
+       }
+     },
++    "node_modules/@acemir/cssom": {
++      "version": "0.9.32",
++      "resolved": "https://registry.npmjs.org/@acemir/cssom/-/cssom-0.9.32.tgz",
++      "integrity": "sha512-OijrAUu7rrJhSIoHNg6LMPS5e344nwUHA+1EFYYjrh64D+GmytUsfBQjci45TjT+rd5Spsp8B5xsZDT+TgyXXQ==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/@alloc/quick-lru": {
+       "version": "5.2.0",
+       "resolved": "https://registry.npmjs.org/@alloc/quick-lru/-/quick-lru-5.2.0.tgz",
+@@ -64,6 +73,61 @@
+         "url": "https://github.com/sponsors/sindresorhus"
+       }
+     },
++    "node_modules/@asamuzakjp/css-color": {
++      "version": "4.1.2",
++      "resolved": "https://registry.npmjs.org/@asamuzakjp/css-color/-/css-color-4.1.2.tgz",
++      "integrity": "sha512-NfBUvBaYgKIuq6E/RBLY1m0IohzNHAYyaJGuTK79Z23uNwmz2jl1mPsC5ZxCCxylinKhT1Amn5oNTlx1wN8cQg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@csstools/css-calc": "^3.0.0",
++        "@csstools/css-color-parser": "^4.0.1",
++        "@csstools/css-parser-algorithms": "^4.0.0",
++        "@csstools/css-tokenizer": "^4.0.0",
++        "lru-cache": "^11.2.5"
++      }
++    },
++    "node_modules/@asamuzakjp/css-color/node_modules/lru-cache": {
++      "version": "11.5.3",
++      "resolved": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.5.3.tgz",
++      "integrity": "sha512-U4N8FgzmWxc8k1VH8Kr6lQg18U7Fjvby6wXHVRX/ZZ7IwWbRMgrRbP0Wrb5q5NVinryp4SQampHKdvtecItxUg==",
++      "dev": true,
++      "license": "BlueOak-1.0.0",
++      "engines": {
++        "node": "20 || >=22"
++      }
++    },
++    "node_modules/@asamuzakjp/dom-selector": {
++      "version": "6.8.1",
++      "resolved": "https://registry.npmjs.org/@asamuzakjp/dom-selector/-/dom-selector-6.8.1.tgz",
++      "integrity": "sha512-MvRz1nCqW0fsy8Qz4dnLIvhOlMzqDVBabZx6lH+YywFDdjXhMY37SmpV1XFX3JzG5GWHn63j6HX6QPr3lZXHvQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@asamuzakjp/nwsapi": "^2.3.9",
++        "bidi-js": "^1.0.3",
++        "css-tree": "^3.1.0",
++        "is-potential-custom-element-name": "^1.0.1",
++        "lru-cache": "^11.2.6"
++      }
++    },
++    "node_modules/@asamuzakjp/dom-selector/node_modules/lru-cache": {
++      "version": "11.5.3",
++      "resolved": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.5.3.tgz",
++      "integrity": "sha512-U4N8FgzmWxc8k1VH8Kr6lQg18U7Fjvby6wXHVRX/ZZ7IwWbRMgrRbP0Wrb5q5NVinryp4SQampHKdvtecItxUg==",
++      "dev": true,
++      "license": "BlueOak-1.0.0",
++      "engines": {
++        "node": "20 || >=22"
++      }
++    },
++    "node_modules/@asamuzakjp/nwsapi": {
++      "version": "2.3.9",
++      "resolved": "https://registry.npmjs.org/@asamuzakjp/nwsapi/-/nwsapi-2.3.9.tgz",
++      "integrity": "sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/@babel/code-frame": {
+       "version": "7.29.7",
+       "resolved": "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.29.7.tgz",
+@@ -1598,6 +1662,146 @@
+         "@jridgewell/sourcemap-codec": "^1.4.10"
+       }
+     },
++    "node_modules/@csstools/color-helpers": {
++      "version": "6.1.2",
++      "resolved": "https://registry.npmjs.org/@csstools/color-helpers/-/color-helpers-6.1.2.tgz",
++      "integrity": "sha512-grhRy3OKmniaAEKXMjua5z/EODX0MSqBGjunw8+j/3HQjOnahs2AGhvEOIYVUWcU6ScApbhLhVrQTX8XqrMrow==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/csstools"
++        },
++        {
++          "type": "opencollective",
++          "url": "https://opencollective.com/csstools"
++        }
++      ],
++      "license": "MIT-0",
++      "engines": {
++        "node": ">=20.19.0"
++      }
++    },
++    "node_modules/@csstools/css-calc": {
++      "version": "3.4.3",
++      "resolved": "https://registry.npmjs.org/@csstools/css-calc/-/css-calc-3.4.3.tgz",
++      "integrity": "sha512-iex20d8CHVkyvg6B7UKV7uHnI2Bqo9g+EFfT9E0y+GvTvhZ/DwONJ+9aKb1dlqm0ZiGsL5RXjp0fCoJYnkeDjA==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/csstools"
++        },
++        {
++          "type": "opencollective",
++          "url": "https://opencollective.com/csstools"
++        }
++      ],
++      "license": "MIT",
++      "engines": {
++        "node": ">=20.19.0"
++      },
++      "peerDependencies": {
++        "@csstools/css-parser-algorithms": "^4.0.2",
++        "@csstools/css-tokenizer": "^4.0.2"
++      }
++    },
++    "node_modules/@csstools/css-color-parser": {
++      "version": "4.2.6",
++      "resolved": "https://registry.npmjs.org/@csstools/css-color-parser/-/css-color-parser-4.2.6.tgz",
++      "integrity": "sha512-iiPQ3iRWwnJkeEn6RIu6SJPr7hYrLz6XZ9s/QZl+2/LI5KQVjpl2fdmDSZKuD4xP6GMmMPgHFFXg6k1Wkz0Trg==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/csstools"
++        },
++        {
++          "type": "opencollective",
++          "url": "https://opencollective.com/csstools"
++        }
++      ],
++      "license": "MIT",
++      "dependencies": {
++        "@csstools/color-helpers": "^6.1.2",
++        "@csstools/css-calc": "^3.4.3"
++      },
++      "engines": {
++        "node": ">=20.19.0"
++      },
++      "peerDependencies": {
++        "@csstools/css-parser-algorithms": "^4.0.2",
++        "@csstools/css-tokenizer": "^4.0.2"
++      }
++    },
++    "node_modules/@csstools/css-parser-algorithms": {
++      "version": "4.0.2",
++      "resolved": "https://registry.npmjs.org/@csstools/css-parser-algorithms/-/css-parser-algorithms-4.0.2.tgz",
++      "integrity": "sha512-40cSKyMvK+tq4qz6Awrlye2WGuOKt3FwPgtGg6KTfbHOWNw+Rk1rzbAtZnZ6IBhsY491HLRnDXwoyBAijmmILA==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/csstools"
++        },
++        {
++          "type": "opencollective",
++          "url": "https://opencollective.com/csstools"
++        }
++      ],
++      "license": "MIT",
++      "engines": {
++        "node": ">=20.19.0"
++      },
++      "peerDependencies": {
++        "@csstools/css-tokenizer": "^4.0.2"
++      }
++    },
++    "node_modules/@csstools/css-syntax-patches-for-csstree": {
++      "version": "1.1.15",
++      "resolved": "https://registry.npmjs.org/@csstools/css-syntax-patches-for-csstree/-/css-syntax-patches-for-csstree-1.1.15.tgz",
++      "integrity": "sha512-J0u7HkVl2nzSlhsiTOp4AmwcUQ3D+mGEEKfBy/7To5/y7F2OHwyLrXfrhR0SMgr4p5Lo+eaMVSeai24zUcBIxA==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/csstools"
++        },
++        {
++          "type": "opencollective",
++          "url": "https://opencollective.com/csstools"
++        }
++      ],
++      "license": "MIT-0",
++      "peerDependencies": {
++        "css-tree": "^3.2.1"
++      },
++      "peerDependenciesMeta": {
++        "css-tree": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/@csstools/css-tokenizer": {
++      "version": "4.0.2",
++      "resolved": "https://registry.npmjs.org/@csstools/css-tokenizer/-/css-tokenizer-4.0.2.tgz",
++      "integrity": "sha512-OoKoR0f76dCY666JlcbhmVTs2drYj1GUXZTYTcbUgJjh9Nv41aFfZ21bPQTERm5+L5cBDo466NltB2lplS5GBw==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/csstools"
++        },
++        {
++          "type": "opencollective",
++          "url": "https://opencollective.com/csstools"
++        }
++      ],
++      "license": "MIT",
++      "engines": {
++        "node": ">=20.19.0"
++      }
++    },
+     "node_modules/@dnd-kit/accessibility": {
+       "version": "3.1.1",
+       "resolved": "https://registry.npmjs.org/@dnd-kit/accessibility/-/accessibility-3.1.1.tgz",
+@@ -2281,6 +2485,24 @@
+         "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
+       }
+     },
++    "node_modules/@exodus/bytes": {
++      "version": "1.16.0",
++      "resolved": "https://registry.npmjs.org/@exodus/bytes/-/bytes-1.16.0.tgz",
++      "integrity": "sha512-IcpW84uEn3N7ETtNZMlxKhfl6Pec8rUNGOTBtWbK1FKhJxIFAptZyVrvVRVBimAJxJCgc3PxepxkdWWG4DVzfA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
++      },
++      "peerDependencies": {
++        "@noble/hashes": "^1.8.0 || ^2.0.0"
++      },
++      "peerDependenciesMeta": {
++        "@noble/hashes": {
++          "optional": true
++        }
++      }
++    },
+     "node_modules/@firebase/ai": {
+       "version": "2.13.0",
+       "resolved": "https://registry.npmjs.org/@firebase/ai/-/ai-2.13.0.tgz",
+@@ -5184,6 +5406,13 @@
+       "integrity": "sha512-BMq1K3DsElxDWawkX6eLg9+CKJrTVGCBAWVuHXVUV2u0s2711qiChLSId6ikYPfxhdYocLNt3wWwSvDiTvFabw==",
+       "license": "CC0-1.0"
+     },
++    "node_modules/@standard-schema/spec": {
++      "version": "1.1.0",
++      "resolved": "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz",
++      "integrity": "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/@tailwindcss/node": {
+       "version": "4.3.0",
+       "resolved": "https://registry.npmjs.org/@tailwindcss/node/-/node-4.3.0.tgz",
+@@ -6232,6 +6461,24 @@
+         "@babel/types": "^7.28.2"
+       }
+     },
++    "node_modules/@types/chai": {
++      "version": "5.2.3",
++      "resolved": "https://registry.npmjs.org/@types/chai/-/chai-5.2.3.tgz",
++      "integrity": "sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@types/deep-eql": "*",
++        "assertion-error": "^2.0.1"
++      }
++    },
++    "node_modules/@types/deep-eql": {
++      "version": "4.0.2",
++      "resolved": "https://registry.npmjs.org/@types/deep-eql/-/deep-eql-4.0.2.tgz",
++      "integrity": "sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/@types/estree": {
+       "version": "1.0.9",
+       "resolved": "https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz",
+@@ -6598,6 +6845,119 @@
+       "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/@vitest/expect": {
++      "version": "4.1.12",
++      "resolved": "https://registry.npmjs.org/@vitest/expect/-/expect-4.1.12.tgz",
++      "integrity": "sha512-vFlTt+YEu9WBpNjdGayNmlMVzrWPi1+sv853/7t2FU7hpO5gAFBKHzQmkCq5Xjpr+evegF2994LQT3hF3mRlqQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@standard-schema/spec": "^1.1.0",
++        "@types/chai": "^5.2.2",
++        "@vitest/spy": "4.1.12",
++        "@vitest/utils": "4.1.12",
++        "chai": "^6.2.2",
++        "tinyrainbow": "^3.1.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
++    "node_modules/@vitest/mocker": {
++      "version": "4.1.12",
++      "resolved": "https://registry.npmjs.org/@vitest/mocker/-/mocker-4.1.12.tgz",
++      "integrity": "sha512-fKShNpKZzupWZuY0z7egydvL0sqW4INEZBEExMBMAa6izlENEVHwoXgdaTCaBZ5fwlr4xf2o1wXC83n9RpO+NA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@vitest/spy": "4.1.12",
++        "estree-walker": "^3.0.3",
++        "magic-string": "^0.30.21"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      },
++      "peerDependencies": {
++        "msw": "^2.4.9",
++        "vite": "^6.0.0 || ^7.0.0 || ^8.0.0"
++      },
++      "peerDependenciesMeta": {
++        "msw": {
++          "optional": true
++        },
++        "vite": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/@vitest/pretty-format": {
++      "version": "4.1.12",
++      "resolved": "https://registry.npmjs.org/@vitest/pretty-format/-/pretty-format-4.1.12.tgz",
++      "integrity": "sha512-XW9O8+Mxx4VpCtkYdMJLZQQwsVryP9wk7cPKDxtXFfwSak6yRh5+2fep/Y0XF/ElBvJHq8bcYdi6aeuai0opZA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "tinyrainbow": "^3.1.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
++    "node_modules/@vitest/runner": {
++      "version": "4.1.12",
++      "resolved": "https://registry.npmjs.org/@vitest/runner/-/runner-4.1.12.tgz",
++      "integrity": "sha512-NKlVKCr5QnCe8jijdMnmkpHHU+WTqiLFR6G0pHji9uRjXK9xJl1k1nTw6F3pOOj2PDcsDt2GKQMI7wIsaT491w==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@vitest/utils": "4.1.12",
++        "pathe": "^2.0.3"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
++    "node_modules/@vitest/snapshot": {
++      "version": "4.1.12",
++      "resolved": "https://registry.npmjs.org/@vitest/snapshot/-/snapshot-4.1.12.tgz",
++      "integrity": "sha512-ko1y1Qgb/slzQ9mr+b89Cuqud8WG1TKtsPD8r7ZUBdvVOGt85Af2HwCqHujrhwJq95hs/9RM7fcAPg57o1vlzw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@vitest/pretty-format": "4.1.12",
++        "@vitest/utils": "4.1.12",
++        "magic-string": "^0.30.21",
++        "pathe": "^2.0.3"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
++    "node_modules/@vitest/spy": {
++      "version": "4.1.12",
++      "resolved": "https://registry.npmjs.org/@vitest/spy/-/spy-4.1.12.tgz",
++      "integrity": "sha512-RGq9x4JNGNTZHEJxvN0oSiJjeSCExm0n2gZKKJZHY9cX5AVA6M7VJILBT3ZJ/tJ/0J9uWT7fETV9/btoi//vSg==",
++      "dev": true,
++      "license": "MIT",
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
++    "node_modules/@vitest/utils": {
++      "version": "4.1.12",
++      "resolved": "https://registry.npmjs.org/@vitest/utils/-/utils-4.1.12.tgz",
++      "integrity": "sha512-Q3awXrwOfEV+qc3WmO5ONyE0yO7Q1gQ9/oyHxGLZ/pl7N3NO/ZztqQwKLuwMkV+CA1JYSIeO3gkHnRDIo4AVaA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@vitest/pretty-format": "4.1.12",
++        "convert-source-map": "^2.0.0",
++        "tinyrainbow": "^3.1.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
+     "node_modules/acorn": {
+       "version": "8.16.0",
+       "resolved": "https://registry.npmjs.org/acorn/-/acorn-8.16.0.tgz",
+@@ -6621,6 +6981,16 @@
+         "acorn": "^6.0.0 || ^7.0.0 || ^8.0.0"
+       }
+     },
++    "node_modules/agent-base": {
++      "version": "7.1.4",
++      "resolved": "https://registry.npmjs.org/agent-base/-/agent-base-7.1.4.tgz",
++      "integrity": "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">= 14"
++      }
++    },
+     "node_modules/ajv": {
+       "version": "6.15.0",
+       "resolved": "https://registry.npmjs.org/ajv/-/ajv-6.15.0.tgz",
+@@ -6730,6 +7100,16 @@
+         "node": ">=10"
+       }
+     },
++    "node_modules/assertion-error": {
++      "version": "2.0.1",
++      "resolved": "https://registry.npmjs.org/assertion-error/-/assertion-error-2.0.1.tgz",
++      "integrity": "sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=12"
++      }
++    },
+     "node_modules/babel-dead-code-elimination": {
+       "version": "1.0.12",
+       "resolved": "https://registry.npmjs.org/babel-dead-code-elimination/-/babel-dead-code-elimination-1.0.12.tgz",
+@@ -6761,6 +7141,16 @@
+         "node": ">=6.0.0"
+       }
+     },
++    "node_modules/bidi-js": {
++      "version": "1.1.0",
++      "resolved": "https://registry.npmjs.org/bidi-js/-/bidi-js-1.1.0.tgz",
++      "integrity": "sha512-fX1Onk0tdVPC7obPWB5EbJ1z7NVhLq4m2xZLq2YXBkxzMXIGRpNMU88n0EPgWseKl12J7zXs7qrDxPK4sRs2fg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "require-from-string": "^2.0.2"
++      }
++    },
+     "node_modules/binary-extensions": {
+       "version": "2.3.0",
+       "resolved": "https://registry.npmjs.org/binary-extensions/-/binary-extensions-2.3.0.tgz",
+@@ -6877,6 +7267,16 @@
+       ],
+       "license": "CC-BY-4.0"
+     },
++    "node_modules/chai": {
++      "version": "6.3.0",
++      "resolved": "https://registry.npmjs.org/chai/-/chai-6.3.0.tgz",
++      "integrity": "sha512-XWAtwJ6OHO+tj0EKCs0Y2UamnyOxseZWltU4x2U2wh8g4AigdjwvtUjvLP2tqkA/avxHEtzxNaqGq/YGNwckKg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=18"
++      }
++    },
+     "node_modules/chalk": {
+       "version": "4.1.2",
+       "resolved": "https://registry.npmjs.org/chalk/-/chalk-4.1.2.tgz",
+@@ -7044,6 +7444,20 @@
+         }
+       }
+     },
++    "node_modules/css-tree": {
++      "version": "3.2.1",
++      "resolved": "https://registry.npmjs.org/css-tree/-/css-tree-3.2.1.tgz",
++      "integrity": "sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "mdn-data": "2.27.1",
++        "source-map-js": "^1.2.1"
++      },
++      "engines": {
++        "node": "^10 || ^12.20.0 || ^14.13.0 || >=15.0.0"
++      }
++    },
+     "node_modules/cssesc": {
+       "version": "3.0.0",
+       "resolved": "https://registry.npmjs.org/cssesc/-/cssesc-3.0.0.tgz",
+@@ -7057,6 +7471,32 @@
+         "node": ">=4"
+       }
+     },
++    "node_modules/cssstyle": {
++      "version": "5.3.7",
++      "resolved": "https://registry.npmjs.org/cssstyle/-/cssstyle-5.3.7.tgz",
++      "integrity": "sha512-7D2EPVltRrsTkhpQmksIu+LxeWAIEk6wRDMJ1qljlv+CKHJM+cJLlfhWIzNA44eAsHXSNe3+vO6DW1yCYx8SuQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@asamuzakjp/css-color": "^4.1.1",
++        "@csstools/css-syntax-patches-for-csstree": "^1.0.21",
++        "css-tree": "^3.1.0",
++        "lru-cache": "^11.2.4"
++      },
++      "engines": {
++        "node": ">=20"
++      }
++    },
++    "node_modules/cssstyle/node_modules/lru-cache": {
++      "version": "11.5.3",
++      "resolved": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.5.3.tgz",
++      "integrity": "sha512-U4N8FgzmWxc8k1VH8Kr6lQg18U7Fjvby6wXHVRX/ZZ7IwWbRMgrRbP0Wrb5q5NVinryp4SQampHKdvtecItxUg==",
++      "dev": true,
++      "license": "BlueOak-1.0.0",
++      "engines": {
++        "node": "20 || >=22"
++      }
++    },
+     "node_modules/csstype": {
+       "version": "3.2.3",
+       "resolved": "https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz",
+@@ -7064,6 +7504,30 @@
+       "devOptional": true,
+       "license": "MIT"
+     },
++    "node_modules/data-urls": {
++      "version": "6.0.1",
++      "resolved": "https://registry.npmjs.org/data-urls/-/data-urls-6.0.1.tgz",
++      "integrity": "sha512-euIQENZg6x8mj3fO6o9+fOW8MimUI4PpD/fZBhJfeioZVy9TUpM4UY7KjQNVZFlqwJ0UdzRDzkycB997HEq1BQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "whatwg-mimetype": "^5.0.0",
++        "whatwg-url": "^15.1.0"
++      },
++      "engines": {
++        "node": ">=20"
++      }
++    },
++    "node_modules/data-urls/node_modules/whatwg-mimetype": {
++      "version": "5.0.0",
++      "resolved": "https://registry.npmjs.org/whatwg-mimetype/-/whatwg-mimetype-5.0.0.tgz",
++      "integrity": "sha512-sXcNcHOC51uPGF0P/D4NVtrkjSU2fNsm9iog4ZvZJsL3rjoDAzXZhkm2MWt1y+PUdggKAYVoMAIYcs78wJ51Cw==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=20"
++      }
++    },
+     "node_modules/db0": {
+       "version": "0.3.4",
+       "resolved": "https://registry.npmjs.org/db0/-/db0-0.3.4.tgz",
+@@ -7116,6 +7580,13 @@
+         }
+       }
+     },
++    "node_modules/decimal.js": {
++      "version": "10.6.0",
++      "resolved": "https://registry.npmjs.org/decimal.js/-/decimal.js-10.6.0.tgz",
++      "integrity": "sha512-YpgQiITW3JXGntzdUmyUR1V812Hn8T1YVXhCu+wO3OpS4eU9l4YdD3qjyiKdV6mvV29zapkMeD390UVEf2lkUg==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/deep-is": {
+       "version": "0.1.4",
+       "resolved": "https://registry.npmjs.org/deep-is/-/deep-is-0.1.4.tgz",
+@@ -7186,6 +7657,19 @@
+         "node": ">=10.13.0"
+       }
+     },
++    "node_modules/entities": {
++      "version": "8.1.0",
++      "resolved": "https://registry.npmjs.org/entities/-/entities-8.1.0.tgz",
++      "integrity": "sha512-kxL7msIffSuh9aaFAMD7rxAIuTRMAHMeBtgHW2yUdWw732ZNh4MehkF2gdjvtdmikkaIP9bFDDJOPlsvm7avrA==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "engines": {
++        "node": ">=20.19.0"
++      },
++      "funding": {
++        "url": "https://github.com/fb55/entities?sponsor=1"
++      }
++    },
+     "node_modules/env-runner": {
+       "version": "0.1.9",
+       "resolved": "https://registry.npmjs.org/env-runner/-/env-runner-0.1.9.tgz",
+@@ -7237,6 +7721,13 @@
+         "node": ">= 0.4"
+       }
+     },
++    "node_modules/es-module-lexer": {
++      "version": "2.3.2",
++      "resolved": "https://registry.npmjs.org/es-module-lexer/-/es-module-lexer-2.3.2.tgz",
++      "integrity": "sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/esbuild": {
+       "version": "0.25.12",
+       "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz",
+@@ -7515,6 +8006,16 @@
+         "node": ">=4.0"
+       }
+     },
++    "node_modules/estree-walker": {
++      "version": "3.0.3",
++      "resolved": "https://registry.npmjs.org/estree-walker/-/estree-walker-3.0.3.tgz",
++      "integrity": "sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@types/estree": "^1.0.0"
++      }
++    },
+     "node_modules/esutils": {
+       "version": "2.0.3",
+       "resolved": "https://registry.npmjs.org/esutils/-/esutils-2.0.3.tgz",
+@@ -7525,6 +8026,16 @@
+         "node": ">=0.10.0"
+       }
+     },
++    "node_modules/expect-type": {
++      "version": "1.4.0",
++      "resolved": "https://registry.npmjs.org/expect-type/-/expect-type-1.4.0.tgz",
++      "integrity": "sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=12.0.0"
++      }
++    },
+     "node_modules/exsolve": {
+       "version": "1.1.3",
+       "resolved": "https://registry.npmjs.org/exsolve/-/exsolve-1.1.3.tgz",
+@@ -7941,12 +8452,53 @@
+       "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/html-encoding-sniffer": {
++      "version": "6.0.0",
++      "resolved": "https://registry.npmjs.org/html-encoding-sniffer/-/html-encoding-sniffer-6.0.0.tgz",
++      "integrity": "sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@exodus/bytes": "^1.6.0"
++      },
++      "engines": {
++        "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
++      }
++    },
+     "node_modules/http-parser-js": {
+       "version": "0.5.10",
+       "resolved": "https://registry.npmjs.org/http-parser-js/-/http-parser-js-0.5.10.tgz",
+       "integrity": "sha512-Pysuw9XpUq5dVc/2SMHpuTY01RFl8fttgcyunjL7eEMhGM3cI4eOmiCycJDVCo/7O7ClfQD3SaI6ftDzqOXYMA==",
+       "license": "MIT"
+     },
++    "node_modules/http-proxy-agent": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/http-proxy-agent/-/http-proxy-agent-7.0.2.tgz",
++      "integrity": "sha512-T1gkAiYYDWYx3V5Bmyu7HcfcvL7mUrTWiM6yOfa3PIphViJ/gFPbvidQ+veqSOHci/PxBcDabeUNCzpOODJZig==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "agent-base": "^7.1.0",
++        "debug": "^4.3.4"
++      },
++      "engines": {
++        "node": ">= 14"
++      }
++    },
++    "node_modules/https-proxy-agent": {
++      "version": "7.0.6",
++      "resolved": "https://registry.npmjs.org/https-proxy-agent/-/https-proxy-agent-7.0.6.tgz",
++      "integrity": "sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "agent-base": "^7.1.2",
++        "debug": "4"
++      },
++      "engines": {
++        "node": ">= 14"
++      }
++    },
+     "node_modules/httpxy": {
+       "version": "0.5.3",
+       "resolved": "https://registry.npmjs.org/httpxy/-/httpxy-0.5.3.tgz",
+@@ -8068,6 +8620,13 @@
+         "node": ">=0.12.0"
+       }
+     },
++    "node_modules/is-potential-custom-element-name": {
++      "version": "1.0.1",
++      "resolved": "https://registry.npmjs.org/is-potential-custom-element-name/-/is-potential-custom-element-name-1.0.1.tgz",
++      "integrity": "sha512-bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/isbot": {
+       "version": "5.1.40",
+       "resolved": "https://registry.npmjs.org/isbot/-/isbot-5.1.40.tgz",
+@@ -8121,6 +8680,46 @@
+         "js-yaml": "bin/js-yaml.js"
+       }
+     },
++    "node_modules/jsdom": {
++      "version": "27.4.0",
++      "resolved": "https://registry.npmjs.org/jsdom/-/jsdom-27.4.0.tgz",
++      "integrity": "sha512-mjzqwWRD9Y1J1KUi7W97Gja1bwOOM5Ug0EZ6UDK3xS7j7mndrkwozHtSblfomlzyB4NepioNt+B2sOSzczVgtQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@acemir/cssom": "^0.9.28",
++        "@asamuzakjp/dom-selector": "^6.7.6",
++        "@exodus/bytes": "^1.6.0",
++        "cssstyle": "^5.3.4",
++        "data-urls": "^6.0.0",
++        "decimal.js": "^10.6.0",
++        "html-encoding-sniffer": "^6.0.0",
++        "http-proxy-agent": "^7.0.2",
++        "https-proxy-agent": "^7.0.6",
++        "is-potential-custom-element-name": "^1.0.1",
++        "parse5": "^8.0.0",
++        "saxes": "^6.0.0",
++        "symbol-tree": "^3.2.4",
++        "tough-cookie": "^6.0.0",
++        "w3c-xmlserializer": "^5.0.0",
++        "webidl-conversions": "^8.0.0",
++        "whatwg-mimetype": "^4.0.0",
++        "whatwg-url": "^15.1.0",
++        "ws": "^8.18.3",
++        "xml-name-validator": "^5.0.0"
++      },
++      "engines": {
++        "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
++      },
++      "peerDependencies": {
++        "canvas": "^3.0.0"
++      },
++      "peerDependenciesMeta": {
++        "canvas": {
++          "optional": true
++        }
++      }
++    },
+     "node_modules/jsesc": {
+       "version": "3.1.0",
+       "resolved": "https://registry.npmjs.org/jsesc/-/jsesc-3.1.0.tgz",
+@@ -8656,6 +9255,13 @@
+         "@jridgewell/sourcemap-codec": "^1.5.5"
+       }
+     },
++    "node_modules/mdn-data": {
++      "version": "2.27.1",
++      "resolved": "https://registry.npmjs.org/mdn-data/-/mdn-data-2.27.1.tgz",
++      "integrity": "sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==",
++      "dev": true,
++      "license": "CC0-1.0"
++    },
+     "node_modules/merge2": {
+       "version": "1.4.1",
+       "resolved": "https://registry.npmjs.org/merge2/-/merge2-1.4.1.tgz",
+@@ -8998,6 +9604,20 @@
+         "node": ">= 6"
+       }
+     },
++    "node_modules/obug": {
++      "version": "2.2.1",
++      "resolved": "https://registry.npmjs.org/obug/-/obug-2.2.1.tgz",
++      "integrity": "sha512-XrsrhT5sybtKI6wakr2SPOlGZWWYbUXZ7a0jT8/QOeAPau+1X/bSegNe5YR75oJmEZQbKningirmGOEJCIk61Q==",
++      "dev": true,
++      "funding": [
++        "https://github.com/sponsors/sxzz",
++        "https://opencollective.com/debug"
++      ],
++      "license": "MIT",
++      "engines": {
++        "node": ">=12.20.0"
++      }
++    },
+     "node_modules/ocache": {
+       "version": "0.1.4",
+       "resolved": "https://registry.npmjs.org/ocache/-/ocache-0.1.4.tgz",
+@@ -9085,6 +9705,19 @@
+         "node": ">=6"
+       }
+     },
++    "node_modules/parse5": {
++      "version": "8.0.1",
++      "resolved": "https://registry.npmjs.org/parse5/-/parse5-8.0.1.tgz",
++      "integrity": "sha512-z1e/HMG90obSGeidlli3hj7cbocou0/wa5HacvI3ASx34PecNjNQeaHNo5WIZpWofN9kgkqV1q5YvXe3F0FoPw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "entities": "^8.0.0"
++      },
++      "funding": {
++        "url": "https://github.com/inikulin/parse5?sponsor=1"
++      }
++    },
+     "node_modules/path-exists": {
+       "version": "4.0.0",
+       "resolved": "https://registry.npmjs.org/path-exists/-/path-exists-4.0.0.tgz",
+@@ -9563,6 +10196,16 @@
+         "node": ">=0.10.0"
+       }
+     },
++    "node_modules/require-from-string": {
++      "version": "2.0.2",
++      "resolved": "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz",
++      "integrity": "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
+     "node_modules/resolve": {
+       "version": "1.22.12",
+       "resolved": "https://registry.npmjs.org/resolve/-/resolve-1.22.12.tgz",
+@@ -9740,6 +10383,19 @@
+       ],
+       "license": "MIT"
+     },
++    "node_modules/saxes": {
++      "version": "6.0.0",
++      "resolved": "https://registry.npmjs.org/saxes/-/saxes-6.0.0.tgz",
++      "integrity": "sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==",
++      "dev": true,
++      "license": "ISC",
++      "dependencies": {
++        "xmlchars": "^2.2.0"
++      },
++      "engines": {
++        "node": ">=v12.22.7"
++      }
++    },
+     "node_modules/scheduler": {
+       "version": "0.27.0",
+       "resolved": "https://registry.npmjs.org/scheduler/-/scheduler-0.27.0.tgz",
+@@ -9903,6 +10559,13 @@
+         "node": ">=8"
+       }
+     },
++    "node_modules/siginfo": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/siginfo/-/siginfo-2.0.0.tgz",
++      "integrity": "sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==",
++      "dev": true,
++      "license": "ISC"
++    },
+     "node_modules/source-map": {
+       "version": "0.7.6",
+       "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.7.6.tgz",
+@@ -9933,6 +10596,20 @@
+         "node": ">=20.16.0"
+       }
+     },
++    "node_modules/stackback": {
++      "version": "0.0.2",
++      "resolved": "https://registry.npmjs.org/stackback/-/stackback-0.0.2.tgz",
++      "integrity": "sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/std-env": {
++      "version": "4.3.0",
++      "resolved": "https://registry.npmjs.org/std-env/-/std-env-4.3.0.tgz",
++      "integrity": "sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/string-width": {
+       "version": "4.2.3",
+       "resolved": "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz",
+@@ -10033,6 +10710,13 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/symbol-tree": {
++      "version": "3.2.4",
++      "resolved": "https://registry.npmjs.org/symbol-tree/-/symbol-tree-3.2.4.tgz",
++      "integrity": "sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/synckit": {
+       "version": "0.11.13",
+       "resolved": "https://registry.npmjs.org/synckit/-/synckit-0.11.13.tgz",
+@@ -10101,6 +10785,23 @@
+         "node": ">=0.8"
+       }
+     },
++    "node_modules/tinybench": {
++      "version": "2.9.0",
++      "resolved": "https://registry.npmjs.org/tinybench/-/tinybench-2.9.0.tgz",
++      "integrity": "sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/tinyexec": {
++      "version": "1.3.1",
++      "resolved": "https://registry.npmjs.org/tinyexec/-/tinyexec-1.3.1.tgz",
++      "integrity": "sha512-GCvB3aoys96IuDFBMcTB46JOR6mdMtAToqwiW8JlWhsoh1mhHi/xn9ss/Dg7N555GiJyEt2qzoG/NHCwM6h1EA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=18"
++      }
++    },
+     "node_modules/tinyglobby": {
+       "version": "0.2.17",
+       "resolved": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz",
+@@ -10117,6 +10818,36 @@
+         "url": "https://github.com/sponsors/SuperchupuDev"
+       }
+     },
++    "node_modules/tinyrainbow": {
++      "version": "3.2.0",
++      "resolved": "https://registry.npmjs.org/tinyrainbow/-/tinyrainbow-3.2.0.tgz",
++      "integrity": "sha512-LgO3D9yZJjApUiuUfl9iFAwrtaX4+lok3wJIqttGoKCHlWUqHqbQpnxCf82L8FjgKsh4iGo78hqJwgL8F6To2A==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=14.0.0"
++      }
++    },
++    "node_modules/tldts": {
++      "version": "7.4.18",
++      "resolved": "https://registry.npmjs.org/tldts/-/tldts-7.4.18.tgz",
++      "integrity": "sha512-somxA8xKAUzlAxl0TX/jMSYIbRNFIVGnI96pVGJPeMc5BsHmfVXn6mOJT6U++ELnl04eGfzpfcEuZe8WiASkXg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "tldts-core": "^7.4.18"
++      },
++      "bin": {
++        "tldts": "bin/cli.js"
++      }
++    },
++    "node_modules/tldts-core": {
++      "version": "7.4.18",
++      "resolved": "https://registry.npmjs.org/tldts-core/-/tldts-core-7.4.18.tgz",
++      "integrity": "sha512-KI2PKvCmvQI/xD6ypPqkU0i7oxNXR/O58RLRaHR4svsgVUQ2JE/XC8BtMbG6PSehD27I8sZJRcC1ASnCy6lp3g==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/to-regex-range": {
+       "version": "5.0.1",
+       "resolved": "https://registry.npmjs.org/to-regex-range/-/to-regex-range-5.0.1.tgz",
+@@ -10130,6 +10861,32 @@
+         "node": ">=8.0"
+       }
+     },
++    "node_modules/tough-cookie": {
++      "version": "6.0.2",
++      "resolved": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-6.0.2.tgz",
++      "integrity": "sha512-exgYmnmL/sJpR3upZfXG5PoatXQii55xAiXGXzY+sROLZ/Y+SLcp9PgJNI9Vz37HpQ74WvDcLT8eqm+kV3FzrA==",
++      "dev": true,
++      "license": "BSD-3-Clause",
++      "dependencies": {
++        "tldts": "^7.0.5"
++      },
++      "engines": {
++        "node": ">=16"
++      }
++    },
++    "node_modules/tr46": {
++      "version": "6.0.0",
++      "resolved": "https://registry.npmjs.org/tr46/-/tr46-6.0.0.tgz",
++      "integrity": "sha512-bLVMLPtstlZ4iMQHpFHTR7GAGj2jxi8Dg0s2h2MafAE4uSWF98FC/3MomU51iQAMf8/qDUbKWf5GxuvvVcXEhw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "punycode": "^2.3.1"
++      },
++      "engines": {
++        "node": ">=20"
++      }
++    },
+     "node_modules/ts-api-utils": {
+       "version": "2.5.0",
+       "resolved": "https://registry.npmjs.org/ts-api-utils/-/ts-api-utils-2.5.0.tgz",
+@@ -10990,12 +11747,125 @@
+         }
+       }
+     },
++    "node_modules/vitest": {
++      "version": "4.1.12",
++      "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.1.12.tgz",
++      "integrity": "sha512-5eWdz2yb3ajxWF3C8C4TjkXl7FGm3n2E/VlazALrQHzK7nYMSGFnCZto0bbPNl77AwkOZVLk0YnBAejUu0NiWA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@vitest/expect": "4.1.12",
++        "@vitest/mocker": "4.1.12",
++        "@vitest/pretty-format": "4.1.12",
++        "@vitest/runner": "4.1.12",
++        "@vitest/snapshot": "4.1.12",
++        "@vitest/spy": "4.1.12",
++        "@vitest/utils": "4.1.12",
++        "es-module-lexer": "^2.0.0",
++        "expect-type": "^1.3.0",
++        "magic-string": "^0.30.21",
++        "obug": "^2.1.1",
++        "pathe": "^2.0.3",
++        "picomatch": "^4.0.3",
++        "std-env": "^4.0.0-rc.1",
++        "tinybench": "^2.9.0",
++        "tinyexec": "^1.0.2",
++        "tinyglobby": "^0.2.15",
++        "tinyrainbow": "^3.1.0",
++        "vite": "^6.0.0 || ^7.0.0 || ^8.0.0",
++        "why-is-node-running": "^2.3.0"
++      },
++      "bin": {
++        "vitest": "vitest.mjs"
++      },
++      "engines": {
++        "node": "^20.0.0 || ^22.0.0 || >=24.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      },
++      "peerDependencies": {
++        "@edge-runtime/vm": "*",
++        "@opentelemetry/api": "^1.9.0",
++        "@types/node": "^20.0.0 || ^22.0.0 || >=24.0.0",
++        "@vitest/browser-playwright": "4.1.12",
++        "@vitest/browser-preview": "4.1.12",
++        "@vitest/browser-webdriverio": "^4.1.11",
++        "@vitest/coverage-istanbul": "4.1.12",
++        "@vitest/coverage-v8": "4.1.12",
++        "@vitest/ui": "4.1.12",
++        "happy-dom": "*",
++        "jsdom": "*",
++        "vite": "^6.0.0 || ^7.0.0 || ^8.0.0"
++      },
++      "peerDependenciesMeta": {
++        "@edge-runtime/vm": {
++          "optional": true
++        },
++        "@opentelemetry/api": {
++          "optional": true
++        },
++        "@types/node": {
++          "optional": true
++        },
++        "@vitest/browser-playwright": {
++          "optional": true
++        },
++        "@vitest/browser-preview": {
++          "optional": true
++        },
++        "@vitest/browser-webdriverio": {
++          "optional": true
++        },
++        "@vitest/coverage-istanbul": {
++          "optional": true
++        },
++        "@vitest/coverage-v8": {
++          "optional": true
++        },
++        "@vitest/ui": {
++          "optional": true
++        },
++        "happy-dom": {
++          "optional": true
++        },
++        "jsdom": {
++          "optional": true
++        },
++        "vite": {
++          "optional": false
++        }
++      }
++    },
++    "node_modules/w3c-xmlserializer": {
++      "version": "5.0.0",
++      "resolved": "https://registry.npmjs.org/w3c-xmlserializer/-/w3c-xmlserializer-5.0.0.tgz",
++      "integrity": "sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "xml-name-validator": "^5.0.0"
++      },
++      "engines": {
++        "node": ">=18"
++      }
++    },
+     "node_modules/web-vitals": {
+       "version": "4.2.4",
+       "resolved": "https://registry.npmjs.org/web-vitals/-/web-vitals-4.2.4.tgz",
+       "integrity": "sha512-r4DIlprAGwJ7YM11VZp4R884m0Vmgr6EAKe3P+kO0PPj3Unqyvv59rczf6UiGcb9Z8QxZVcqKNwv/g0WNdWwsw==",
+       "license": "Apache-2.0"
+     },
++    "node_modules/webidl-conversions": {
++      "version": "8.0.1",
++      "resolved": "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-8.0.1.tgz",
++      "integrity": "sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "engines": {
++        "node": ">=20"
++      }
++    },
+     "node_modules/webpack-virtual-modules": {
+       "version": "0.6.2",
+       "resolved": "https://registry.npmjs.org/webpack-virtual-modules/-/webpack-virtual-modules-0.6.2.tgz",
+@@ -11025,6 +11895,30 @@
+         "node": ">=0.8.0"
+       }
+     },
++    "node_modules/whatwg-mimetype": {
++      "version": "4.0.0",
++      "resolved": "https://registry.npmjs.org/whatwg-mimetype/-/whatwg-mimetype-4.0.0.tgz",
++      "integrity": "sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/whatwg-url": {
++      "version": "15.1.0",
++      "resolved": "https://registry.npmjs.org/whatwg-url/-/whatwg-url-15.1.0.tgz",
++      "integrity": "sha512-2ytDk0kiEj/yu90JOAp44PVPUkO9+jVhyf+SybKlRHSDlvOOZhdPIrr7xTH64l4WixO2cP+wQIcgujkGBPPz6g==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "tr46": "^6.0.0",
++        "webidl-conversions": "^8.0.0"
++      },
++      "engines": {
++        "node": ">=20"
++      }
++    },
+     "node_modules/which": {
+       "version": "2.0.2",
+       "resolved": "https://registry.npmjs.org/which/-/which-2.0.2.tgz",
+@@ -11041,6 +11935,23 @@
+         "node": ">= 8"
+       }
+     },
++    "node_modules/why-is-node-running": {
++      "version": "2.3.0",
++      "resolved": "https://registry.npmjs.org/why-is-node-running/-/why-is-node-running-2.3.0.tgz",
++      "integrity": "sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "siginfo": "^2.0.0",
++        "stackback": "0.0.2"
++      },
++      "bin": {
++        "why-is-node-running": "cli.js"
++      },
++      "engines": {
++        "node": ">=8"
++      }
++    },
+     "node_modules/word-wrap": {
+       "version": "1.2.5",
+       "resolved": "https://registry.npmjs.org/word-wrap/-/word-wrap-1.2.5.tgz",
+@@ -12288,6 +13199,16 @@
+         }
+       }
+     },
++    "node_modules/xml-name-validator": {
++      "version": "5.0.0",
++      "resolved": "https://registry.npmjs.org/xml-name-validator/-/xml-name-validator-5.0.0.tgz",
++      "integrity": "sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=18"
++      }
++    },
+     "node_modules/xml-naming": {
+       "version": "0.1.0",
+       "resolved": "https://registry.npmjs.org/xml-naming/-/xml-naming-0.1.0.tgz",
+@@ -12318,6 +13239,13 @@
+         "node": ">=20.0"
+       }
+     },
++    "node_modules/xmlchars": {
++      "version": "2.2.0",
++      "resolved": "https://registry.npmjs.org/xmlchars/-/xmlchars-2.2.0.tgz",
++      "integrity": "sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/y18n": {
+       "version": "5.0.8",
+       "resolved": "https://registry.npmjs.org/y18n/-/y18n-5.0.8.tgz",
+diff --git a/package.json b/package.json
+index 07e9bbd..60b2757 100644
+--- a/package.json
++++ b/package.json
+@@ -9,6 +9,8 @@
+     "build:dev": "vite build --mode development",
+     "preview": "vite preview",
+     "lint": "eslint .",
++    "test": "vitest run",
++    "test:watch": "vitest",
+     "format": "prettier --write .",
+     "deploy": "vite build && wrangler deploy --config wrangler.deploy.jsonc"
+   },
+@@ -51,10 +53,12 @@
+     "eslint-plugin-react-hooks": "^5.2.0",
+     "eslint-plugin-react-refresh": "^0.4.20",
+     "globals": "^15.15.0",
++    "jsdom": "^27.4.0",
+     "prettier": "^3.7.3",
+     "typescript": "^5.8.3",
+     "typescript-eslint": "^8.56.1",
+     "vite": "^7.3.1",
++    "vitest": "^4.1.12",
+     "wrangler": "^4.151.1"
+   },
+   "allowScripts": {
+diff --git a/src/lib/activeTab.test.ts b/src/lib/activeTab.test.ts
+new file mode 100644
+index 0000000..2718a50
+--- /dev/null
++++ b/src/lib/activeTab.test.ts
+@@ -0,0 +1,55 @@
++// @vitest-environment jsdom
++import { afterEach, describe, expect, it, vi } from "vitest";
++import { readActiveTab, withActiveTab, writeActiveTab } from "./activeTab";
++import { dashboard, tab } from "@/test/data";
++
++afterEach(() => localStorage.clear());
++
++describe("active tab memory (per device, per user)", () => {
++  it("writes and reads back", () => {
++    expect(readActiveTab("u1")).toBeNull();
++    writeActiveTab("u1", "T2");
++    expect(readActiveTab("u1")).toBe("T2");
++  });
++
++  it("keeps users apart", () => {
++    writeActiveTab("u1", "T1");
++    writeActiveTab("u2", "T9");
++    expect(readActiveTab("u1")).toBe("T1");
++    expect(readActiveTab("u2")).toBe("T9");
++  });
++
++  it("does not throw when storage is blocked", () => {
++    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
++      throw new Error("blocked");
++    });
++    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
++      throw new Error("blocked");
++    });
++    expect(readActiveTab("u1")).toBeNull();
++    expect(() => writeActiveTab("u1", "T1")).not.toThrow();
++  });
++});
++
++describe("withActiveTab", () => {
++  const state = dashboard([tab("T1"), tab("T2"), tab("T3")], "T1");
++
++  it("uses the first preferred id that still exists", () => {
++    expect(withActiveTab(state, ["gone", "T3", "T2"]).activeTabId).toBe("T3");
++  });
++
++  it("ignores null / undefined / empty", () => {
++    expect(withActiveTab(state, [null, undefined, "", "T2"]).activeTabId).toBe("T2");
++  });
++
++  it("returns the same object when nothing changes", () => {
++    expect(withActiveTab(state, ["T1"])).toBe(state);
++    expect(withActiveTab(state, ["gone"])).toBe(state);
++    expect(withActiveTab(state, [])).toBe(state);
++  });
++
++  it("does not modify the original state", () => {
++    withActiveTab(state, ["T3"]);
++    expect(state.activeTabId).toBe("T1");
++  });
++});
+diff --git a/src/lib/apiRoutes.test.ts b/src/lib/apiRoutes.test.ts
+new file mode 100644
+index 0000000..fa52164
+--- /dev/null
++++ b/src/lib/apiRoutes.test.ts
+@@ -0,0 +1,247 @@
++// The two server endpoints, called the way the server calls them, with a fake "internet".
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { rss } from "@/test/data";
++
++// createFileRoute(path)(options) normally builds a route object; here we just keep the options.
++vi.mock("@tanstack/react-router", () => ({
++  createFileRoute: () => (options: unknown) => ({ options }),
++}));
++
++type Handlers = Record<string, (ctx: { request: Request }) => Promise<Response>>;
++async function handlers(path: "feed" | "discover-feed"): Promise<Handlers> {
++  const mod = await import(`../routes/api/${path}.ts`);
++  return (mod.Route as any).options.server.handlers;
++}
++
++const APP = "https://lumen.example";
++const get = (h: Handlers, target: string | null, headers: Record<string, string> = {}) =>
++  h.GET({
++    request: new Request(
++      `${APP}/api/x${target === null ? "" : `?url=${encodeURIComponent(target)}`}`,
++      { headers },
++    ),
++  });
++
++type Site = Record<string, () => Response>;
++let calls: string[];
++function fakeInternet(site: Site) {
++  calls = [];
++  vi.stubGlobal(
++    "fetch",
++    vi.fn(async (input: string) => {
++      calls.push(String(input));
++      const make = site[String(input)];
++      return make ? make() : new Response("not found", { status: 404 });
++    }),
++  );
++}
++const xml =
++  (body: string, type = "application/rss+xml") =>
++  () =>
++    new Response(body, { headers: { "content-type": type } });
++
++beforeEach(() => (calls = []));
++afterEach(() => vi.unstubAllGlobals());
++
++describe("/api/feed", () => {
++  it("returns parsed, normalised JSON", async () => {
++    fakeInternet({
++      "https://news.example/rss": xml(
++        rss(
++          [
++            { title: "One", link: "/a/1" },
++            { title: "Two", link: "javascript:alert(1)" },
++          ],
++          "https://news.example/",
++        ),
++      ),
++    });
++    const res = await get(await handlers("feed"), "https://news.example/rss");
++    expect(res.status).toBe(200);
++    expect(res.headers.get("cache-control")).toBe("public, max-age=300");
++    const body = await res.json();
++    expect(body.title).toBe("Test feed");
++    expect(body.items.map((i: any) => i.link)).toEqual(["https://news.example/a/1", ""]);
++    expect(typeof body.fetchedAt).toBe("string");
++  });
++
++  it("returns at most 30 entries", async () => {
++    const items = Array.from({ length: 80 }, (_, i) => ({
++      title: `T${i}`,
++      link: `https://n.example/${i}`,
++    }));
++    fakeInternet({ "https://n.example/rss": xml(rss(items)) });
++    const body = await (await get(await handlers("feed"), "https://n.example/rss")).json();
++    expect(body.items).toHaveLength(30);
++  });
++
++  it("decodes accented characters from ISO-8859-1 feeds", async () => {
++    const head = new TextEncoder().encode(
++      '<?xml version="1.0" encoding="ISO-8859-1"?><rss><channel><title>Citt',
++    );
++    const tail = new TextEncoder().encode("</title></channel></rss>");
++    const body = new Uint8Array([...head, 0xe0, ...tail]); // "à"
++    fakeInternet({
++      "https://it.example/rss": () =>
++        new Response(body, { headers: { "content-type": "text/xml" } }),
++    });
++    const json = await (await get(await handlers("feed"), "https://it.example/rss")).json();
++    expect(json.title).toBe("Città");
++  });
++
++  it("follows a redirect and resolves links against the final site", async () => {
++    fakeInternet({
++      "https://old.example/rss": () =>
++        new Response(null, { status: 301, headers: { location: "https://new.example/feed" } }),
++      "https://new.example/feed": xml(
++        `<rss><channel><title>T</title><item><title>I</title><link>/p</link></item></channel></rss>`,
++      ),
++    });
++    const json = await (await get(await handlers("feed"), "https://old.example/rss")).json();
++    expect(json.items[0].link).toBe("https://new.example/p");
++  });
++
++  it("400 without url", async () => {
++    fakeInternet({});
++    const res = await get(await handlers("feed"), null);
++    expect(res.status).toBe(400);
++    expect((await res.json()).error).toBe("Missing url param");
++  });
++
++  it.each([
++    "http://127.0.0.1/",
++    "http://localhost/x",
++    "http://169.254.169.254/",
++    "http://intranet/",
++    "ftp://x.example/",
++  ])("refuses %s without contacting it", async (target) => {
++    fakeInternet({});
++    const res = await get(await handlers("feed"), target);
++    expect(res.status).toBe(400);
++    expect(calls).toEqual([]);
++  });
++
++  it("refuses a public URL that redirects to an internal one", async () => {
++    fakeInternet({
++      "https://evil.example/r": () =>
++        new Response(null, { status: 302, headers: { location: "http://169.254.169.254/latest" } }),
++    });
++    const res = await get(await handlers("feed"), "https://evil.example/r");
++    expect(res.status).toBe(400);
++    expect(calls).toEqual(["https://evil.example/r"]);
++  });
++
++  it("keeps the 'Upstream <status>' message the UI relies on", async () => {
++    fakeInternet({ "https://n.example/rss": () => new Response("no", { status: 403 }) });
++    const res = await get(await handlers("feed"), "https://n.example/rss");
++    expect(res.status).toBe(502);
++    expect((await res.json()).error).toBe("Upstream 403");
++  });
++
++  it("502 when the page is not a feed", async () => {
++    fakeInternet({ "https://n.example/": xml("<html><body>hi</body></html>", "text/html") });
++    const res = await get(await handlers("feed"), "https://n.example/");
++    expect(res.status).toBe(502);
++    expect((await res.json()).error).toBe("Unrecognized feed format");
++  });
++
++  it("refuses an oversized feed", async () => {
++    fakeInternet({
++      "https://n.example/big": () =>
++        new Response("x", { headers: { "content-length": String(50 * 1024 * 1024) } }),
++    });
++    const res = await get(await handlers("feed"), "https://n.example/big");
++    expect(res.status).toBe(502);
++    expect((await res.json()).error).toBe("Feed too large");
++  });
++
++  it("refuses other websites (Origin) but not the app itself", async () => {
++    fakeInternet({ "https://n.example/rss": xml(rss([])) });
++    const h = await handlers("feed");
++    expect((await get(h, "https://n.example/rss", { origin: "https://evil.example" })).status).toBe(
++      403,
++    );
++    expect(calls).toEqual([]);
++    const ok = await get(h, "https://n.example/rss", { origin: APP });
++    expect(ok.status).toBe(200);
++    expect(ok.headers.get("access-control-allow-origin")).toBe(APP);
++  });
++
++  it("answers OPTIONS (preflight) for the app and refuses others", async () => {
++    const h = await handlers("feed");
++    const opt = (origin: string) =>
++      h.OPTIONS({
++        request: new Request(`${APP}/api/feed`, { method: "OPTIONS", headers: { origin } }),
++      });
++    expect((await opt(APP)).status).toBe(204);
++    expect((await opt("https://evil.example")).status).toBe(403);
++  });
++});
++
++describe("/api/discover-feed", () => {
++  it("returns the URL itself with ONE single fetch when it already is a feed", async () => {
++    fakeInternet({ "https://n.example/rss": xml(rss([])) });
++    const res = await get(await handlers("discover-feed"), "https://n.example/rss");
++    expect(await res.json()).toEqual({ feeds: [{ url: "https://n.example/rss", title: null }] });
++    expect(calls).toEqual(["https://n.example/rss"]);
++  });
++
++  it("finds the feed advertised in the page <head>", async () => {
++    fakeInternet({
++      "https://blog.example/": xml(
++        `<html><head><link rel="alternate" type="application/rss+xml" href="/custom.xml"></head><body></body></html>`,
++        "text/html; charset=utf-8",
++      ),
++      "https://blog.example/custom.xml": xml(rss([])),
++    });
++    const body = await (await get(await handlers("discover-feed"), "https://blog.example/")).json();
++    expect(body.feeds).toEqual([{ url: "https://blog.example/custom.xml", title: null }]);
++  });
++
++  it("adds https:// to a bare domain", async () => {
++    fakeInternet({ "https://open.example/": xml(rss([])) });
++    const res = await get(await handlers("discover-feed"), "open.example");
++    expect(res.status).toBe(200);
++    expect(calls[0]).toBe("https://open.example/");
++  });
++
++  it("probes common paths when the page advertises nothing", async () => {
++    fakeInternet({
++      "https://plain.example/": xml("<html><head></head></html>", "text/html"),
++      "https://plain.example/feed.xml": xml(rss([])),
++    });
++    const body = await (
++      await get(await handlers("discover-feed"), "https://plain.example/")
++    ).json();
++    expect(body.feeds[0].url).toBe("https://plain.example/feed.xml");
++  });
++
++  it("does not accept a non-feed (e.g. a sitemap) on a probed path", async () => {
++    fakeInternet({
++      "https://plain.example/": xml("<html></html>", "text/html"),
++      "https://plain.example/feed": xml('<?xml version="1.0"?><urlset></urlset>', "text/xml"),
++    });
++    const res = await get(await handlers("discover-feed"), "https://plain.example/");
++    expect(res.status).toBe(404);
++    expect((await res.json()).error).toContain("No RSS/Atom feed found");
++  });
++
++  it("refuses internal targets and does not contact them", async () => {
++    fakeInternet({});
++    const h = await handlers("discover-feed");
++    for (const t of ["http://127.0.0.1/", "localhost", "http://192.168.0.1/"]) {
++      const res = await get(h, t);
++      expect(res.status).toBe(400);
++    }
++    expect(calls).toEqual([]);
++  });
++
++  it("400 without url; 403 for other websites", async () => {
++    fakeInternet({});
++    const h = await handlers("discover-feed");
++    expect((await get(h, null)).status).toBe(400);
++    expect((await get(h, "https://n.example/", { origin: "https://evil.example" })).status).toBe(
++      403,
++    );
++  });
++});
+diff --git a/src/lib/backup.test.ts b/src/lib/backup.test.ts
+new file mode 100644
+index 0000000..87a0527
+--- /dev/null
++++ b/src/lib/backup.test.ts
+@@ -0,0 +1,305 @@
++// @vitest-environment jsdom
++import { describe, expect, it, vi } from "vitest";
++import {
++  BACKUP_APP,
++  BACKUP_VERSION,
++  buildBackupJson,
++  downloadFile,
++  fileTimestamp,
++  normalizeDashboardState,
++  parseBackup,
++  summarizeState,
++  withFreshIds,
++} from "./backup";
++import { dashboard, tab, widget } from "@/test/data";
++import type { DashboardState } from "./rss";
++
++const sample = (): DashboardState =>
++  dashboard(
++    [
++      tab("T1", [
++        widget("w1", 0, { customTitle: "Mine", style: "mini" }),
++        widget("w2", 1),
++        {
++          id: "w3",
++          kind: "bookmarks",
++          url: "",
++          column: 2,
++          customTitle: "Fav",
++          bookmarks: [{ id: "b1", url: "https://a.example/", title: "A" }],
++        },
++      ]),
++      tab("T2", [], 4),
++    ],
++    "T2",
++  );
++
++describe("backup round trip", () => {
++  it("exports and re-imports without losing anything", () => {
++    const state = sample();
++    const parsed = parseBackup(buildBackupJson(state));
++    expect(parsed.state).toEqual(state);
++    expect(parsed.summary).toEqual({ tabCount: 2, feedCount: 2, bookmarkCount: 1, skipped: 0 });
++  });
++
++  it("wraps the state in a labelled envelope", () => {
++    const json = JSON.parse(buildBackupJson(sample()));
++    expect(json.app).toBe(BACKUP_APP);
++    expect(json.version).toBe(BACKUP_VERSION);
++    expect(typeof json.exportedAt).toBe("string");
++  });
++
++  it("also accepts a bare state (older files)", () => {
++    const state = sample();
++    expect(parseBackup(JSON.stringify(state)).state).toEqual(state);
++  });
++});
++
++describe("parseBackup errors", () => {
++  it("rejects invalid JSON and non-objects", () => {
++    expect(() => parseBackup("{nope")).toThrow("not valid JSON");
++    expect(() => parseBackup("[1,2]")).toThrow("Not a Lumen backup");
++    expect(() => parseBackup("42")).toThrow("Not a Lumen backup");
++  });
++
++  it("rejects files from another app", () => {
++    expect(() => parseBackup(JSON.stringify({ app: "other", version: 1, data: sample() }))).toThrow(
++      "Not a Lumen backup",
++    );
++  });
++
++  it("rejects a newer backup version with a helpful message", () => {
++    const text = JSON.stringify({ app: BACKUP_APP, version: BACKUP_VERSION + 1, data: sample() });
++    expect(() => parseBackup(text)).toThrow("newer version");
++  });
++
++  it("rejects a file without tabs, or with only unusable tabs", () => {
++    expect(() => parseBackup(JSON.stringify({ app: BACKUP_APP, version: 1, data: {} }))).toThrow(
++      "no tabs",
++    );
++    expect(() => parseBackup(JSON.stringify({ tabs: [] }))).toThrow("no tabs");
++    expect(() => parseBackup(JSON.stringify({ tabs: [null, 5] }))).toThrow("no tabs");
++  });
++});
++
++describe("normalizeDashboardState (repairs untrusted data)", () => {
++  it("clamps columns and tile positions", () => {
++    const { state } = normalizeDashboardState({
++      tabs: [
++        {
++          id: "t",
++          name: "X",
++          columns: 99,
++          widgets: [
++            { id: "a", url: "https://a.example/", column: 50 },
++            { id: "b", url: "https://b.example/", column: -3 },
++            { id: "c", url: "https://c.example/", column: "oops" },
++          ],
++        },
++      ],
++    });
++    expect(state.tabs[0].columns).toBe(4);
++    expect(state.tabs[0].widgets.map((w) => w.column)).toEqual([3, 0, 0]);
++  });
++
++  it("uses 3 columns when the value is missing or broken", () => {
++    const { state } = normalizeDashboardState({
++      tabs: [
++        { id: "t", widgets: [] },
++        { id: "u", columns: "x", widgets: [] },
++      ],
++    });
++    expect(state.tabs.map((t) => t.columns)).toEqual([3, 3]);
++  });
++
++  it("skips feeds without a valid http(s) URL and counts them", () => {
++    const { state, summary } = normalizeDashboardState({
++      tabs: [
++        {
++          id: "t",
++          name: "X",
++          columns: 2,
++          widgets: [
++            { id: "ok", url: "https://ok.example/feed" },
++            { id: "js", url: "javascript:alert(1)" },
++            { id: "empty", url: "" },
++            "garbage",
++            null,
++          ],
++        },
++      ],
++    });
++    expect(state.tabs[0].widgets.map((w) => w.id)).toEqual(["ok"]);
++    expect(summary.skipped).toBe(4);
++  });
++
++  it("drops bookmarks with unsafe URLs", () => {
++    const { state } = normalizeDashboardState({
++      tabs: [
++        {
++          id: "t",
++          columns: 2,
++          widgets: [
++            {
++              id: "f",
++              kind: "bookmarks",
++              bookmarks: [
++                { id: "1", url: "https://ok.example/", title: "OK" },
++                { id: "2", url: "javascript:alert(1)", title: "Bad" },
++                { id: "3", url: "https://no-title.example/" },
++              ],
++            },
++          ],
++        },
++      ],
++    });
++    const bm = state.tabs[0].widgets[0].bookmarks!;
++    expect(bm.map((b) => b.url)).toEqual(["https://ok.example/", "https://no-title.example/"]);
++    expect(bm[1].title).toBe("https://no-title.example/"); // title falls back to the URL
++  });
++
++  it("gives fresh ids to duplicated or missing ids", () => {
++    const { state } = normalizeDashboardState({
++      tabs: [
++        {
++          id: "same",
++          columns: 2,
++          widgets: [{ id: "same", url: "https://a.example/" }, { url: "https://b.example/" }],
++        },
++        { id: "same", columns: 2, widgets: [] },
++      ],
++    });
++    const all = [
++      ...state.tabs.map((t) => t.id),
++      ...state.tabs.flatMap((t) => t.widgets.map((w) => w.id)),
++    ];
++    expect(new Set(all).size).toBe(all.length);
++    expect(all.every((id) => id.length > 0)).toBe(true);
++  });
++
++  it("names unnamed tabs", () => {
++    const { state } = normalizeDashboardState({
++      tabs: [
++        { id: "a", columns: 2, widgets: [] },
++        { id: "b", name: "  ", columns: 2, widgets: [] },
++      ],
++    });
++    expect(state.tabs.map((t) => t.name)).toEqual(["Tab 1", "Tab 2"]);
++  });
++
++  it("keeps the saved active tab only if it exists, and fills defaults", () => {
++    const base = {
++      tabs: [
++        { id: "a", columns: 2, widgets: [] },
++        { id: "b", columns: 2, widgets: [] },
++      ],
++    };
++    expect(normalizeDashboardState({ ...base, activeTabId: "b" }).state.activeTabId).toBe("b");
++    expect(normalizeDashboardState({ ...base, activeTabId: "zzz" }).state.activeTabId).toBe("a");
++    const s = normalizeDashboardState(base).state;
++    expect(s.globalDefaultStyle).toBe("full");
++    expect(s.highlightNew).toBe(true);
++    expect(
++      normalizeDashboardState({ ...base, highlightNew: false, globalDefaultStyle: "mini" }).state,
++    ).toMatchObject({
++      highlightNew: false,
++      globalDefaultStyle: "mini",
++    });
++    expect(
++      normalizeDashboardState({ ...base, globalDefaultStyle: "weird" }).state.globalDefaultStyle,
++    ).toBe("full");
++  });
++
++  it("preserves unknown fields (future versions) but not prototype tricks", () => {
++    const raw = JSON.parse(`{
++      "tabs":[{"id":"a","columns":2,"futureTabField":{"x":1},"widgets":[
++        {"id":"w","url":"https://a.example/","futureWidgetField":7,"__proto__":{"polluted":true}}]}],
++      "futureStateField":"keep me","nothing":null}`);
++    const { state } = normalizeDashboardState(raw);
++    expect((state as any).futureStateField).toBe("keep me");
++    expect("nothing" in state).toBe(false);
++    expect((state.tabs[0] as any).futureTabField).toEqual({ x: 1 });
++    expect((state.tabs[0].widgets[0] as any).futureWidgetField).toBe(7);
++    expect(({} as any).polluted).toBeUndefined();
++    expect((state.tabs[0].widgets[0] as any).polluted).toBeUndefined();
++  });
++
++  it("does not carry sync bookkeeping fields over", () => {
++    const { state } = normalizeDashboardState({
++      schemaVersion: 1,
++      updatedAt: "x",
++      tabs: [{ id: "a", columns: 2, widgets: [] }],
++    });
++    expect("schemaVersion" in state).toBe(false);
++    expect("updatedAt" in state).toBe(false);
++  });
++
++  it("ignores unknown tile styles", () => {
++    const { state } = normalizeDashboardState({
++      tabs: [
++        {
++          id: "a",
++          columns: 2,
++          defaultStyle: "nope",
++          widgets: [{ id: "w", url: "https://a.example/", style: "nope" }],
++        },
++      ],
++    });
++    expect(state.tabs[0].defaultStyle).toBeUndefined();
++    expect(state.tabs[0].widgets[0].style).toBeUndefined();
++  });
++});
++
++describe("summarizeState / withFreshIds / helpers", () => {
++  it("counts tabs, feeds and bookmarks", () => {
++    expect(summarizeState(sample())).toEqual({ tabCount: 2, feedCount: 2, bookmarkCount: 1 });
++  });
++
++  it("withFreshIds changes every id but keeps everything else", () => {
++    const tabs = sample().tabs;
++    const fresh = withFreshIds(tabs);
++    const oldIds = new Set([
++      ...tabs.map((t) => t.id),
++      ...tabs.flatMap((t) =>
++        t.widgets.flatMap((w) => [w.id, ...(w.bookmarks ?? []).map((b) => b.id)]),
++      ),
++    ]);
++    const newIds = [
++      ...fresh.map((t) => t.id),
++      ...fresh.flatMap((t) =>
++        t.widgets.flatMap((w) => [w.id, ...(w.bookmarks ?? []).map((b) => b.id)]),
++      ),
++    ];
++    expect(newIds.some((id) => oldIds.has(id))).toBe(false);
++    expect(new Set(newIds).size).toBe(newIds.length);
++    expect(fresh[0].widgets[0]).toMatchObject({
++      url: "https://example.com/w1.xml",
++      customTitle: "Mine",
++      style: "mini",
++    });
++    expect(fresh[0].widgets[2].bookmarks![0]).toMatchObject({
++      url: "https://a.example/",
++      title: "A",
++    });
++  });
++
++  it("fileTimestamp is safe for file names", () => {
++    expect(fileTimestamp(new Date("2026-10-12T14:30:05Z"))).toBe("2026-10-12-14-30-05");
++  });
++
++  it("downloadFile creates a temporary link, clicks it and cleans up", () => {
++    vi.useFakeTimers();
++    const create = vi.fn(() => "blob:fake");
++    const revoke = vi.fn();
++    Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke });
++    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
++    downloadFile("hello", "x.txt", "text/plain");
++    expect(create).toHaveBeenCalledOnce();
++    expect(click).toHaveBeenCalledOnce();
++    expect(document.querySelector("a[download]")).toBeNull(); // removed again
++    expect(revoke).not.toHaveBeenCalled(); // not immediately (can cancel the download)
++    vi.advanceTimersByTime(10_000);
++    expect(revoke).toHaveBeenCalledWith("blob:fake");
++    vi.useRealTimers();
++  });
++});
+diff --git a/src/lib/dashboardSync.test.ts b/src/lib/dashboardSync.test.ts
+new file mode 100644
+index 0000000..aca2af1
+--- /dev/null
++++ b/src/lib/dashboardSync.test.ts
+@@ -0,0 +1,381 @@
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import {
++  BACKUP_KEEP,
++  DashboardSync,
++  SCHEMA_VERSION,
++  backupIdFor,
++  backupsToPrune,
++  ensureDailyBackup,
++  firestoreBackups,
++  stripUndefined,
++  type DashboardBackend,
++  type RemoteSnapshot,
++  type SyncIssue,
++  type SyncStatus,
++} from "./dashboardSync";
++import { fs } from "@/test/fakeFirestore";
++import { dashboard, tab, widget } from "@/test/data";
++import type { DashboardState } from "./rss";
++
++vi.mock("firebase/firestore", () => import("@/test/fakeFirestore"));
++
++// ── a fake backend we fully control ──────────────────────────────────────────
++function setup(options?: ConstructorParameters<typeof DashboardSync>[2]) {
++  let push!: (s: RemoteSnapshot) => void;
++  let fail!: (e: unknown) => void;
++  const writes: Record<string, any>[] = [];
++  const writeResults: Array<"ok" | Error> = [];
++  const backend: DashboardBackend = {
++    subscribe(onSnap, onError) {
++      push = onSnap;
++      fail = onError;
++      return () => {};
++    },
++    write: vi.fn(async (payload) => {
++      writes.push(payload);
++      const r = writeResults.shift() ?? "ok";
++      if (r !== "ok") throw r;
++    }),
++  };
++  const remote: Array<DashboardState | null> = [];
++  const statuses: Array<[SyncStatus, SyncIssue | undefined]> = [];
++  const confirmed: Array<DashboardState | null> = [];
++  const sync = new DashboardSync(
++    backend,
++    {
++      onRemote: (s) => remote.push(s),
++      onStatus: (s, i) => statuses.push([s, i]),
++      onConfirmed: (s) => confirmed.push(s),
++    },
++    options,
++  );
++  sync.start();
++  return {
++    sync,
++    writes,
++    writeResults,
++    remote,
++    statuses,
++    confirmed,
++    backend,
++    push: (data: unknown, fromCache = false) =>
++      push({ exists: data !== null, fromCache, data: data ?? undefined }),
++    fail: (e: unknown) => fail(e),
++    last: () => statuses[statuses.length - 1],
++  };
++}
++
++const state = (name = "A") =>
++  dashboard([tab("T1", [widget("w1", 0)])].map((t) => ({ ...t, name })));
++const stored = (name = "A") => ({ ...state(name), schemaVersion: 1 });
++
++beforeEach(() => vi.useFakeTimers());
++afterEach(() => {
++  vi.useRealTimers();
++  fs.reset();
++});
++
++describe("rule 1: nothing is written before the server confirmed what is stored", () => {
++  it("an empty answer from the local cache is NOT 'no data' (stays offline, edits refused)", async () => {
++    const t = setup();
++    t.push(null, true);
++    expect(t.last()?.[0]).toBe("offline");
++    expect(t.sync.canEdit()).toBe(false);
++    expect(t.sync.schedule(state())).toBe(false);
++    await vi.advanceTimersByTimeAsync(5000);
++    expect(t.writes).toHaveLength(0);
++    expect(t.remote).toHaveLength(0);
++  });
++
++  it("an answer from the server unlocks editing", () => {
++    const t = setup();
++    t.push(stored());
++    expect(t.sync.canEdit()).toBe(true);
++    expect(t.last()?.[0]).toBe("synced");
++    expect(t.remote).toHaveLength(1);
++  });
++
++  it("after the server confirmed once, later cache answers are accepted", () => {
++    const t = setup();
++    t.push(stored("A"));
++    t.push(stored("B"), true);
++    expect(t.remote.map((s) => s?.tabs[0].name)).toEqual(["A", "B"]);
++  });
++
++  it("reports the first trustworthy read exactly once (daily backup hook)", () => {
++    const t = setup();
++    t.push(null, true);
++    expect(t.confirmed).toHaveLength(0);
++    t.push(stored("A"));
++    t.push(stored("B"));
++    expect(t.confirmed).toHaveLength(1);
++    expect(t.confirmed[0]?.tabs[0].name).toBe("A");
++  });
++});
++
++describe("rule 2: a missing document is never seeded automatically", () => {
++  it("'does not exist' from the server → onRemote(null), and still no write", async () => {
++    const t = setup();
++    t.push(null);
++    expect(t.remote).toEqual([null]);
++    expect(t.confirmed).toEqual([null]);
++    await vi.advanceTimersByTimeAsync(5000);
++    expect(t.writes).toHaveLength(0);
++  });
++
++  it("the first user edit does save", async () => {
++    const t = setup();
++    t.push(null);
++    expect(t.sync.schedule(state("Mine"))).toBe(true);
++    await vi.advanceTimersByTimeAsync(500);
++    expect(t.writes).toHaveLength(1);
++  });
++});
++
++describe("rule 3: unreadable stored data is never overwritten", () => {
++  it("blocks the sync and reports 'unreadable'", async () => {
++    const t = setup();
++    t.push({ tabs: "garbage" });
++    expect(t.last()).toEqual(["error", "unreadable"]);
++    expect(t.sync.canEdit()).toBe(false);
++    expect(t.sync.schedule(state())).toBe(false);
++    await vi.advanceTimersByTimeAsync(5000);
++    expect(t.writes).toHaveLength(0);
++    expect(t.remote).toHaveLength(0);
++  });
++
++  it("an explicit restore (force) may replace it, once the server has answered", async () => {
++    const t = setup();
++    t.push({ tabs: "garbage" });
++    expect(t.sync.schedule(state("Restored"), { force: true })).toBe(true);
++    await vi.advanceTimersByTimeAsync(500);
++    expect(t.writes).toHaveLength(1);
++    expect(t.writes[0].tabs[0].name).toBe("Restored");
++    expect(t.sync.canEdit()).toBe(true);
++  });
++
++  it("force is refused before the server has answered", () => {
++    const t = setup();
++    expect(t.sync.schedule(state(), { force: true })).toBe(false);
++    t.push(null, true);
++    expect(t.sync.schedule(state(), { force: true })).toBe(false);
++  });
++
++  it("a listener error (e.g. permission denied) blocks and is reported", () => {
++    const t = setup();
++    t.fail({ code: "permission-denied" });
++    expect(t.last()).toEqual(["error", "permission-denied"]);
++    expect(t.sync.canEdit()).toBe(false);
++    const t2 = setup();
++    t2.fail(new Error("weird"));
++    expect(t2.last()).toEqual(["error", "unknown"]);
++  });
++});
++
++describe("saving", () => {
++  it("waits for the debounce and merges quick edits into one write", async () => {
++    const t = setup({ debounceMs: 400 });
++    t.push(stored());
++    t.sync.schedule(state("1"));
++    await vi.advanceTimersByTimeAsync(200);
++    t.sync.schedule(state("2"));
++    await vi.advanceTimersByTimeAsync(200);
++    t.sync.schedule(state("3"));
++    expect(t.last()?.[0]).toBe("saving");
++    expect(t.writes).toHaveLength(0);
++    await vi.advanceTimersByTimeAsync(400);
++    expect(t.writes).toHaveLength(1);
++    expect(t.writes[0].tabs[0].name).toBe("3");
++    expect(t.last()?.[0]).toBe("synced");
++  });
++
++  it("adds the schema version and removes undefined fields", async () => {
++    const t = setup();
++    t.push(stored());
++    const s = state();
++    s.tabs[0].defaultStyle = undefined;
++    s.tabs[0].widgets[0].customTitle = undefined;
++    t.sync.schedule(s);
++    await vi.advanceTimersByTimeAsync(500);
++    expect(t.writes[0].schemaVersion).toBe(SCHEMA_VERSION);
++    expect("defaultStyle" in t.writes[0].tabs[0]).toBe(false);
++    expect("customTitle" in t.writes[0].tabs[0].widgets[0]).toBe(false);
++  });
++
++  it("our unsaved edits win over a snapshot arriving meanwhile", async () => {
++    const t = setup();
++    t.push(stored("server"));
++    t.remote.length = 0;
++    t.sync.schedule(state("mine"));
++    t.push(stored("someone else"));
++    expect(t.remote).toHaveLength(0); // not applied: would erase the edit
++    await vi.advanceTimersByTimeAsync(500);
++    expect(t.writes[0].tabs[0].name).toBe("mine");
++  });
++
++  it("flushNow saves immediately; stop({flush}) too", async () => {
++    const t = setup();
++    t.push(stored());
++    t.sync.schedule(state("x"));
++    t.sync.flushNow();
++    expect(t.writes).toHaveLength(1);
++    t.sync.schedule(state("y"));
++    t.sync.stop({ flush: true });
++    expect(t.writes).toHaveLength(2);
++  });
++
++  it("flushNow does nothing when there is nothing to save", () => {
++    const t = setup();
++    t.push(stored());
++    t.sync.flushNow();
++    expect(t.writes).toHaveLength(0);
++  });
++
++  it("after stop(), nothing more is saved or reported", async () => {
++    const t = setup();
++    t.push(stored());
++    t.sync.schedule(state());
++    t.sync.stop();
++    await vi.advanceTimersByTimeAsync(5000);
++    expect(t.writes).toHaveLength(0);
++    expect(t.sync.schedule(state())).toBe(false);
++  });
++
++  it("hasUnsavedChanges tells whether something is pending", async () => {
++    const t = setup();
++    t.push(stored());
++    expect(t.sync.hasUnsavedChanges()).toBe(false);
++    t.sync.schedule(state());
++    expect(t.sync.hasUnsavedChanges()).toBe(true);
++    await vi.advanceTimersByTimeAsync(500);
++    expect(t.sync.hasUnsavedChanges()).toBe(false);
++  });
++});
++
++describe("rule 4: failed saves are reported and retried, never silent", () => {
++  it("keeps the change, reports it and retries with growing delays", async () => {
++    const t = setup({ debounceMs: 100, retryDelaysMs: [1000, 5000] });
++    t.push(stored());
++    t.writeResults.push(new Error("net"), new Error("net"), "ok");
++    t.sync.schedule(state("keep me"));
++    await vi.advanceTimersByTimeAsync(100);
++    expect(t.writes).toHaveLength(1);
++    expect(t.last()).toEqual(["error", "write-failed"]);
++    expect(t.sync.hasUnsavedChanges()).toBe(true);
++    await vi.advanceTimersByTimeAsync(999);
++    expect(t.writes).toHaveLength(1);
++    await vi.advanceTimersByTimeAsync(1);
++    expect(t.writes).toHaveLength(2); // retry after 1 s
++    await vi.advanceTimersByTimeAsync(4999);
++    expect(t.writes).toHaveLength(2);
++    await vi.advanceTimersByTimeAsync(1);
++    expect(t.writes).toHaveLength(3); // second retry after 5 s → succeeds
++    expect(t.writes.every((w) => w.tabs[0].name === "keep me")).toBe(true);
++    expect(t.last()?.[0]).toBe("synced");
++    expect(t.sync.hasUnsavedChanges()).toBe(false);
++  });
++
++  it("reports permission-denied specifically", async () => {
++    const t = setup({ debounceMs: 10 });
++    t.push(stored());
++    t.writeResults.push(Object.assign(new Error("denied"), { code: "permission-denied" }));
++    t.sync.schedule(state());
++    await vi.advanceTimersByTimeAsync(10);
++    expect(t.last()).toEqual(["error", "permission-denied"]);
++  });
++
++  it("the last retry delay repeats", async () => {
++    const t = setup({ debounceMs: 10, retryDelaysMs: [100] });
++    t.push(stored());
++    t.writeResults.push(new Error("a"), new Error("b"), new Error("c"), "ok");
++    t.sync.schedule(state());
++    await vi.advanceTimersByTimeAsync(10 + 100 + 100 + 100);
++    expect(t.writes).toHaveLength(4);
++  });
++});
++
++describe("stripUndefined", () => {
++  it("removes undefined deeply (objects and arrays), keeps null / 0 / ''", () => {
++    expect(
++      stripUndefined({
++        a: 1,
++        b: undefined,
++        c: { d: undefined, e: null, f: 0, g: "" },
++        h: [1, undefined, { i: undefined }],
++      }),
++    ).toEqual({
++      a: 1,
++      c: { e: null, f: 0, g: "" },
++      h: [1, {}],
++    });
++  });
++  it("leaves primitives alone", () => {
++    expect(stripUndefined(5)).toBe(5);
++    expect(stripUndefined(null)).toBeNull();
++    expect(stripUndefined(undefined)).toBeUndefined();
++  });
++});
++
++describe("daily backups", () => {
++  const uid = "u1";
++  const when = new Date("2026-10-18T09:00:00Z");
++  const full = state();
++
++  it("backupIdFor is the UTC date", () => {
++    expect(backupIdFor(new Date("2026-10-18T23:59:59Z"))).toBe("2026-10-18");
++  });
++
++  it("backupsToPrune keeps the 14 most recent and ignores foreign ids", () => {
++    const ids = Array.from({ length: 20 }, (_, i) => `2026-10-${String(i + 1).padStart(2, "0")}`);
++    const prune = backupsToPrune([...ids, "junk", "2026-1-1"]);
++    expect(new Set(prune)).toEqual(new Set(ids.slice(0, 6))); // the 6 oldest
++    expect(prune).toHaveLength(20 - BACKUP_KEEP);
++    expect(prune).not.toContain("junk");
++    expect(backupsToPrune(ids.slice(0, 14))).toEqual([]);
++  });
++
++  it("takes one backup per day, the first time the app is opened", async () => {
++    expect(await ensureDailyBackup({} as any, uid, full, when)).toBe(true);
++    expect(fs.store.has("users/u1/backups/2026-10-18")).toBe(true);
++    expect(await ensureDailyBackup({} as any, uid, state("changed later"), when)).toBe(false);
++    expect(fs.store.get("users/u1/backups/2026-10-18").data.tabs[0].name).toBe("A"); // original kept
++  });
++
++  it("never backs up an empty dashboard (a wipe must not push good backups out)", async () => {
++    expect(await ensureDailyBackup({} as any, uid, dashboard([tab("T")]), when)).toBe(false);
++    expect(fs.store.size).toBe(0);
++  });
++
++  it("deletes the oldest backups beyond 14", async () => {
++    for (let d = 1; d <= 16; d++)
++      fs.store.set(`users/u1/backups/2026-09-${String(d).padStart(2, "0")}`, { data: full });
++    await ensureDailyBackup({} as any, uid, full, when);
++    expect(fs.deleted.sort()).toEqual([
++      "users/u1/backups/2026-09-01",
++      "users/u1/backups/2026-09-02",
++      "users/u1/backups/2026-09-03",
++    ]);
++  });
++
++  it("lists backups newest first and loads one (validated)", async () => {
++    fs.store.set("users/u1/backups/2026-10-01", {
++      tabCount: 1,
++      feedCount: 2,
++      bookmarkCount: 0,
++      data: full,
++    });
++    fs.store.set("users/u1/backups/2026-10-05", {
++      tabCount: 3,
++      feedCount: 4,
++      bookmarkCount: 5,
++      data: full,
++    });
++    fs.store.set("users/u1/backups/not-a-date", { data: full });
++    const api = firestoreBackups({} as any, uid);
++    const list = await api.list();
++    expect(list.map((b) => b.id)).toEqual(["2026-10-05", "2026-10-01"]);
++    expect(list[0]).toMatchObject({ tabCount: 3, feedCount: 4, bookmarkCount: 5 });
++    expect((await api.load("2026-10-01")).state.tabs[0].name).toBe("A");
++    await expect(api.load("2020-01-01")).rejects.toThrow("no longer exists");
++  });
++});
+diff --git a/src/lib/dropSlot.test.ts b/src/lib/dropSlot.test.ts
+new file mode 100644
+index 0000000..32d4770
+--- /dev/null
++++ b/src/lib/dropSlot.test.ts
+@@ -0,0 +1,89 @@
++// @vitest-environment jsdom
++import { describe, expect, it } from "vitest";
++import {
++  computeDropSlot,
++  distanceToBox,
++  measureColumns,
++  sameSlot,
++  type ColumnBox,
++} from "./dropSlot";
++
++// Two columns side by side; column 0 has tiles at 0-100 and 120-300, column 1 is empty.
++const columns: ColumnBox[] = [
++  {
++    col: 0,
++    left: 0,
++    right: 100,
++    top: 0,
++    bottom: 400,
++    tiles: [
++      { id: "a", top: 0, bottom: 100 },
++      { id: "b", top: 120, bottom: 300 },
++    ],
++  },
++  { col: 1, left: 110, right: 210, top: 0, bottom: 400, tiles: [] },
++];
++
++describe("computeDropSlot", () => {
++  it("is null when there are no columns", () => {
++    expect(computeDropSlot({ x: 1, y: 1 }, [], "a")).toBeNull();
++  });
++
++  it("goes first when the pointer is above the middle of the first tile", () => {
++    expect(computeDropSlot({ x: 50, y: 10 }, columns, "z")).toEqual({ col: 0, index: 0 });
++  });
++
++  it("goes between tiles", () => {
++    expect(computeDropSlot({ x: 50, y: 110 }, columns, "z")).toEqual({ col: 0, index: 1 });
++  });
++
++  it("goes LAST when the pointer is below every tile (the old bug)", () => {
++    expect(computeDropSlot({ x: 50, y: 380 }, columns, "z")).toEqual({ col: 0, index: 2 });
++  });
++
++  it("ignores the dragged tile itself when counting", () => {
++    // dragging "a": the only other tile is "b" (middle 210)
++    expect(computeDropSlot({ x: 50, y: 380 }, columns, "a")).toEqual({ col: 0, index: 1 });
++    expect(computeDropSlot({ x: 50, y: 5 }, columns, "a")).toEqual({ col: 0, index: 0 });
++  });
++
++  it("uses an empty column", () => {
++    expect(computeDropSlot({ x: 150, y: 200 }, columns, "a")).toEqual({ col: 1, index: 0 });
++  });
++
++  it("picks the nearest column when the pointer is in a gap or outside", () => {
++    expect(computeDropSlot({ x: 104, y: 200 }, columns, "z")?.col).toBe(0);
++    expect(computeDropSlot({ x: 108, y: 200 }, columns, "z")?.col).toBe(1);
++    expect(computeDropSlot({ x: 900, y: 900 }, columns, "z")?.col).toBe(1);
++    expect(computeDropSlot({ x: -50, y: -50 }, columns, "z")?.col).toBe(0);
++  });
++});
++
++describe("distanceToBox / sameSlot", () => {
++  const box = { left: 10, right: 20, top: 10, bottom: 20 };
++  it("is 0 inside and positive outside", () => {
++    expect(distanceToBox(15, 15, box)).toBe(0);
++    expect(distanceToBox(25, 15, box)).toBe(5);
++    expect(distanceToBox(23, 24, box)).toBe(5);
++  });
++  it("compares slots", () => {
++    expect(sameSlot(null, null)).toBe(true);
++    expect(sameSlot({ col: 1, index: 2 }, { col: 1, index: 2 })).toBe(true);
++    expect(sameSlot({ col: 1, index: 2 }, { col: 1, index: 3 })).toBe(false);
++    expect(sameSlot(null, { col: 0, index: 0 })).toBe(false);
++  });
++});
++
++describe("measureColumns", () => {
++  it("reads columns and their direct tiles from the DOM", () => {
++    document.body.innerHTML = `
++      <div id="root">
++        <div data-column="0"><div data-tile-id="a"><div data-tile-id="nested"></div></div><div data-tile-id="b"></div></div>
++        <div data-column="1"></div>
++      </div>`;
++    const out = measureColumns(document.getElementById("root")!);
++    expect(out.map((c) => c.col)).toEqual([0, 1]);
++    expect(out[0].tiles.map((t) => t.id)).toEqual(["a", "b"]); // nested tile is not counted
++    expect(out[1].tiles).toEqual([]);
++  });
++});
+diff --git a/src/lib/exportReminder.test.ts b/src/lib/exportReminder.test.ts
+new file mode 100644
+index 0000000..5c13954
+--- /dev/null
++++ b/src/lib/exportReminder.test.ts
+@@ -0,0 +1,82 @@
++// @vitest-environment jsdom
++import { afterEach, describe, expect, it, vi } from "vitest";
++import {
++  EXPORT_INTERVAL_DAYS,
++  SNOOZE_DAYS,
++  parseExportDate,
++  readSnooze,
++  reminderStatus,
++  snoozeUntil,
++  writeSnooze,
++} from "./exportReminder";
++
++const DAY = 24 * 60 * 60 * 1000;
++const now = Date.UTC(2026, 9, 18, 12, 0, 0);
++
++afterEach(() => localStorage.clear());
++
++describe("reminderStatus", () => {
++  it("is due when there has never been an export", () => {
++    expect(reminderStatus({ lastExportAt: null, snoozedUntil: null, now })).toEqual({
++      daysSince: null,
++      due: true,
++    });
++  });
++
++  it("is not due before 30 days, due from 30 days", () => {
++    const at = (days: number) => new Date(now - days * DAY);
++    expect(reminderStatus({ lastExportAt: at(29), snoozedUntil: null, now }).due).toBe(false);
++    expect(
++      reminderStatus({ lastExportAt: at(EXPORT_INTERVAL_DAYS), snoozedUntil: null, now }).due,
++    ).toBe(true);
++    expect(reminderStatus({ lastExportAt: at(45), snoozedUntil: null, now })).toMatchObject({
++      daysSince: 45,
++      due: true,
++    });
++  });
++
++  it("stays quiet while snoozed, then comes back", () => {
++    const old = new Date(now - 60 * DAY);
++    expect(reminderStatus({ lastExportAt: old, snoozedUntil: now + DAY, now }).due).toBe(false);
++    expect(reminderStatus({ lastExportAt: old, snoozedUntil: now - 1, now }).due).toBe(true);
++  });
++
++  it("treats a date in the future (wrong clock) as 'just exported'", () => {
++    const r = reminderStatus({ lastExportAt: new Date(now + 10 * DAY), snoozedUntil: null, now });
++    expect(r).toEqual({ daysSince: 0, due: false });
++  });
++});
++
++describe("parseExportDate", () => {
++  it("accepts ISO strings only", () => {
++    expect(parseExportDate("2026-10-01T10:00:00.000Z")?.toISOString()).toBe(
++      "2026-10-01T10:00:00.000Z",
++    );
++    expect(parseExportDate("not a date")).toBeNull();
++    expect(parseExportDate(undefined)).toBeNull();
++    expect(parseExportDate(12345)).toBeNull();
++    expect(parseExportDate(null)).toBeNull();
++  });
++});
++
++describe("snooze", () => {
++  it("lasts 7 days", () => {
++    expect(snoozeUntil(now)).toBe(now + SNOOZE_DAYS * DAY);
++  });
++
++  it("is stored per user on this device", () => {
++    expect(readSnooze("u1")).toBeNull();
++    writeSnooze("u1", 123);
++    expect(readSnooze("u1")).toBe(123);
++    expect(readSnooze("u2")).toBeNull();
++  });
++
++  it("ignores garbage and blocked storage", () => {
++    localStorage.setItem("lumen:exportReminderSnooze:u1", "abc");
++    expect(readSnooze("u1")).toBeNull();
++    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
++      throw new Error("blocked");
++    });
++    expect(readSnooze("u1")).toBeNull();
++  });
++});
+diff --git a/src/lib/feedParse.test.ts b/src/lib/feedParse.test.ts
+new file mode 100644
+index 0000000..86ab583
+--- /dev/null
++++ b/src/lib/feedParse.test.ts
+@@ -0,0 +1,123 @@
++import { describe, expect, it } from "vitest";
++import { normalizeLinks, parseFeed, resolveLink } from "./feedParse";
++
++describe("parseFeed", () => {
++  it("reads RSS 2.0", () => {
++    const f = parseFeed(`<?xml version="1.0"?><rss version="2.0"><channel>
++      <title>News</title><link>https://n.example/</link><description>All the news</description>
++      <item><title>One</title><link>https://n.example/1</link><pubDate>Mon, 01 Jan 2026 10:00:00 GMT</pubDate>
++        <description>&lt;p&gt;Hello &lt;b&gt;world&lt;/b&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Ann</dc:creator></item>
++      <item><title>Two</title><link>https://n.example/2</link></item>
++    </channel></rss>`);
++    expect(f.title).toBe("News");
++    expect(f.link).toBe("https://n.example/");
++    expect(f.items).toHaveLength(2);
++    expect(f.items[0]).toMatchObject({ title: "One", link: "https://n.example/1", author: "Ann" });
++    expect(f.items[0].description).not.toMatch(/[<>]/); // HTML is stripped
++    expect(f.items[0].description).toContain("Hello");
++  });
++
++  it("reads Atom (link as attribute, summary, author)", () => {
++    const f = parseFeed(`<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom">
++      <title>Blog</title><link href="https://b.example/"/>
++      <entry><title>Post</title><link href="https://b.example/p1"/><updated>2026-01-01T00:00:00Z</updated>
++        <summary>Short</summary><author><name>Bob</name></author></entry>
++    </feed>`);
++    expect(f.title).toBe("Blog");
++    expect(f.link).toBe("https://b.example/");
++    expect(f.items[0]).toMatchObject({
++      title: "Post",
++      link: "https://b.example/p1",
++      pubDate: "2026-01-01T00:00:00Z",
++      description: "Short",
++      author: "Bob",
++    });
++  });
++
++  it("reads RSS 1.0 / RDF", () => {
++    const f =
++      parseFeed(`<?xml version="1.0"?><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
++      <channel><title>Old school</title><link>https://o.example/</link></channel>
++      <item><title>Item</title><link>https://o.example/i</link><dc:date>2026-02-02</dc:date></item></rdf:RDF>`);
++    expect(f.title).toBe("Old school");
++    expect(f.items[0]).toMatchObject({
++      title: "Item",
++      link: "https://o.example/i",
++      pubDate: "2026-02-02",
++    });
++  });
++
++  it("handles a single item (not an array) and an empty feed", () => {
++    const one = parseFeed(
++      `<rss><channel><title>T</title><item><title>Only</title></item></channel></rss>`,
++    );
++    expect(one.items).toHaveLength(1);
++    const none = parseFeed(`<rss><channel><title>T</title></channel></rss>`);
++    expect(none.items).toEqual([]);
++  });
++
++  it("falls back to defaults for missing titles", () => {
++    const f = parseFeed(
++      `<rss><channel><item><link>https://x.example/1</link></item></channel></rss>`,
++    );
++    expect(f.title).toBe("Untitled feed");
++    expect(f.items[0].title).toBe("Untitled");
++  });
++
++  it("rejects things that are not feeds", () => {
++    expect(() => parseFeed("<html><body>hi</body></html>")).toThrow("Unrecognized feed format");
++    expect(() => parseFeed("")).toThrow();
++  });
++});
++
++describe("resolveLink", () => {
++  it("makes relative links absolute", () => {
++    expect(resolveLink("/a/b", "https://x.example/feed")).toBe("https://x.example/a/b");
++    expect(resolveLink("post-1", "https://x.example/blog/")).toBe("https://x.example/blog/post-1");
++  });
++
++  it("drops anything that is not http(s)", () => {
++    expect(resolveLink("javascript:alert(1)", "https://x.example/")).toBe("");
++    expect(resolveLink("data:text/html,<b>x</b>", "https://x.example/")).toBe("");
++    expect(resolveLink("mailto:a@b.c", "https://x.example/")).toBe("");
++    expect(resolveLink("  JaVaScRiPt:alert(1)", "https://x.example/")).toBe("");
++  });
++
++  it("returns '' for empty or missing", () => {
++    expect(resolveLink(undefined, "https://x.example/")).toBe("");
++    expect(resolveLink("   ", "https://x.example/")).toBe("");
++  });
++});
++
++describe("normalizeLinks", () => {
++  it("resolves item links against the channel link", () => {
++    const out = normalizeLinks(
++      { title: "t", link: "https://site.example/", items: [{ title: "i", link: "/p/1" }] },
++      "https://feeds.example/rss",
++    );
++    expect(out.items[0].link).toBe("https://site.example/p/1");
++  });
++
++  it("uses the feed URL when the channel link is not usable", () => {
++    const out = normalizeLinks(
++      { title: "t", link: "javascript:alert(1)", items: [{ title: "i", link: "/p/1" }] },
++      "https://feeds.example/rss",
++    );
++    expect(out.link).toBeUndefined();
++    expect(out.items[0].link).toBe("https://feeds.example/p/1");
++  });
++
++  it("removes dangerous item links", () => {
++    const out = normalizeLinks(
++      {
++        title: "t",
++        items: [
++          { title: "i", link: "javascript:alert(1)" },
++          { title: "j", link: "https://ok.example/" },
++        ],
++      },
++      "https://feeds.example/rss",
++    );
++    expect(out.items.map((i) => i.link)).toEqual(["", "https://ok.example/"]);
++  });
++});
+diff --git a/src/lib/feedProxy.test.ts b/src/lib/feedProxy.test.ts
+new file mode 100644
+index 0000000..d0f5546
+--- /dev/null
++++ b/src/lib/feedProxy.test.ts
+@@ -0,0 +1,340 @@
++import { describe, expect, it, vi } from "vitest";
++import {
++  MAX_FEED_BYTES,
++  ProxyError,
++  assertPublicUrl,
++  checkOrigin,
++  decodeBody,
++  errorResponse,
++  jsonResponse,
++  looksLikeFeed,
++  preflight,
++  readCapped,
++  readHead,
++  safeFetch,
++} from "./feedProxy";
++
++const req = (url: string, headers: Record<string, string> = {}) => new Request(url, { headers });
++const bytes = (...n: number[]) => new Uint8Array(n);
++const enc = (s: string) => new TextEncoder().encode(s);
++const stream = (chunks: Uint8Array[]) =>
++  new ReadableStream<Uint8Array>({
++    start(c) {
++      chunks.forEach((x) => c.enqueue(x));
++      c.close();
++    },
++  });
++
++describe("assertPublicUrl (SSRF guard)", () => {
++  const blocked = [
++    "http://localhost/feed",
++    "http://localhost:8080/",
++    "http://127.0.0.1/",
++    "http://127.1.2.3/",
++    "http://10.0.0.5/",
++    "http://172.16.0.1/",
++    "http://172.31.255.255/",
++    "http://192.168.1.1/",
++    "http://169.254.169.254/latest/meta-data/", // cloud metadata
++    "http://100.64.0.1/",
++    "http://0.0.0.0/",
++    "http://224.0.0.1/",
++    "http://[::1]/",
++    "http://[::ffff:127.0.0.1]/",
++    "http://[fd00::1]/",
++    "http://intranet/feed", // single label
++    "http://nas.local/feed",
++    "http://printer.lan/",
++    "http://thing.internal/",
++    "http://x.localhost/",
++    "http://localhost./", // trailing dot
++    "http://user:pass@example.com/", // credentials
++    "http://example.com:22/", // odd port
++    "http://example.com:6379/",
++    "ftp://example.com/",
++    "file:///etc/passwd",
++    "javascript:alert(1)",
++  ];
++  it.each(blocked)("blocks %s", (u) => {
++    expect(() => assertPublicUrl(new URL(u))).toThrow(ProxyError);
++  });
++
++  const allowed = [
++    "http://example.com/feed",
++    "https://example.com/feed",
++    "https://sub.example.co.uk/a/b?x=1",
++    "https://example.com:443/",
++    "http://example.com:8080/",
++    "https://example.com:8443/",
++    "http://172.15.0.1/", // just outside 172.16/12
++    "http://172.32.0.1/",
++    "https://8.8.8.8/",
++  ];
++  it.each(allowed)("allows %s", (u) => {
++    expect(() => assertPublicUrl(new URL(u))).not.toThrow();
++  });
++
++  it("uses status 400 for blocked targets", () => {
++    try {
++      assertPublicUrl(new URL("http://127.0.0.1/"));
++    } catch (e) {
++      expect((e as ProxyError).status).toBe(400);
++    }
++  });
++});
++
++describe("safeFetch", () => {
++  const ok = (body = "x") => new Response(body, { status: 200 });
++  const redirect = (to: string, status = 302) =>
++    new Response(null, { status, headers: { location: to } });
++
++  it("fetches a public URL and reports the final URL", async () => {
++    const f = vi.fn(async () => ok());
++    const { res, finalUrl } = await safeFetch("https://example.com/a", {}, f);
++    expect(res.status).toBe(200);
++    expect(finalUrl).toBe("https://example.com/a");
++  });
++
++  it("never lets fetch follow redirects by itself", async () => {
++    const f = vi.fn(async (_url: string, _init?: RequestInit) => ok());
++    await safeFetch("https://example.com/", { headers: { A: "b" } }, f);
++    expect(f.mock.calls[0][1]).toMatchObject({ redirect: "manual", headers: { A: "b" } });
++  });
++
++  it("follows redirects (relative too) and returns the last URL", async () => {
++    const f = vi
++      .fn()
++      .mockResolvedValueOnce(redirect("/moved"))
++      .mockResolvedValueOnce(redirect("https://other.example/final", 301))
++      .mockResolvedValueOnce(ok());
++    const { finalUrl } = await safeFetch("https://example.com/a", {}, f);
++    expect(finalUrl).toBe("https://other.example/final");
++    expect(f.mock.calls.map((c) => c[0])).toEqual([
++      "https://example.com/a",
++      "https://example.com/moved",
++      "https://other.example/final",
++    ]);
++  });
++
++  it("blocks a redirect to an internal address (and never fetches it)", async () => {
++    for (const target of [
++      "http://127.0.0.1/admin",
++      "http://169.254.169.254/",
++      "http://localhost/",
++      "http://intranet/",
++    ]) {
++      const f = vi.fn().mockResolvedValueOnce(redirect(target));
++      await expect(safeFetch("https://example.com/", {}, f)).rejects.toThrow(ProxyError);
++      expect(f).toHaveBeenCalledTimes(1); // only the first, public, request was made
++    }
++  });
++
++  it("blocks the first URL too, without fetching", async () => {
++    const f = vi.fn();
++    await expect(safeFetch("http://127.0.0.1/", {}, f)).rejects.toThrow("Address not allowed");
++    expect(f).not.toHaveBeenCalled();
++  });
++
++  it("rejects malformed URLs", async () => {
++    await expect(safeFetch("not a url", {}, vi.fn())).rejects.toThrow("Invalid url");
++  });
++
++  it("stops redirect loops (502)", async () => {
++    const f = vi.fn(async () => redirect("https://example.com/again"));
++    await expect(safeFetch("https://example.com/", {}, f)).rejects.toMatchObject({
++      message: "Too many redirects",
++      status: 502,
++    });
++    expect(f.mock.calls.length).toBeLessThanOrEqual(10);
++  });
++
++  it("returns a 3xx without Location as it is", async () => {
++    const f = vi.fn(async () => new Response(null, { status: 304 }));
++    const { res } = await safeFetch("https://example.com/", {}, f);
++    expect(res.status).toBe(304);
++  });
++});
++
++describe("readCapped", () => {
++  it("reads a normal body", async () => {
++    const out = await readCapped(new Response(stream([enc("hel"), enc("lo")])), 100);
++    expect(new TextDecoder().decode(out)).toBe("hello");
++  });
++
++  it("refuses when Content-Length already says it is too big", async () => {
++    const res = new Response("x", { headers: { "content-length": "999999" } });
++    await expect(readCapped(res, 1000)).rejects.toMatchObject({
++      message: "Feed too large",
++      status: 502,
++    });
++  });
++
++  it("aborts a streamed body that grows past the limit (no Content-Length)", async () => {
++    let pulled = 0;
++    const body = new ReadableStream<Uint8Array>({
++      pull(c) {
++        pulled++;
++        c.enqueue(new Uint8Array(400));
++        if (pulled > 50) c.close();
++      },
++    });
++    await expect(readCapped(new Response(body), 1000)).rejects.toThrow("Feed too large");
++    expect(pulled).toBeLessThan(10); // stopped early instead of reading everything
++  });
++
++  it("handles an empty body", async () => {
++    expect((await readCapped(new Response(null), 10)).byteLength).toBe(0);
++  });
++
++  it("has a sane default limit", () => {
++    expect(MAX_FEED_BYTES).toBe(5 * 1024 * 1024);
++  });
++});
++
++describe("readHead", () => {
++  it("returns at most maxBytes and stops", async () => {
++    const out = await readHead(new Response(stream([enc("abcdef"), enc("ghijkl")])), 8);
++    expect(new TextDecoder().decode(out)).toBe("abcdefgh");
++  });
++  it("returns everything when the body is shorter", async () => {
++    expect(new TextDecoder().decode(await readHead(new Response("short"), 100))).toBe("short");
++  });
++});
++
++describe("decodeBody", () => {
++  it("decodes UTF-8 (default)", () => {
++    expect(decodeBody(enc("caffè € 日本"))).toBe("caffè € 日本");
++  });
++
++  it("honours the charset of the HTTP header (ISO-8859-1)", () => {
++    expect(decodeBody(bytes(0x63, 0x61, 0x66, 0x66, 0xe8), "text/xml; charset=ISO-8859-1")).toBe(
++      "caffè",
++    );
++  });
++
++  it("treats ISO-8859-1 / windows-1252 like browsers do (€ and curly quotes)", () => {
++    expect(decodeBody(bytes(0x80, 0x93, 0x94), "text/xml; charset=iso-8859-1")).toBe("€“”");
++    expect(decodeBody(bytes(0x80, 0x93, 0x94), "text/xml; charset=windows-1252")).toBe("€“”");
++  });
++
++  it("reads the encoding from the XML prolog", () => {
++    const body = new Uint8Array([
++      ...enc('<?xml version="1.0" encoding="ISO-8859-1"?><t>'),
++      0xe0,
++      0xe8,
++      ...enc("</t>"),
++    ]);
++    expect(decodeBody(body)).toContain("àè");
++  });
++
++  it("reads the encoding from an HTML meta tag", () => {
++    const body = new Uint8Array([...enc('<html><head><meta charset="windows-1252"></head>'), 0x80]);
++    expect(decodeBody(body)).toContain("€");
++  });
++
++  it("the HTTP header wins over the prolog", () => {
++    const body = new Uint8Array([
++      ...enc('<?xml version="1.0" encoding="UTF-8"?><t>'),
++      0xe8,
++      ...enc("</t>"),
++    ]);
++    expect(decodeBody(body, "text/xml; charset=iso-8859-1")).toContain("è");
++  });
++
++  it("understands BOMs (UTF-8 and UTF-16)", () => {
++    expect(decodeBody(new Uint8Array([0xef, 0xbb, 0xbf, ...enc("è")]))).toContain("è");
++    expect(decodeBody(new Uint8Array([0xff, 0xfe, 0xe8, 0x00]))).toBe("è");
++  });
++
++  it("falls back to UTF-8 for an unknown charset label", () => {
++    expect(decodeBody(enc("ok"), "text/xml; charset=klingon")).toBe("ok");
++  });
++
++  it("does not choke on large bodies", () => {
++    const big = new Uint8Array(300_000).fill(0x41);
++    expect(decodeBody(big, "text/xml; charset=iso-8859-1")).toHaveLength(300_000);
++  });
++});
++
++describe("looksLikeFeed", () => {
++  it("recognises RSS, Atom and RDF", () => {
++    expect(looksLikeFeed('<?xml version="1.0"?><rss version="2.0">')).toBe(true);
++    expect(looksLikeFeed('  \n<feed xmlns="http://www.w3.org/2005/Atom">')).toBe(true);
++    expect(looksLikeFeed("<rdf:RDF ...>")).toBe(true);
++  });
++  it("rejects HTML and sitemaps", () => {
++    expect(looksLikeFeed("<!doctype html><html><head></head></html>")).toBe(false);
++    expect(looksLikeFeed('<?xml version="1.0"?><urlset xmlns="...">')).toBe(false);
++  });
++});
++
++describe("origin check (only other websites are refused)", () => {
++  it("allows requests without Origin (the app itself, curl)", () => {
++    expect(checkOrigin(req("https://lumen.example/api/feed"))).toBeNull();
++  });
++  it("allows the same origin", () => {
++    expect(
++      checkOrigin(req("https://lumen.example/api/feed", { origin: "https://lumen.example" })),
++    ).toBeNull();
++  });
++  it("refuses another site (403)", async () => {
++    const r = checkOrigin(
++      req("https://lumen.example/api/feed", { origin: "https://evil.example" }),
++    );
++    expect(r?.status).toBe(403);
++    expect(await r!.json()).toEqual({ error: "Origin not allowed" });
++  });
++  it("refuses a malformed Origin", () => {
++    expect(checkOrigin(req("https://lumen.example/api/feed", { origin: "null" }))?.status).toBe(
++      403,
++    );
++  });
++  it("refuses cross-site fetches that send no Origin", () => {
++    expect(
++      checkOrigin(req("https://lumen.example/api/feed", { "sec-fetch-site": "cross-site" }))
++        ?.status,
++    ).toBe(403);
++    expect(
++      checkOrigin(req("https://lumen.example/api/feed", { "sec-fetch-site": "same-origin" })),
++    ).toBeNull();
++  });
++  it("a look-alike host is not the same host", () => {
++    expect(
++      checkOrigin(req("https://lumen.example/x", { origin: "https://lumen.example.evil.com" }))
++        ?.status,
++    ).toBe(403);
++  });
++});
++
++describe("responses", () => {
++  it("jsonResponse echoes only an allowed Origin back (no wildcard)", async () => {
++    const withOrigin = jsonResponse(
++      req("https://lumen.example/x", { origin: "https://lumen.example" }),
++      { a: 1 },
++    );
++    expect(withOrigin.headers.get("access-control-allow-origin")).toBe("https://lumen.example");
++    expect(withOrigin.headers.get("vary")).toBe("Origin");
++    expect(await withOrigin.json()).toEqual({ a: 1 });
++    const without = jsonResponse(req("https://lumen.example/x"), {});
++    expect(without.headers.get("access-control-allow-origin")).toBeNull();
++    expect(without.headers.get("access-control-allow-origin")).not.toBe("*");
++  });
++
++  it("preflight: 204 for the same origin, 403 for others", () => {
++    const ok = preflight(req("https://lumen.example/x", { origin: "https://lumen.example" }));
++    expect(ok.status).toBe(204);
++    expect(ok.headers.get("access-control-allow-methods")).toBe("GET, OPTIONS");
++    expect(
++      preflight(req("https://lumen.example/x", { origin: "https://evil.example" })).status,
++    ).toBe(403);
++  });
++
++  it("errorResponse: ProxyError keeps its message and status, others become 500", async () => {
++    const r1 = errorResponse(req("https://lumen.example/x"), new ProxyError("Nope", 418));
++    expect(r1.status).toBe(418);
++    expect(r1.headers.get("cache-control")).toBe("no-store");
++    expect(await r1.json()).toEqual({ error: "Nope" });
++    const r2 = errorResponse(req("https://lumen.example/x"), new Error("boom"));
++    expect(r2.status).toBe(500);
++  });
++});
+diff --git a/src/lib/layout.test.ts b/src/lib/layout.test.ts
+new file mode 100644
+index 0000000..fb24d1d
+--- /dev/null
++++ b/src/lib/layout.test.ts
+@@ -0,0 +1,124 @@
++import { describe, expect, it } from "vitest";
++import { clampColumns, fitToColumns, moveWidget } from "./layout";
++import { widget } from "@/test/data";
++
++const ids = (list: { id: string }[]) => list.map((w) => w.id);
++const col = (list: { id: string; column: number }[], c: number) =>
++  list.filter((w) => w.column === c).map((w) => w.id);
++
++describe("clampColumns", () => {
++  it("keeps the value between 2 and 4", () => {
++    expect(clampColumns(1)).toBe(2);
++    expect(clampColumns(3)).toBe(3);
++    expect(clampColumns(9)).toBe(4);
++    expect(clampColumns(3.9)).toBe(3);
++  });
++  it("falls back to the minimum for NaN / Infinity", () => {
++    expect(clampColumns(NaN)).toBe(2);
++    expect(clampColumns(Infinity)).toBe(2);
++  });
++});
++
++describe("fitToColumns", () => {
++  it("returns the very same array when everything already fits", () => {
++    const w = [widget("a", 0), widget("b", 1), widget("c", 2)];
++    expect(fitToColumns(w, 3)).toBe(w);
++    expect(fitToColumns(w, 4)).toBe(w);
++  });
++
++  it("never loses a tile when columns are removed", () => {
++    const w = [widget("a", 0), widget("b", 1), widget("c", 2), widget("d", 3), widget("e", 3)];
++    const out = fitToColumns(w, 2);
++    expect(ids(out).sort()).toEqual(["a", "b", "c", "d", "e"]);
++    expect(out.every((x) => x.column === 0 || x.column === 1)).toBe(true);
++  });
++
++  it("leaves tiles of remaining columns where they are", () => {
++    const w = [widget("a", 0), widget("b", 1), widget("c", 3)];
++    const out = fitToColumns(w, 2);
++    expect(out.find((x) => x.id === "a")!.column).toBe(0);
++    expect(out.find((x) => x.id === "b")!.column).toBe(1);
++  });
++
++  it("moves displaced tiles to the shortest column (leftmost on ties)", () => {
++    // column 0 has 2 tiles, column 1 has 1 → the displaced tile goes to column 1
++    const w = [widget("a", 0), widget("b", 0), widget("c", 1), widget("d", 2)];
++    const out = fitToColumns(w, 2);
++    expect(out.find((x) => x.id === "d")!.column).toBe(1);
++    // equal columns → leftmost
++    const tie = fitToColumns([widget("a", 0), widget("b", 1), widget("c", 2)], 2);
++    expect(tie.find((x) => x.id === "c")!.column).toBe(0);
++  });
++
++  it("repairs tiles with a broken column value", () => {
++    const w = [widget("a", 0), widget("b", NaN), widget("c", -1), widget("d", 1.5)];
++    const out = fitToColumns(w, 2);
++    expect(out).toHaveLength(4);
++    expect(out.every((x) => Number.isInteger(x.column) && x.column >= 0 && x.column < 2)).toBe(
++      true,
++    );
++  });
++
++  it("does not modify its input", () => {
++    const w = [widget("a", 0), widget("b", 3)];
++    const copy = JSON.parse(JSON.stringify(w));
++    fitToColumns(w, 2);
++    expect(w).toEqual(copy);
++  });
++});
++
++describe("moveWidget", () => {
++  const base = () => [
++    widget("a", 0),
++    widget("b", 0),
++    widget("c", 0),
++    widget("x", 1),
++    widget("y", 1),
++  ];
++
++  it("moves a tile to another column at a given position", () => {
++    const out = moveWidget(base(), "a", 1, 1);
++    expect(col(out, 1)).toEqual(["x", "a", "y"]);
++    expect(col(out, 0)).toEqual(["b", "c"]);
++  });
++
++  it("puts a tile first / last", () => {
++    expect(col(moveWidget(base(), "a", 1, 0), 1)).toEqual(["a", "x", "y"]);
++    expect(col(moveWidget(base(), "a", 1, 2), 1)).toEqual(["x", "y", "a"]);
++  });
++
++  it("treats an index outside the column as 'last'", () => {
++    expect(col(moveWidget(base(), "a", 1, -1), 1)).toEqual(["x", "y", "a"]);
++    expect(col(moveWidget(base(), "a", 1, 99), 1)).toEqual(["x", "y", "a"]);
++  });
++
++  it("reorders inside the same column (index counts the OTHER tiles)", () => {
++    expect(col(moveWidget(base(), "a", 0, 1), 0)).toEqual(["b", "a", "c"]);
++    expect(col(moveWidget(base(), "a", 0, 2), 0)).toEqual(["b", "c", "a"]);
++  });
++
++  it("drops into an empty column", () => {
++    const out = moveWidget(base(), "a", 2, 0);
++    expect(col(out, 2)).toEqual(["a"]);
++  });
++
++  it("returns the same array when the tile would not move", () => {
++    const w = base();
++    expect(moveWidget(w, "a", 0, 0)).toBe(w);
++    expect(moveWidget(w, "b", 0, 1)).toBe(w);
++    expect(moveWidget(w, "c", 0, 2)).toBe(w);
++    expect(moveWidget(w, "c", 0, -1)).toBe(w);
++  });
++
++  it("returns the same array for an unknown tile", () => {
++    const w = base();
++    expect(moveWidget(w, "nope", 1, 0)).toBe(w);
++  });
++
++  it("keeps every other tile in its column and relative order", () => {
++    const out = moveWidget(base(), "b", 1, 1);
++    expect(ids(out).sort()).toEqual(["a", "b", "c", "x", "y"]);
++    expect(col(out, 0)).toEqual(["a", "c"]);
++    expect(col(out, 1)).toEqual(["x", "b", "y"]);
++  });
++});
+diff --git a/src/lib/linkId.test.ts b/src/lib/linkId.test.ts
+new file mode 100644
+index 0000000..cdf6bb3
+--- /dev/null
++++ b/src/lib/linkId.test.ts
+@@ -0,0 +1,33 @@
++import { describe, expect, it } from "vitest";
++import { linkId, toLinkId } from "./linkId";
++
++describe("linkId", () => {
++  it("is short, stable and made only of letters and digits", () => {
++    const id = linkId("https://example.com/a/b?x=1#frag");
++    expect(id).toMatch(/^[a-z0-9]{6,13}$/);
++    expect(linkId("https://example.com/a/b?x=1#frag")).toBe(id);
++  });
++
++  it("gives different ids to different links", () => {
++    const ids = new Set(
++      Array.from({ length: 5000 }, (_, i) => linkId(`https://example.com/post/${i}`)),
++    );
++    expect(ids.size).toBe(5000);
++  });
++
++  it("handles empty and non-ASCII input", () => {
++    expect(linkId("")).toMatch(/^[a-z0-9]+$/);
++    expect(linkId("https://esempio.it/città?x=è")).toMatch(/^[a-z0-9]+$/);
++  });
++});
++
++describe("toLinkId", () => {
++  it("keeps an id as it is", () => {
++    expect(toLinkId(linkId("https://a.com/x"))).toBe(linkId("https://a.com/x"));
++  });
++
++  it("converts an old full address to its id", () => {
++    expect(toLinkId("https://a.com/x")).toBe(linkId("https://a.com/x"));
++    expect(toLinkId("http://a.com")).toBe(linkId("http://a.com"));
++  });
++});
+diff --git a/src/lib/opml.test.ts b/src/lib/opml.test.ts
+new file mode 100644
+index 0000000..4fa0824
+--- /dev/null
++++ b/src/lib/opml.test.ts
+@@ -0,0 +1,116 @@
++import { describe, expect, it } from "vitest";
++import { buildOpml, parseOpml, MAX_COLUMNS, MIN_COLUMNS } from "./opml";
++import { dashboard, tab, widget } from "@/test/data";
++
++describe("OPML export → import round trip", () => {
++  it("keeps tabs, columns, order, titles and bookmarks", () => {
++    const state = dashboard([
++      tab(
++        "T1",
++        [
++          widget("a", 0, { customTitle: 'Tom & "Jerry" <news>' }),
++          widget("b", 0),
++          widget("c", 2),
++          {
++            id: "f",
++            kind: "bookmarks",
++            url: "",
++            column: 1,
++            customTitle: "Fav",
++            bookmarks: [{ id: "b1", url: "https://a.example/?x=1&y=2", title: "A & B" }],
++          },
++        ],
++        3,
++      ),
++      tab("T2", [widget("d", 1)], 4),
++    ]);
++    const out = parseOpml(buildOpml(state));
++    expect(out.tabs.map((t) => [t.name, t.columns])).toEqual([
++      ["Tab T1", 3],
++      ["Tab T2", 4],
++    ]);
++    expect(out.feedCount).toBe(4); // a, b, c, d (the bookmarks tile is not a feed)
++    expect(out.bookmarkCount).toBe(1);
++    const t1 = out.tabs[0].widgets;
++    expect(t1.find((w) => w.customTitle === 'Tom & "Jerry" <news>')).toBeTruthy();
++    // order inside column 0 is preserved: a then b
++    const col0 = t1.filter((w) => w.column === 0).map((w) => w.url);
++    expect(col0).toEqual(["https://example.com/a.xml", "https://example.com/b.xml"]);
++    const fav = t1.find((w) => w.kind === "bookmarks")!;
++    expect(fav.column).toBe(1);
++    expect(fav.bookmarks![0]).toMatchObject({ url: "https://a.example/?x=1&y=2", title: "A & B" });
++  });
++
++  it("escapes XML special characters in the output", () => {
++    const xml = buildOpml(dashboard([tab("T", [widget("a", 0, { customTitle: "<b>&" })])]));
++    expect(xml).not.toContain('<b>&"');
++    expect(xml).toContain("&lt;b&gt;&amp;");
++  });
++});
++
++describe("parseOpml", () => {
++  it("wraps flat feeds into one 'Imported' tab", () => {
++    const out = parseOpml(`<opml version="2.0"><body>
++      <outline type="rss" text="One" xmlUrl="https://one.example/rss"/>
++      <outline type="rss" text="Two" xmlUrl="https://two.example/rss"/></body></opml>`);
++    expect(out.tabs).toHaveLength(1);
++    expect(out.tabs[0].name).toBe("Imported");
++    expect(out.feedCount).toBe(2);
++  });
++
++  it("reads folders as tabs, ignores empty ones", () => {
++    const out = parseOpml(`<opml version="2.0"><body>
++      <outline text="News"><outline type="rss" xmlUrl="https://n.example/rss"/></outline>
++      <outline text="Empty"></outline></body></opml>`);
++    expect(out.tabs.map((t) => t.name)).toEqual(["News"]);
++  });
++
++  it("reads uStart positions and prefs (single-quoted pseudo-JSON)", () => {
++    const out = parseOpml(`<opml version="2.0"><body><outline text="Home">
++      <outline type="rss" text="Second" xmlUrl="https://b.example/rss" pos="{'col':1,'row':0}" prefs="{&quot;_t&quot;:&quot;My title&quot;}"/>
++      <outline type="rss" text="First" xmlUrl="https://a.example/rss" pos="{'col':0,'row':0}"/>
++      </outline></body></opml>`);
++    const w = out.tabs[0].widgets;
++    expect(w.map((x) => x.url)).toEqual(["https://a.example/rss", "https://b.example/rss"]);
++    expect(w.map((x) => x.column)).toEqual([0, 1]);
++    expect(out.tabs[0].columns).toBe(MIN_COLUMNS);
++    expect(w[1].customTitle).toBe("My title");
++  });
++
++  it("clamps columns to the supported range", () => {
++    const out = parseOpml(`<opml version="2.0"><body><outline text="Wide" lumenColumns="9">
++      <outline type="rss" xmlUrl="https://a.example/rss" pos="{'col':8,'row':0}"/></outline></body></opml>`);
++    expect(out.tabs[0].columns).toBe(MAX_COLUMNS);
++    expect(out.tabs[0].widgets[0].column).toBe(MAX_COLUMNS - 1);
++  });
++
++  it("counts outlines it cannot import", () => {
++    const out = parseOpml(`<opml version="2.0"><body><outline text="Home">
++      <outline type="rss" xmlUrl="https://a.example/rss"/>
++      <outline type="liens" text="Links tile"/></outline></body></opml>`);
++    expect(out.feedCount).toBe(1);
++    expect(out.skipped).toBe(1);
++  });
++
++  it("drops bookmarks with unsafe URLs", () => {
++    const out = parseOpml(`<opml version="2.0"><body><outline text="Home">
++      <outline type="favourites" text="Fav">
++        <outline type="link" text="ok" url="https://ok.example/"/>
++        <outline type="link" text="bad" url="javascript:alert(1)"/></outline></outline></body></opml>`);
++    expect(out.bookmarkCount).toBe(1);
++  });
++
++  it("gives every imported tab and tile its own id", () => {
++    const out = parseOpml(buildOpml(dashboard([tab("T", [widget("a", 0), widget("b", 1)])])));
++    const ids = [out.tabs[0].id, ...out.tabs[0].widgets.map((w) => w.id)];
++    expect(new Set(ids).size).toBe(3);
++  });
++
++  it("rejects files that are not OPML or have no feeds", () => {
++    expect(() => parseOpml("<html/>")).toThrow("Not a valid OPML");
++    expect(() => parseOpml(`<opml version="2.0"><body></body></opml>`)).toThrow();
++    expect(() =>
++      parseOpml(`<opml version="2.0"><body><outline text="Empty"/></body></opml>`),
++    ).toThrow("No RSS feeds");
++  });
++});
+diff --git a/src/lib/useAutoRefresh.test.tsx b/src/lib/useAutoRefresh.test.tsx
+new file mode 100644
+index 0000000..a0f1e26
+--- /dev/null
++++ b/src/lib/useAutoRefresh.test.tsx
+@@ -0,0 +1,114 @@
++// @vitest-environment jsdom
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { act } from "react";
++import { REFRESH_MS, hashStr, refreshDue, useAutoRefresh } from "./useAutoRefresh";
++import { mount } from "@/test/render";
++
++const due = (o: Partial<Parameters<typeof refreshDue>[0]> = {}) =>
++  refreshDue({
++    hidden: false,
++    fetching: false,
++    now: 1_000_000,
++    lastUpdated: 0,
++    intervalMs: 1000,
++    jitterMs: 0,
++    ...o,
++  });
++
++describe("refreshDue", () => {
++  it("is due once the data is older than interval + jitter", () => {
++    expect(due({ now: 999 })).toBe(false);
++    expect(due({ now: 1000 })).toBe(true);
++    expect(due({ now: 1500, jitterMs: 600 })).toBe(false);
++    expect(due({ now: 1600, jitterMs: 600 })).toBe(true);
++  });
++  it("never refreshes a hidden page or while already fetching", () => {
++    expect(due({ hidden: true })).toBe(false);
++    expect(due({ fetching: true })).toBe(false);
++  });
++});
++
++describe("hashStr", () => {
++  it("is stable and non-negative", () => {
++    expect(hashStr("abc")).toBe(hashStr("abc"));
++    expect(hashStr("widget-1")).toBeGreaterThanOrEqual(0);
++    expect(hashStr("")).toBe(0);
++  });
++  it("spreads different ids", () => {
++    const set = new Set(Array.from({ length: 50 }, (_, i) => hashStr(`w-${i}`) % 120_000));
++    expect(set.size).toBeGreaterThan(40);
++  });
++});
++
++describe("useAutoRefresh", () => {
++  let refetch: ReturnType<typeof vi.fn<() => void>>;
++  let props: { lastUpdated: number; fetching: boolean };
++  const C = () => (
++    useAutoRefresh({ id: "w1", ...props, refetch, intervalMs: 100_000, tickMs: 1000 }),
++    null
++  );
++  const setHidden = (hidden: boolean) =>
++    Object.defineProperty(document, "visibilityState", {
++      value: hidden ? "hidden" : "visible",
++      configurable: true,
++    });
++  const wait = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)));
++
++  beforeEach(() => {
++    vi.useFakeTimers();
++    vi.setSystemTime(1_000_000);
++    refetch = vi.fn();
++    props = { lastUpdated: Date.now(), fetching: false };
++    setHidden(false);
++  });
++  afterEach(() => {
++    vi.useRealTimers();
++    document.body.innerHTML = "";
++  });
++
++  it("default interval is 10 minutes", () => expect(REFRESH_MS).toBe(600_000));
++
++  it("does nothing while the data is fresh", async () => {
++    mount(<C />);
++    await wait(60_000);
++    expect(refetch).not.toHaveBeenCalled();
++  });
++
++  it("refreshes once the data is old enough (within interval + 20% jitter)", async () => {
++    mount(<C />);
++    await wait(99_000);
++    expect(refetch).not.toHaveBeenCalled();
++    await wait(25_000); // 124 s > 100 s + max 20 s of jitter
++    expect(refetch).toHaveBeenCalled();
++  });
++
++  it("pauses while the page is hidden and catches up when it is shown again", async () => {
++    mount(<C />);
++    setHidden(true);
++    await wait(300_000);
++    expect(refetch).not.toHaveBeenCalled();
++    setHidden(false);
++    await act(async () => void document.dispatchEvent(new Event("visibilitychange")));
++    expect(refetch).toHaveBeenCalledTimes(1);
++  });
++
++  it("does not stack requests while one is running", async () => {
++    props.fetching = true;
++    const m = mount(<C />);
++    await wait(300_000);
++    expect(refetch).not.toHaveBeenCalled();
++    props = { lastUpdated: Date.now(), fetching: false };
++    await m.rerender(<C />);
++    await wait(10_000);
++    expect(refetch).not.toHaveBeenCalled(); // fresh again
++  });
++
++  it("stops everything on unmount", async () => {
++    const m = mount(<C />);
++    await m.unmount();
++    await wait(600_000);
++    setHidden(false);
++    document.dispatchEvent(new Event("visibilitychange"));
++    expect(refetch).not.toHaveBeenCalled();
++  });
++});
+diff --git a/src/lib/useDashboard.test.tsx b/src/lib/useDashboard.test.tsx
+new file mode 100644
+index 0000000..4cee006
+--- /dev/null
++++ b/src/lib/useDashboard.test.tsx
+@@ -0,0 +1,283 @@
++// @vitest-environment jsdom
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { act } from "react";
++import { useDashboard } from "./useDashboard";
++import { fs, snap } from "@/test/fakeFirestore";
++import { auth } from "@/test/fakeAuth";
++import { mount } from "@/test/render";
++import type { DashboardState } from "./rss";
++
++vi.mock("firebase/firestore", () => import("@/test/fakeFirestore"));
++vi.mock("./firebase", () => ({ db: {} }));
++vi.mock("./useAuth", () => import("@/test/fakeAuth"));
++
++let d: ReturnType<typeof useDashboard>;
++let statuses: string[];
++const C = () => ((d = useDashboard()), statuses.push(d.sync.status), null);
++
++const stored = (active: string, tabIds = ["T1", "T2"], extra: Record<string, unknown> = {}) => ({
++  schemaVersion: 1,
++  tabs: tabIds.map((id) => ({
++    id,
++    name: id,
++    columns: 3,
++    widgets:
++      id === "T1"
++        ? [
++            { id: "w1", url: "https://a.example/rss", column: 0 },
++            { id: "w2", url: "https://b.example/rss", column: 0 },
++          ]
++        : [],
++  })),
++  activeTabId: active,
++  globalDefaultStyle: "full",
++  highlightNew: true,
++  ...extra,
++});
++const KEY = "lumen:activeTab:u1";
++const dash = () => fs.on("data/dashboard");
++const server = (data: unknown, fromCache = false) =>
++  act(async () => dash().cb(snap(data, fromCache)));
++const wait = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)));
++const open = async () => {
++  mount(<C />);
++  await act(async () => {});
++};
++const dashWrites = () => fs.sets.filter((s) => s.ref.endsWith("data/dashboard"));
++
++beforeEach(() => {
++  vi.useFakeTimers();
++  fs.reset();
++  localStorage.clear();
++  statuses = [];
++  auth.user = { uid: "u1" };
++});
++afterEach(() => {
++  vi.useRealTimers();
++  document.body.innerHTML = "";
++});
++
++describe("loading and safety", () => {
++  it("shows a starter dashboard in memory only: nothing is written on load", async () => {
++    await open();
++    await server(null); // the server says: no dashboard yet
++    expect(d.state.tabs[0].widgets.length).toBeGreaterThan(0);
++    await wait(5000);
++    expect(dashWrites()).toHaveLength(0);
++  });
++
++  it("ignores edits until the server has answered (offline / cache only)", async () => {
++    await open();
++    await server(null, true);
++    const before = d.state.tabs[0].name;
++    await act(async () => d.renameTab(d.state.tabs[0].id, "Hacked"));
++    await wait(5000);
++    expect(d.state.tabs[0].name).toBe(before); // the edit is refused, not shown and lost
++    expect(dashWrites()).toHaveLength(0);
++    expect(d.sync.status).toBe("offline");
++  });
++
++  it("does not overwrite a stored dashboard it cannot read", async () => {
++    await open();
++    await server({ tabs: "garbage" });
++    expect(d.sync).toMatchObject({ status: "error", issue: "unreadable" });
++    const tabs = d.state.tabs.length;
++    await act(async () => d.addTab("X"));
++    await wait(5000);
++    expect(d.state.tabs).toHaveLength(tabs);
++    expect(dashWrites()).toHaveLength(0);
++  });
++
++  it("guest: empty local dashboard, nothing saved, no subscription", async () => {
++    auth.user = null;
++    await open();
++    expect(d.sync.status).toBe("guest");
++    expect(d.isGuest).toBe(true);
++    await act(async () => d.addTab("Local"));
++    await wait(5000);
++    expect(fs.sets).toHaveLength(0);
++    expect(fs.listeners).toHaveLength(0);
++  });
++
++  it("takes a daily backup of the dashboard found at the first confirmed read", async () => {
++    await open();
++    await server(stored("T1"));
++    await act(async () => {});
++    expect([...fs.store.keys()].some((k) => k.startsWith("users/u1/backups/"))).toBe(true);
++  });
++});
++
++describe("switching tab never touches the database", () => {
++  it("the tab remembered on this device wins over the saved one, with no write", async () => {
++    localStorage.setItem(KEY, "T2");
++    await open();
++    await server(stored("T1"));
++    expect(d.state.activeTabId).toBe("T2");
++    expect(dashWrites()).toHaveLength(0);
++  });
++
++  it("switching: updates the view and the local memory, writes nothing, never shows 'saving'", async () => {
++    await open();
++    await server(stored("T1"));
++    const mark = statuses.length;
++    await act(async () => d.setActiveTab("T2"));
++    await wait(1000);
++    expect(d.state.activeTabId).toBe("T2");
++    expect(localStorage.getItem(KEY)).toBe("T2");
++    expect(dashWrites()).toHaveLength(0);
++    expect(statuses.slice(mark)).not.toContain("saving");
++  });
++
++  it("an unknown tab id is ignored", async () => {
++    await open();
++    await server(stored("T1"));
++    await act(async () => d.setActiveTab("nope"));
++    expect(d.state.activeTabId).toBe("T1");
++  });
++
++  it("a later server snapshot does not throw us back to the saved tab", async () => {
++    await open();
++    await server(stored("T1"));
++    await act(async () => d.setActiveTab("T2"));
++    await server(stored("T1"));
++    expect(d.state.activeTabId).toBe("T2");
++  });
++
++  it("falls back to the saved tab if the open one was deleted elsewhere", async () => {
++    await open();
++    await server(stored("T1"));
++    await act(async () => d.setActiveTab("T2"));
++    await server(stored("T1", ["T1", "T3"]));
++    expect(d.state.activeTabId).toBe("T1");
++  });
++
++  it("a real edit still saves, carrying the tab that is open", async () => {
++    await open();
++    await server(stored("T1"));
++    await act(async () => d.setActiveTab("T2"));
++    await act(async () => d.renameTab("T1", "Renamed"));
++    await wait(700);
++    expect(dashWrites()).toHaveLength(1);
++    expect(dashWrites()[0].data.tabs[0].name).toBe("Renamed");
++    expect(dashWrites()[0].data.activeTabId).toBe("T2");
++  });
++
++  it("adding a tab switches to it, remembers it and saves once", async () => {
++    await open();
++    await server(stored("T1"));
++    await act(async () => d.addTab("New"));
++    const id = d.state.activeTabId;
++    await wait(700);
++    expect(id).not.toBe("T1");
++    expect(localStorage.getItem(KEY)).toBe(id);
++    expect(dashWrites()).toHaveLength(1);
++  });
++
++  it("removing the open tab moves to another one (but never removes the last tab)", async () => {
++    await open();
++    await server(stored("T1"));
++    await act(async () => d.removeTab("T1"));
++    expect(d.state.tabs.map((t) => t.id)).toEqual(["T2"]);
++    expect(d.state.activeTabId).toBe("T2");
++    expect(localStorage.getItem(KEY)).toBe("T2");
++    await act(async () => d.removeTab("T2"));
++    expect(d.state.tabs).toHaveLength(1);
++  });
++});
++
++describe("edits", () => {
++  const widgets = () => d.state.tabs.find((t) => t.id === d.state.activeTabId)!.widgets;
++  const loaded = async () => {
++    await open();
++    await server(stored("T1"));
++  };
++
++  it("several quick edits are saved as ONE write", async () => {
++    await loaded();
++    await act(async () => d.addWidget("https://c.example/rss"));
++    await act(async () => d.updateWidget("w1", { customTitle: "Mine" }));
++    await act(async () => d.setHighlightNew(false));
++    await wait(700);
++    expect(dashWrites()).toHaveLength(1);
++    expect(dashWrites()[0].data.highlightNew).toBe(false);
++  });
++
++  it("a new feed goes to the shortest column", async () => {
++    await loaded(); // column 0 has two tiles, 1 and 2 are empty
++    await act(async () => d.addWidget("https://c.example/rss"));
++    expect(widgets().find((w) => w.url === "https://c.example/rss")!.column).toBe(1);
++  });
++
++  it("removes and updates tiles", async () => {
++    await loaded();
++    await act(async () => d.removeWidget("w1"));
++    expect(widgets().map((w) => w.id)).toEqual(["w2"]);
++    await act(async () => d.updateWidget("w2", { style: "mini" }));
++    expect(widgets()[0].style).toBe("mini");
++  });
++
++  it("drag & drop: moving a tile saves; dropping it where it was does NOT save", async () => {
++    await loaded();
++    await act(async () => d.reorderWidgets("w1", 0, 0)); // already first in column 0
++    await wait(700);
++    expect(dashWrites()).toHaveLength(0);
++    await act(async () => d.reorderWidgets("w1", 2, 0));
++    await wait(700);
++    expect(widgets().find((w) => w.id === "w1")!.column).toBe(2);
++    expect(dashWrites()).toHaveLength(1);
++  });
++
++  it("changing the number of columns keeps every tile; same number = no save", async () => {
++    await loaded();
++    await act(async () => d.setColumns(3));
++    await wait(700);
++    expect(dashWrites()).toHaveLength(0);
++    await act(async () => d.setColumns(4));
++    await act(async () => d.reorderWidgets("w2", 3, 0));
++    await act(async () => d.setColumns(2));
++    expect(d.state.tabs[0].columns).toBe(2);
++    expect(
++      widgets()
++        .map((w) => w.id)
++        .sort(),
++    ).toEqual(["w1", "w2"]);
++    expect(widgets().every((w) => w.column < 2)).toBe(true);
++  });
++
++  it("importing tabs adds them and switches to the first imported", async () => {
++    await loaded();
++    await act(async () => d.importTabs([{ id: "I1", name: "Imp", columns: 3, widgets: [] }]));
++    expect(d.state.tabs.map((t) => t.id)).toEqual(["T1", "T2", "I1"]);
++    expect(d.state.activeTabId).toBe("I1");
++    await act(async () => d.importTabs([]));
++    expect(d.state.tabs).toHaveLength(3);
++  });
++
++  it("restoring a backup replaces everything and is saved (also over unreadable data)", async () => {
++    await open();
++    await server({ tabs: "garbage" });
++    const restored: DashboardState = {
++      tabs: [{ id: "R", name: "R", columns: 2, widgets: [] }],
++      activeTabId: "R",
++      globalDefaultStyle: "full",
++      highlightNew: true,
++    };
++    await act(async () => d.replaceState(restored));
++    await wait(700);
++    expect(d.state.tabs.map((t) => t.id)).toEqual(["R"]);
++    expect(dashWrites()).toHaveLength(1);
++    expect(localStorage.getItem(KEY)).toBe("R");
++  });
++
++  it("styles resolve tile → tab → global", async () => {
++    await loaded();
++    const w = widgets()[0];
++    expect(d.resolveStyle(w)).toBe("full");
++    await act(async () => d.setGlobalStyle("compact"));
++    expect(d.resolveStyle(widgets()[0])).toBe("compact");
++    await act(async () => d.setTabStyle("mini"));
++    expect(d.resolveStyle(widgets()[0])).toBe("mini");
++    await act(async () => d.updateWidget("w1", { style: "condensed" }));
++    expect(d.resolveStyle(widgets()[0])).toBe("condensed");
++  });
++});
+diff --git a/src/lib/useSeenItems.test.tsx b/src/lib/useSeenItems.test.tsx
+new file mode 100644
+index 0000000..6abfa5f
+--- /dev/null
++++ b/src/lib/useSeenItems.test.tsx
+@@ -0,0 +1,125 @@
++// @vitest-environment jsdom
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { act } from "react";
++import { useSeenItems } from "./useSeenItems";
++import { fs, snap } from "@/test/fakeFirestore";
++import { auth } from "@/test/fakeAuth";
++import { mount } from "@/test/render";
++
++vi.mock("firebase/firestore", () => import("@/test/fakeFirestore"));
++vi.mock("./firebase", () => ({ db: {} }));
++vi.mock("./useAuth", () => import("@/test/fakeAuth"));
++
++const FEED = "https://f.example/rss";
++let seen: ReturnType<typeof useSeenItems>;
++const C = ({ url = FEED }: { url?: string }) => ((seen = useSeenItems(url)), null);
++let n = 0;
++
++beforeEach(() => {
++  vi.useFakeTimers();
++  auth.user = { uid: `seen-${++n}` };
++  fs.reset();
++});
++afterEach(() => {
++  vi.useRealTimers();
++  document.body.innerHTML = "";
++});
++
++const open = async () => {
++  mount(<C />);
++  await act(async () => {});
++};
++const server = (map: Record<string, string[]> | null, fromCache = false) =>
++  act(async () => fs.on("data/seen").cb(snap(map === null ? null : { map }, fromCache)));
++const wait = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)));
++const urls = (...ids: string[]) => ids.map((i) => `https://f.example/${i}`);
++
++describe("useSeenItems: what is new, and when it costs a write", () => {
++  it("flags entries that were not in the previous list", async () => {
++    await open();
++    await server({ [FEED]: urls("a", "b") });
++    const fresh = seen.computeNew(urls("c", "a", "b"));
++    expect([...fresh]).toEqual(urls("c"));
++  });
++
++  it("flags nothing the first time a feed is seen (no baseline yet)", async () => {
++    await open();
++    await server({});
++    expect(seen.computeNew(urls("a", "b")).size).toBe(0);
++    await wait(1600);
++    expect(fs.sets).toHaveLength(1); // first time: the baseline is saved
++    expect(fs.sets[0].data.map[FEED]).toEqual(urls("a", "b"));
++  });
++
++  it("refresh with the same entries costs NO write (even if reordered)", async () => {
++    await open();
++    await server({ [FEED]: urls("a", "b", "c") });
++    expect(seen.computeNew(urls("a", "b", "c")).size).toBe(0);
++    expect(seen.computeNew(urls("c", "b", "a")).size).toBe(0);
++    await wait(5000);
++    expect(fs.sets).toHaveLength(0);
++  });
++
++  it("a real change is saved once, after the debounce", async () => {
++    await open();
++    await server({ [FEED]: urls("a", "b") });
++    seen.computeNew(urls("c", "a"));
++    seen.computeNew(urls("d", "c", "a"));
++    await wait(1600);
++    expect(fs.sets).toHaveLength(1);
++    expect(fs.sets[0].data.map[FEED]).toEqual(urls("d", "c", "a"));
++  });
++
++  it("repeating the same list after saving writes nothing more", async () => {
++    await open();
++    await server({ [FEED]: urls("a") });
++    seen.computeNew(urls("b", "a"));
++    await wait(1600);
++    fs.sets.length = 0;
++    seen.computeNew(urls("b", "a"));
++    await wait(5000);
++    expect(fs.sets).toHaveLength(0);
++  });
++
++  it("a snapshot arriving before our save does not undo the local change", async () => {
++    await open();
++    await server({ [FEED]: urls("a") });
++    seen.computeNew(urls("b", "a")); // local, unsaved
++    await server({ [FEED]: urls("a") }); // stale echo from the server
++    await wait(1600);
++    expect(fs.sets[0].data.map[FEED]).toEqual(urls("b", "a"));
++  });
++
++  it("keeps other feeds' lists untouched when one feed changes", async () => {
++    await open();
++    await server({ [FEED]: urls("a"), "https://other.example/rss": ["https://o.example/1"] });
++    seen.computeNew(urls("b", "a"));
++    await wait(1600);
++    expect(fs.sets[0].data.map["https://other.example/rss"]).toEqual(["https://o.example/1"]);
++  });
++
++  it("never flags or writes before the server answered", async () => {
++    await open();
++    expect(seen.computeNew(urls("a")).size).toBe(0);
++    await server(null, true); // empty local cache is not 'nothing saved'
++    expect(seen.computeNew(urls("a", "b")).size).toBe(0);
++    await wait(5000);
++    expect(fs.sets).toHaveLength(0);
++  });
++
++  it("guests: nothing is flagged and nothing is saved", async () => {
++    auth.user = null;
++    await open();
++    expect(seen.computeNew(urls("a")).size).toBe(0);
++    await wait(5000);
++    expect(fs.sets).toHaveLength(0);
++  });
++
++  it("keeps at most 300 entries per feed", async () => {
++    await open();
++    await server({ [FEED]: ["https://f.example/old"] });
++    seen.computeNew(Array.from({ length: 500 }, (_, i) => `https://f.example/${i}`));
++    await wait(1600);
++    expect(fs.sets[0].data.map[FEED]).toHaveLength(300);
++  });
++});
+diff --git a/src/lib/useTheme.test.tsx b/src/lib/useTheme.test.tsx
+new file mode 100644
+index 0000000..7b84b94
+--- /dev/null
++++ b/src/lib/useTheme.test.tsx
+@@ -0,0 +1,144 @@
++// @vitest-environment jsdom
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { act } from "react";
++import { useTheme } from "./useTheme";
++import { THEMES, THEME_STORAGE_KEY, themeBootScript } from "./themeConfig";
++import { fs, snap } from "@/test/fakeFirestore";
++import { auth } from "@/test/fakeAuth";
++import { mount } from "@/test/render";
++
++vi.mock("firebase/firestore", () => import("@/test/fakeFirestore"));
++vi.mock("./firebase", () => ({ db: {} }));
++vi.mock("./useAuth", () => import("@/test/fakeAuth"));
++
++let t: ReturnType<typeof useTheme>;
++const C = () => ((t = useTheme()), null);
++const attr = () => document.documentElement.getAttribute("data-theme");
++const cached = () => localStorage.getItem(THEME_STORAGE_KEY);
++
++beforeEach(() => {
++  fs.reset();
++  localStorage.clear();
++  document.documentElement.removeAttribute("data-theme");
++  auth.user = { uid: "u1" };
++});
++afterEach(() => {
++  document.body.innerHTML = "";
++  vi.restoreAllMocks();
++});
++
++const open = async () => {
++  mount(<C />);
++  await act(async () => {});
++};
++const server = (theme: unknown) =>
++  act(async () => fs.on("data/prefs").cb(snap(theme === null ? null : { theme })));
++
++describe("useTheme", () => {
++  it("starts from the theme remembered on this device (no flash of the default)", async () => {
++    localStorage.setItem(THEME_STORAGE_KEY, "cyber");
++    await open();
++    expect(t.theme).toBe("cyber");
++    expect(attr()).toBe("cyber");
++  });
++
++  it("starts with Aurora when nothing, or garbage, is remembered", async () => {
++    await open();
++    expect(t.theme).toBe("aurora");
++    document.body.innerHTML = "";
++    localStorage.setItem(THEME_STORAGE_KEY, "<script>");
++    await open();
++    expect(t.theme).toBe("aurora");
++  });
++
++  it("the database answer wins and is remembered locally", async () => {
++    localStorage.setItem(THEME_STORAGE_KEY, "cyber");
++    await open();
++    await server("daylight");
++    expect(t.theme).toBe("daylight");
++    expect(attr()).toBe("daylight");
++    expect(cached()).toBe("daylight");
++    expect(fs.sets).toHaveLength(0); // reading from the database never writes
++  });
++
++  it("an unknown theme in the database falls back to Aurora", async () => {
++    await open();
++    await server("neon-pink");
++    expect(t.theme).toBe("aurora");
++  });
++
++  it("a choice made by the user is applied, remembered and saved (merge)", async () => {
++    await open();
++    await server("aurora");
++    await act(async () => t.setTheme("slate"));
++    expect(attr()).toBe("slate");
++    expect(cached()).toBe("slate");
++    expect(fs.sets).toHaveLength(1);
++    expect(fs.sets[0]).toMatchObject({
++      ref: "users/u1/data/prefs",
++      data: { theme: "slate" },
++      options: { merge: true },
++    });
++  });
++
++  it("does not save before the database has answered", async () => {
++    await open();
++    await act(async () => t.setTheme("slate"));
++    expect(fs.sets).toHaveLength(0);
++    expect(attr()).toBe("slate");
++  });
++
++  it("signed out (or still checking): keeps the remembered theme, saves nothing", async () => {
++    auth.user = null;
++    localStorage.setItem(THEME_STORAGE_KEY, "slate");
++    await open();
++    expect(t.theme).toBe("slate");
++    expect(fs.sets).toHaveLength(0);
++    expect(fs.listeners).toHaveLength(0);
++  });
++
++  it("works when localStorage is blocked", async () => {
++    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
++      throw new Error("blocked");
++    });
++    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
++      throw new Error("blocked");
++    });
++    await open();
++    expect(t.theme).toBe("aurora");
++    await server("cyber");
++    expect(t.theme).toBe("cyber");
++  });
++});
++
++describe("themeBootScript (runs in the page head, before the first paint)", () => {
++  const run = () => new Function(themeBootScript)();
++
++  it("applies a remembered, valid theme", () => {
++    for (const th of THEMES) {
++      document.documentElement.removeAttribute("data-theme");
++      localStorage.setItem(THEME_STORAGE_KEY, th.id);
++      run();
++      expect(attr()).toBe(th.id);
++    }
++  });
++
++  it("ignores missing or invalid values", () => {
++    run();
++    expect(attr()).toBeNull();
++    localStorage.setItem(THEME_STORAGE_KEY, 'x"><script>alert(1)</script>');
++    run();
++    expect(attr()).toBeNull();
++  });
++
++  it("does not throw when storage is blocked", () => {
++    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
++      throw new Error("blocked");
++    });
++    expect(run).not.toThrow();
++  });
++
++  it("is small and has no external dependencies", () => {
++    expect(themeBootScript.length).toBeLessThan(400);
++  });
++});
+diff --git a/src/lib/useVisited.test.tsx b/src/lib/useVisited.test.tsx
+new file mode 100644
+index 0000000..0610b8e
+--- /dev/null
++++ b/src/lib/useVisited.test.tsx
+@@ -0,0 +1,149 @@
++// @vitest-environment jsdom
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { act } from "react";
++import { useVisited } from "./useVisited";
++import { linkId } from "./linkId";
++import { fs, snap } from "@/test/fakeFirestore";
++import { auth } from "@/test/fakeAuth";
++import { mount } from "@/test/render";
++
++vi.mock("firebase/firestore", () => import("@/test/fakeFirestore"));
++vi.mock("./firebase", () => ({ db: {} }));
++vi.mock("./useAuth", () => import("@/test/fakeAuth"));
++
++let a: ReturnType<typeof useVisited>;
++let b: ReturnType<typeof useVisited>;
++const A = () => ((a = useVisited()), (<p id="a">{String(a.isVisited("https://x.example/1"))}</p>));
++const B = () => ((b = useVisited()), (<p id="b">{String(b.isVisited("https://x.example/1"))}</p>));
++const text = (id: string) => document.getElementById(id)!.textContent;
++let n = 0;
++
++beforeEach(() => {
++  vi.useFakeTimers();
++  auth.user = { uid: `visited-${++n}` }; // a new user = fresh store
++  fs.reset();
++});
++afterEach(() => {
++  window.dispatchEvent(new Event("pagehide")); // settle pending saves so tests stay independent
++  vi.useRealTimers();
++  document.body.innerHTML = "";
++});
++
++const open = async () => {
++  const m = mount(
++    <>
++      <A />
++      <B />
++    </>,
++  );
++  await act(async () => {});
++  return m;
++};
++const server = (links: string[] | null, fromCache = false) =>
++  act(async () => fs.on("data/visited").cb(snap(links === null ? null : { links }, fromCache)));
++const wait = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)));
++
++describe("useVisited", () => {
++  it("two cards share one single Firestore subscription", async () => {
++    await open();
++    expect(fs.listeners.filter((l) => l.ref.endsWith("data/visited"))).toHaveLength(1);
++  });
++
++  it("a click in one card is immediately visible in the other", async () => {
++    await open();
++    await server([]);
++    await act(async () => a.markVisited("https://x.example/1"));
++    expect(text("a")).toBe("true");
++    expect(text("b")).toBe("true");
++  });
++
++  it("A and B clicks inside the debounce window cost ONE write", async () => {
++    await open();
++    await server([]);
++    await act(async () => a.markVisited("https://x.example/1"));
++    await act(async () => b.markVisited("https://x.example/2"));
++    await wait(1600);
++    expect(fs.sets).toHaveLength(1);
++    expect(fs.sets[0].data.links).toHaveLength(2);
++  });
++
++  it("stores compact ids instead of full addresses", async () => {
++    await open();
++    await server([]);
++    await act(async () => a.markVisited("https://x.example/some/very/long/address?with=query"));
++    await wait(1600);
++    expect(fs.sets[0].data.links).toEqual([
++      linkId("https://x.example/some/very/long/address?with=query"),
++    ]);
++    expect(fs.sets[0].data.links.every((l: string) => !/[:/]/.test(l))).toBe(true);
++  });
++
++  it("understands links saved in the old format (full addresses) and the new one", async () => {
++    await open();
++    await server(["https://x.example/1", linkId("https://x.example/2")]);
++    expect(a.isVisited("https://x.example/1")).toBe(true);
++    expect(a.isVisited("https://x.example/2")).toBe(true);
++    expect(a.isVisited("https://x.example/3")).toBe(false);
++  });
++
++  it("marking the same link twice does not write twice", async () => {
++    await open();
++    await server([]);
++    await act(async () => a.markVisited("https://x.example/1"));
++    await wait(1600);
++    fs.sets.length = 0;
++    await act(async () => a.markVisited("https://x.example/1"));
++    await wait(1600);
++    expect(fs.sets).toHaveLength(0);
++  });
++
++  it("ignores an empty answer from the local cache and keeps clicks made before the server answered", async () => {
++    await open();
++    await server(null, true); // cache: nothing yet
++    await act(async () => a.markVisited("https://x.example/early"));
++    await wait(5000);
++    expect(fs.sets).toHaveLength(0); // still nothing written: the real list is not known yet
++    await server(["https://x.example/old"]); // the server answers
++    expect(a.isVisited("https://x.example/early")).toBe(true);
++    expect(a.isVisited("https://x.example/old")).toBe(true);
++    await wait(1600);
++    expect(fs.sets).toHaveLength(1); // the early click is saved after the load
++    expect(fs.sets[0].data.links).toHaveLength(2);
++  });
++
++  it("never writes before the server answered", async () => {
++    await open();
++    await act(async () => a.markVisited("https://x.example/1"));
++    await wait(5000);
++    expect(fs.sets).toHaveLength(0);
++  });
++
++  it("flushes pending marks when the page is hidden", async () => {
++    await open();
++    await server([]);
++    await act(async () => a.markVisited("https://x.example/1"));
++    await act(async () => void window.dispatchEvent(new Event("pagehide")));
++    expect(fs.sets).toHaveLength(1);
++  });
++
++  it("guests: marks live in memory only, nothing is saved", async () => {
++    auth.user = null;
++    await open();
++    await act(async () => a.markVisited("https://x.example/1"));
++    expect(text("a")).toBe("true");
++    await wait(5000);
++    expect(fs.sets).toHaveLength(0);
++    expect(fs.listeners).toHaveLength(0);
++  });
++
++  it("keeps the list bounded (5000)", async () => {
++    await open();
++    await server([]);
++    await act(async () => {
++      for (let i = 0; i < 5200; i++) a.markVisited(`https://x.example/p/${i}`);
++    });
++    await wait(1600);
++    expect(fs.sets[0].data.links.length).toBeLessThanOrEqual(5000);
++    expect(fs.sets[0].data.links).toContain(linkId("https://x.example/p/5199")); // newest kept
++  });
++});
+diff --git a/src/test/data.ts b/src/test/data.ts
+new file mode 100644
+index 0000000..6c15d37
+--- /dev/null
++++ b/src/test/data.ts
+@@ -0,0 +1,40 @@
++import type { DashboardState, DashboardTab, FeedWidget } from "@/lib/rss";
++
++export const widget = (
++  id: string,
++  column: number,
++  extra: Partial<FeedWidget> = {},
++): FeedWidget => ({
++  id,
++  url: `https://example.com/${id}.xml`,
++  column,
++  ...extra,
++});
++
++export const tab = (id: string, widgets: FeedWidget[] = [], columns = 3): DashboardTab => ({
++  id,
++  name: `Tab ${id}`,
++  columns,
++  widgets,
++});
++
++export const dashboard = (
++  tabs: DashboardTab[],
++  activeTabId = tabs[0]?.id ?? "",
++): DashboardState => ({
++  tabs,
++  activeTabId,
++  globalDefaultStyle: "full",
++  highlightNew: true,
++});
++
++/** A minimal RSS 2.0 document. */
++export const rss = (
++  items: { title: string; link?: string }[],
++  channelLink = "https://example.com/",
++) =>
++  `<?xml version="1.0"?><rss version="2.0"><channel><title>Test feed</title><link>${channelLink}</link>` +
++  items
++    .map((i) => `<item><title>${i.title}</title>${i.link ? `<link>${i.link}</link>` : ""}</item>`)
++    .join("") +
++  `</channel></rss>`;
+diff --git a/src/test/fakeAuth.ts b/src/test/fakeAuth.ts
+new file mode 100644
+index 0000000..1b8856b
+--- /dev/null
++++ b/src/test/fakeAuth.ts
+@@ -0,0 +1,3 @@
++// Stand-in for ./useAuth: `auth.user` is the signed-in user (null = guest).
++export const auth: { user: { uid: string } | null } = { user: { uid: "u1" } };
++export const useAuth = () => ({ user: auth.user, loading: false });
+diff --git a/src/test/fakeFirestore.ts b/src/test/fakeFirestore.ts
+new file mode 100644
+index 0000000..08a295a
+--- /dev/null
++++ b/src/test/fakeFirestore.ts
+@@ -0,0 +1,72 @@
++// A tiny in-memory stand-in for "firebase/firestore", used by the tests:
++//   vi.mock("firebase/firestore", () => import("@/test/fakeFirestore"));
++// `fs` lets a test push snapshots to the app and see what the app wrote.
++
++type Listener = { ref: string; cb: (snap: unknown) => void; onError?: (e: unknown) => void };
++
++export const fs = {
++  listeners: [] as Listener[],
++  /** every setDoc call, in order */
++  sets: [] as { ref: string; data: any; options?: unknown }[],
++  /** documents as the "server" holds them */
++  store: new Map<string, any>(),
++  deleted: [] as string[],
++  reset() {
++    fs.listeners = [];
++    fs.sets = [];
++    fs.store = new Map();
++    fs.deleted = [];
++  },
++  /** listener on a document path ending with `suffix` (e.g. "data/seen") */
++  on(suffix: string) {
++    const l = fs.listeners.find((x) => x.ref.endsWith(suffix));
++    if (!l) throw new Error(`no listener on *${suffix}`);
++    return l;
++  },
++};
++
++/** What the app sees in onSnapshot: `data === null` means "document does not exist". */
++export function snap(data: unknown, fromCache = false) {
++  return {
++    metadata: { fromCache },
++    exists: () => data !== null,
++    data: () => (data === null ? undefined : data),
++  };
++}
++
++export const db = {};
++export const doc = (_db: unknown, ...p: string[]) => p.join("/");
++export const collection = (_db: unknown, ...p: string[]) => p.join("/");
++export const serverTimestamp = () => "SERVER_TIMESTAMP";
++
++export const onSnapshot = (ref: string, a: any, b?: any, c?: any) => {
++  const cb = typeof a === "function" ? a : b;
++  const onError = typeof a === "function" ? b : c;
++  const l: Listener = { ref, cb, onError };
++  fs.listeners.push(l);
++  return () => {
++    fs.listeners = fs.listeners.filter((x) => x !== l);
++  };
++};
++
++export const setDoc = async (ref: string, data: unknown, options?: unknown) => {
++  fs.sets.push({ ref, data, options });
++  fs.store.set(ref, data);
++};
++
++export const getDoc = async (ref: string) => ({
++  exists: () => fs.store.has(ref),
++  data: () => fs.store.get(ref),
++});
++
++export const getDocs = async (col: string) => {
++  const ids = [...fs.store.keys()]
++    .filter((k) => k.startsWith(col + "/") && !k.slice(col.length + 1).includes("/"))
++    .map((k) => k.slice(col.length + 1));
++  return { docs: ids.map((id) => ({ id, data: () => fs.store.get(`${col}/${id}`) })) };
++};
++
++export const deleteDoc = async (ref: string) => {
++  fs.deleted.push(ref);
++  fs.store.delete(ref);
++};
+diff --git a/src/test/render.tsx b/src/test/render.tsx
+new file mode 100644
+index 0000000..34180ab
+--- /dev/null
++++ b/src/test/render.tsx
+@@ -0,0 +1,23 @@
++// Minimal helpers to run React hooks in tests without extra libraries.
++import { act, type ReactElement } from "react";
++import { createRoot, type Root } from "react-dom/client";
++
++(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
++
++export function mount(ui: ReactElement): {
++  root: Root;
++  rerender: (ui: ReactElement) => Promise<void>;
++  unmount: () => Promise<void>;
++} {
++  const el = document.createElement("div");
++  document.body.appendChild(el);
++  const root = createRoot(el);
++  void act(() => root.render(ui));
++  return {
++    root,
++    rerender: (next) => act(async () => root.render(next)),
++    unmount: () => act(async () => root.unmount()),
++  };
++}
++
++export const flush = (fn: () => void | Promise<void>) => act(async () => void (await fn()));
+diff --git a/vitest.config.ts b/vitest.config.ts
+new file mode 100644
+index 0000000..f4d0f7d
+--- /dev/null
++++ b/vitest.config.ts
+@@ -0,0 +1,13 @@
++// Tests run with their own small config: the app's vite.config.ts loads the TanStack
++// Start and Cloudflare plugins, which are not needed (and get in the way) here.
++import { fileURLToPath } from "node:url";
++import { defineConfig } from "vitest/config";
++
++export default defineConfig({
++  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
++  test: {
++    environment: "node", // files that need a browser add:  // @vitest-environment jsdom
++    include: ["src/**/*.test.{ts,tsx}"],
++    restoreMocks: true,
++  },
++});
