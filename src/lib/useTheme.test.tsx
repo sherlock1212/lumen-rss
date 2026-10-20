@@ -42,13 +42,13 @@ describe("useTheme", () => {
     expect(attr()).toBe("cyber");
   });
 
-  it("starts with Aurora when nothing, or garbage, is remembered", async () => {
+  it("starts with Ember when nothing, or garbage, is remembered", async () => {
     await open();
-    expect(t.theme).toBe("aurora");
+    expect(t.theme).toBe("ember");
     document.body.innerHTML = "";
     localStorage.setItem(THEME_STORAGE_KEY, "<script>");
     await open();
-    expect(t.theme).toBe("aurora");
+    expect(t.theme).toBe("ember");
   });
 
   it("the database answer wins and is remembered locally", async () => {
@@ -61,15 +61,25 @@ describe("useTheme", () => {
     expect(fs.sets).toHaveLength(0); // reading from the database never writes
   });
 
-  it("an unknown theme in the database falls back to Aurora", async () => {
+  it("an unknown theme in the database falls back to Ember", async () => {
     await open();
     await server("neon-pink");
-    expect(t.theme).toBe("aurora");
+    expect(t.theme).toBe("ember");
+  });
+
+  it("the removed Aurora theme, remembered locally or in the database, becomes Ember", async () => {
+    localStorage.setItem(THEME_STORAGE_KEY, "aurora");
+    await open();
+    expect(t.theme).toBe("ember");
+    await server("aurora");
+    expect(t.theme).toBe("ember");
+    expect(attr()).toBe("ember");
+    expect(fs.sets).toHaveLength(0); // the stale value is not rewritten behind the user's back
   });
 
   it("a choice made by the user is applied, remembered and saved (merge)", async () => {
     await open();
-    await server("aurora");
+    await server("ember");
     await act(async () => t.setTheme("slate"));
     expect(attr()).toBe("slate");
     expect(cached()).toBe("slate");
@@ -105,7 +115,7 @@ describe("useTheme", () => {
       throw new Error("blocked");
     });
     await open();
-    expect(t.theme).toBe("aurora");
+    expect(t.theme).toBe("ember");
     await server("cyber");
     expect(t.theme).toBe("cyber");
   });

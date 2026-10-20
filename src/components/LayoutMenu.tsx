@@ -32,8 +32,9 @@ const COLUMN_OPTIONS = Array.from(
 );
 
 const SWATCHES: Record<string, [string, string, string]> = {
-  aurora: ["#1a2236", "#3ddfb1", "#c98aff"],
+  ember: ["#1b1816", "#dc7a53", "#dcb985"],
   cyber: ["#0a0a0f", "#ff2bd6", "#22e3ff"],
+  voltage: ["#080d16", "#f3e81c", "#34dfee"],
   slate: ["#2b3344", "#7aa2f7", "#b48cf2"],
   daylight: ["#f7f8fb", "#2563eb", "#9333ea"],
 };

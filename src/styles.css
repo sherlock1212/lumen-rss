@@ -37,28 +37,29 @@
 
 :root {
   --radius: 0.75rem;
-  /* Deep aurora dark theme */
-  --background: oklch(0.18 0.025 265);
-  --foreground: oklch(0.96 0.01 250);
-  --surface: oklch(0.22 0.03 265);
-  --card: oklch(0.235 0.03 265);
-  --card-foreground: oklch(0.96 0.01 250);
-  --popover: oklch(0.22 0.03 265);
-  --popover-foreground: oklch(0.96 0.01 250);
-  --primary: oklch(0.78 0.18 165);
-  --primary-foreground: oklch(0.18 0.03 200);
-  --secondary: oklch(0.3 0.04 270);
-  --secondary-foreground: oklch(0.96 0.01 250);
-  --muted: oklch(0.28 0.025 265);
-  --muted-foreground: oklch(0.72 0.02 260);
-  --accent: oklch(0.7 0.2 305);
-  --accent-foreground: oklch(0.98 0.01 250);
-  --destructive: oklch(0.65 0.22 25);
-  --destructive-foreground: oklch(0.98 0.01 250);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 10%);
-  --ring: oklch(0.78 0.18 165);
-  --glow: oklch(0.78 0.18 165 / 35%);
+  /* Ember (default): warm near-black, terracotta accents, soft surfaces. Lives in :root so a
+     visitor with no remembered theme sees it from the very first paint. */
+  --background: oklch(0.17 0.008 55);
+  --foreground: oklch(0.94 0.012 85);
+  --surface: oklch(0.21 0.01 55);
+  --card: oklch(0.235 0.012 55);
+  --card-foreground: oklch(0.94 0.012 85);
+  --popover: oklch(0.22 0.011 55);
+  --popover-foreground: oklch(0.94 0.012 85);
+  --primary: oklch(0.7 0.165 44);
+  --primary-foreground: oklch(0.17 0.012 50);
+  --secondary: oklch(0.29 0.014 58);
+  --secondary-foreground: oklch(0.94 0.012 85);
+  --muted: oklch(0.27 0.012 56);
+  --muted-foreground: oklch(0.72 0.02 75);
+  --accent: oklch(0.8 0.09 78);
+  --accent-foreground: oklch(0.2 0.015 60);
+  --destructive: oklch(0.63 0.21 24);
+  --destructive-foreground: oklch(0.98 0.01 85);
+  --border: oklch(0.95 0.03 80 / 9%);
+  --input: oklch(0.95 0.03 80 / 11%);
+  --ring: oklch(0.7 0.165 44);
+  --glow: oklch(0.7 0.165 44 / 28%);
 
   /* Header tokens — default mirrors card so dark themes are unchanged */
   --header-bg: var(--card);
@@ -66,34 +67,12 @@
   --header-border: var(--border);
   --header-muted: var(--muted-foreground);
 
-
-  --gradient-aurora: radial-gradient(
-      circle at 20% 10%,
-      oklch(0.45 0.18 175 / 0.35),
-      transparent 50%
-    ),
-    radial-gradient(
-      circle at 85% 15%,
-      oklch(0.5 0.22 305 / 0.3),
-      transparent 55%
-    ),
-    radial-gradient(
-      circle at 50% 90%,
-      oklch(0.4 0.18 250 / 0.35),
-      transparent 60%
-    );
-  --gradient-primary: linear-gradient(
-    135deg,
-    oklch(0.78 0.18 165),
-    oklch(0.7 0.2 305)
-  );
-  --shadow-glow: 0 10px 40px -10px var(--glow);
-  --shadow-card: 0 8px 32px -12px oklch(0 0 0 / 0.6);
-}
-
-.dark {
-  --background: oklch(0.18 0.025 265);
-  --foreground: oklch(0.96 0.01 250);
+  --gradient-aurora:
+    radial-gradient(circle at 12% 0%, oklch(0.36 0.075 48 / 0.45), transparent 55%),
+    radial-gradient(circle at 100% 100%, oklch(0.3 0.05 62 / 0.4), transparent 55%);
+  --gradient-primary: linear-gradient(135deg, oklch(0.74 0.16 50), oklch(0.66 0.17 38));
+  --shadow-glow: 0 6px 24px -10px var(--glow);
+  --shadow-card: 0 6px 24px -14px oklch(0 0 0 / 0.55);
 }
 
 /* =========================================================
@@ -126,13 +105,110 @@
     radial-gradient(circle at 15% 10%, oklch(0.5 0.28 340 / 0.4), transparent 50%),
     radial-gradient(circle at 90% 20%, oklch(0.55 0.25 200 / 0.35), transparent 55%),
     radial-gradient(circle at 50% 95%, oklch(0.45 0.25 290 / 0.4), transparent 60%);
-  --gradient-primary: linear-gradient(
-    135deg,
-    oklch(0.72 0.32 340),
-    oklch(0.78 0.2 200)
-  );
+  --gradient-primary: linear-gradient(135deg, oklch(0.72 0.32 340), oklch(0.78 0.2 200));
   --shadow-glow: 0 10px 40px -10px var(--glow);
   --shadow-card: 0 8px 32px -12px oklch(0 0 0 / 0.7);
+}
+
+/* =========================================================
+   Theme: Voltage — cyberpunk: acid yellow + cyan on blue-black,
+   grid backdrop, neon outlines
+   ========================================================= */
+[data-theme="voltage"] {
+  --background: oklch(0.13 0.028 255);
+  --foreground: oklch(0.95 0.02 200);
+  --surface: oklch(0.165 0.034 255);
+  --card: oklch(0.18 0.036 255);
+  --card-foreground: oklch(0.95 0.02 200);
+  --popover: oklch(0.16 0.034 255);
+  --popover-foreground: oklch(0.95 0.02 200);
+  --primary: oklch(0.93 0.19 105);
+  --primary-foreground: oklch(0.15 0.03 255);
+  --secondary: oklch(0.25 0.05 250);
+  --secondary-foreground: oklch(0.95 0.02 200);
+  --muted: oklch(0.22 0.04 252);
+  --muted-foreground: oklch(0.74 0.06 215);
+  --accent: oklch(0.85 0.14 200);
+  --accent-foreground: oklch(0.14 0.03 255);
+  --destructive: oklch(0.64 0.26 18);
+  --destructive-foreground: oklch(0.98 0.01 200);
+  --border: oklch(0.85 0.14 200 / 22%);
+  --input: oklch(0.85 0.14 200 / 16%);
+  --ring: oklch(0.85 0.14 200);
+  --glow: oklch(0.93 0.19 105 / 45%);
+
+  --gradient-aurora:
+    linear-gradient(oklch(0.85 0.14 200 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.85 0.14 200 / 0.045) 1px, transparent 1px),
+    radial-gradient(circle at 88% 0%, oklch(0.5 0.25 330 / 0.28), transparent 50%),
+    radial-gradient(circle at 8% 100%, oklch(0.55 0.15 200 / 0.22), transparent 55%);
+  --gradient-primary: linear-gradient(135deg, oklch(0.94 0.19 105), oklch(0.86 0.18 88));
+  --shadow-glow: 0 0 22px -4px var(--glow);
+  --shadow-card: 0 0 0 1px oklch(0.85 0.14 200 / 0.1), 0 10px 32px -12px oklch(0 0 0 / 0.85);
+}
+
+[data-theme="voltage"] body {
+  background-size:
+    32px 32px,
+    32px 32px,
+    auto,
+    auto;
+}
+
+/* Faint scanlines over the whole page; never intercepts clicks */
+[data-theme="voltage"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    oklch(0 0 0 / 0.14) 3px
+  );
+}
+
+[data-theme="voltage"] h1,
+[data-theme="voltage"] h2,
+[data-theme="voltage"] h3,
+[data-theme="voltage"] h4,
+[data-theme="voltage"] .font-display {
+  font-family: "Chakra Petch", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+[data-theme="voltage"] .text-gradient {
+  filter: drop-shadow(0 0 10px var(--glow));
+}
+
+[data-theme="voltage"] ::selection {
+  background: oklch(0.93 0.19 105 / 0.35);
+  color: var(--foreground);
+}
+
+/* =========================================================
+   Ember extras (the palette itself is in :root). Serif headings for a calmer, editorial feel.
+   Applies when Ember is picked, and also when nothing is remembered yet (first visit).
+   ========================================================= */
+:root:not([data-theme]) h1,
+:root:not([data-theme]) h2,
+:root:not([data-theme]) h3,
+:root:not([data-theme]) h4,
+:root:not([data-theme]) .font-display,
+[data-theme="ember"] h1,
+[data-theme="ember"] h2,
+[data-theme="ember"] h3,
+[data-theme="ember"] h4,
+[data-theme="ember"] .font-display {
+  font-family: "Fraunces", "Space Grotesk", ui-serif, Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+:root:not([data-theme]) ::selection,
+[data-theme="ember"] ::selection {
+  background: oklch(0.7 0.165 44 / 0.35);
 }
 
 /* =========================================================
@@ -164,11 +240,7 @@
   --gradient-aurora:
     radial-gradient(circle at 20% 10%, oklch(0.55 0.12 250 / 0.3), transparent 55%),
     radial-gradient(circle at 85% 90%, oklch(0.55 0.13 295 / 0.25), transparent 60%);
-  --gradient-primary: linear-gradient(
-    135deg,
-    oklch(0.74 0.13 250),
-    oklch(0.72 0.14 295)
-  );
+  --gradient-primary: linear-gradient(135deg, oklch(0.74 0.13 250), oklch(0.72 0.14 295));
   --shadow-glow: 0 10px 40px -12px var(--glow);
   --shadow-card: 0 8px 32px -14px oklch(0 0 0 / 0.45);
 }
@@ -209,16 +281,10 @@
     radial-gradient(circle at 15% 10%, oklch(0.8 0.12 265 / 0.35), transparent 55%),
     radial-gradient(circle at 90% 15%, oklch(0.82 0.13 305 / 0.3), transparent 60%),
     radial-gradient(circle at 50% 95%, oklch(0.85 0.1 200 / 0.3), transparent 60%);
-  --gradient-primary: linear-gradient(
-    135deg,
-    oklch(0.58 0.2 265),
-    oklch(0.62 0.22 305)
-  );
+  --gradient-primary: linear-gradient(135deg, oklch(0.58 0.2 265), oklch(0.62 0.22 305));
   --shadow-glow: 0 10px 40px -14px var(--glow);
   --shadow-card: 0 8px 24px -14px oklch(0.22 0.03 260 / 0.18);
 }
-
-
 
 @layer base {
   * {
@@ -294,12 +360,21 @@
 
   /* Newly arrived item — animated gradient that gently fades away */
   @keyframes new-item-shimmer {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 200% 50%; }
+    0% {
+      background-position: 0% 50%;
+    }
+    100% {
+      background-position: 200% 50%;
+    }
   }
   @keyframes new-item-fade {
-    0%, 70% { opacity: 1; }
-    100% { opacity: 0; }
+    0%,
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
   }
   .new-item {
     position: relative;
@@ -356,7 +431,7 @@
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
-            mask-composite: exclude;
+    mask-composite: exclude;
     opacity: 0;
     transition: opacity 0.25s ease;
     pointer-events: none;
@@ -381,5 +456,47 @@
     to {
       --hb-angle: 360deg;
     }
+  }
+}
+
+/* =========================================================
+   Ember tiles: a steady terracotta border that starts to flow on hover.
+   The border is a gradient painted behind a solid fill, so it follows the rounded corners
+   and needs no extra element. Only Ember (and a first visit with nothing remembered).
+   ========================================================= */
+@property --tile-a {
+  syntax: "<percentage>";
+  initial-value: 55%;
+  inherits: false;
+}
+
+:is(:root:not([data-theme]), [data-theme="ember"]) .tile {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--card), var(--card)) padding-box,
+    conic-gradient(
+        from var(--hb-angle, 0deg),
+        color-mix(in oklab, var(--primary) var(--tile-a), transparent),
+        color-mix(in oklab, var(--accent) calc(var(--tile-a) * 0.7), transparent),
+        color-mix(in oklab, oklch(0.6 0.17 34) var(--tile-a), transparent),
+        color-mix(in oklab, var(--primary) var(--tile-a), transparent)
+      )
+      border-box;
+  transition:
+    --tile-a 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+:is(:root:not([data-theme]), [data-theme="ember"]) .tile:hover {
+  --tile-a: 100%;
+  animation: hover-border-spin 6s linear infinite;
+  box-shadow:
+    0 8px 28px -10px var(--glow),
+    var(--shadow-card);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(:root:not([data-theme]), [data-theme="ember"]) .tile:hover {
+    animation: none;
   }
 }

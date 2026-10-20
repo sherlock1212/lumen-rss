@@ -119,7 +119,7 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
     <div
       ref={setNodeRef}
       style={dragStyle}
-      className="glass rounded-xl flex flex-col overflow-hidden shadow-[var(--shadow-card)] transition hover:border-primary/30 group"
+      className="tile glass rounded-xl flex flex-col overflow-hidden shadow-[var(--shadow-card)] transition hover:border-primary/30 group"
     >
       {/* Header */}
       <header className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface/50">

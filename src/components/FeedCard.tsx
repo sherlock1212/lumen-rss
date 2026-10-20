@@ -213,7 +213,7 @@ export function FeedCard({ widget, effectiveStyle, highlightNew, onRemove, onUpd
       ref={setNodeRef}
       style={dragStyle}
       onMouseMove={handleMouseMove}
-      className="glass rounded-xl flex flex-col overflow-hidden shadow-[var(--shadow-card)] transition hover:border-primary/30 group"
+      className="tile glass rounded-xl flex flex-col overflow-hidden shadow-[var(--shadow-card)] transition hover:border-primary/30 group"
     >
       <header className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface/50">
         <button
