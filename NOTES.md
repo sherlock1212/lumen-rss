@@ -39,6 +39,7 @@ Cronologia in ordine (i passi 1–5 e 6a–6d sono lavori precedenti: i dettagli
 10. **Pulizia**: rimossa la vecchia modalità ospite (stato `guest` in `useDashboard`/`dashboardSync`, relativi testi in `SyncStatus`) ed eliminata la cartella `.lovable/` (`plan.md` e `project.json`). `SyncBanner` resta: serve ancora per offline ed errori.
 11. **Riquadri delle icone**: l'utente preferisce l'aspetto pulito **senza sfondo** dietro le icone (resta solo l'alone `--shadow-glow`), quindi la classe `bg-[var(--gradient-primary)]`, che non aveva effetto, è stata tolta dal codice. Le favicon dell'intestazione dei tile (`FeedFavicon` in `FeedCard`) sono passate da 16 a 24 px (+50%); l'icona RSS di riserva da 14 a 20 px.
 12. **`@tanstack/router-plugin`** tolto dalle dipendenze dirette: nessun file del repo lo importava e `vite.config.ts` non lo nomina. Resta installato comunque, perché lo richiede `@tanstack/start-plugin-core` (dentro `react-start`) alla versione esatta; è lui che genera `routeTree.gen.ts`. Verificato: build e `routeTree.gen.ts` identici byte per byte, `npm ci` ok con npm 10 e npm 11. Non rimetterlo a mano: se serve, lo porta `react-start`.
+13. **Wrangler** aggiornato a 4.151.3 (porta con sé `workerd` 1.20261019.1, ora in una sola copia). In `package.json`, `allowScripts` elenca la versione esatta di `workerd`: **a ogni aggiornamento di wrangler va aggiornata anche quella riga**. Verificato: build identica byte per byte e `wrangler deploy --dry-run` ok.
 
 ## Come funziona il controllo accessi
 
