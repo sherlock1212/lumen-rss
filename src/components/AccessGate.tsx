@@ -8,7 +8,7 @@ function Shell({ children }: { children: ReactNode }) {
   return (
     <main className="min-h-full flex items-center justify-center p-6">
       <div className="glass rounded-2xl w-full max-w-sm p-8 text-center shadow-[var(--shadow-card)]">
-        <div className="mx-auto mb-4 h-12 w-12 rounded-xl flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
+        <div className="mx-auto mb-4 h-12 w-12 rounded-xl flex items-center justify-center shadow-[var(--shadow-glow)]">
           <Sparkles className="h-6 w-6 text-white drop-shadow" />
         </div>
         <h1 className="font-display text-2xl font-bold text-gradient">Lumen</h1>

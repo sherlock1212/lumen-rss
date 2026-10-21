@@ -38,7 +38,7 @@ function resolveSiteUrl(
 
 function FeedFavicon({ siteUrl }: { siteUrl: string | null }) {
   const googleUrl = siteUrl
-    ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(siteUrl)}&sz=32`
+    ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(siteUrl)}&sz=64`
     : null;
   const directUrl = siteUrl ? `${siteUrl}/favicon.ico` : null;
   const [src, setSrc] = useState<string | null>(googleUrl);
@@ -59,15 +59,15 @@ function FeedFavicon({ siteUrl }: { siteUrl: string | null }) {
     }
   }
 
-  if (!src) return <Rss className="h-3.5 w-3.5 text-white drop-shadow" />;
+  if (!src) return <Rss className="h-5 w-5 text-white drop-shadow" />;
   return (
     <img
       src={src}
       alt=""
-      width={16}
-      height={16}
+      width={24}
+      height={24}
       onError={handleError}
-      className="h-4 w-4 rounded-sm object-contain"
+      className="h-6 w-6 rounded-sm object-contain"
     />
   );
 }
@@ -224,7 +224,7 @@ export function FeedCard({ widget, effectiveStyle, highlightNew, onRemove, onUpd
         >
           <GripVertical className="h-3.5 w-3.5" />
         </button>
-        <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0">
+        <div className="h-7 w-7 rounded-md flex items-center justify-center shadow-[var(--shadow-glow)] shrink-0">
           <FeedFavicon siteUrl={siteUrl} />
         </div>
         {siteUrl ? (

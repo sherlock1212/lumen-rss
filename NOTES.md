@@ -17,7 +17,7 @@ Vocabolario usato nelle conversazioni:
 ## Come lavoriamo (regole di collaborazione)
 
 - L'utente lavora su **Windows con PowerShell**, Node 24.x. Non è un esperto di git: dare sempre i comandi esatti, nell'ordine, con cosa deve comparire e cosa fare se non è così.
-- Claude **non fa push** e non ha accesso in scrittura al repo. Prepara **patch** (`git apply`) generate da un clone pulito della versione su GitHub e verificate con `git apply --check`; l'utente le applica, prova, fa commit e deploy (`npm run deploy`).
+- Claude **non fa push** e non ha accesso in scrittura al repo. Prepara **patch** (`git apply`) generate da un clone pulito della versione su GitHub e verificate con `git apply --check`; l'utente le applica, prova, fa commit, **push** e deploy (`npm run deploy`). Le patch vanno salvate **fuori** dalla cartella del progetto (es. in Download) e applicate con il percorso completo, per non finire per sbaglio nel commit con `git add -A`.
 - Prima di consegnare: `tsc`, `eslint`, `npm test`, build con le variabili Firebase di prova, e per le modifiche all'aspetto un confronto visivo prima/dopo (i temi non toccati devono restare identici). Per le modifiche delicate si fa anche un test "a mutazione": si introduce un guasto di proposito e si controlla che i test lo scoprano.
 - Spiegare in italiano semplice: cosa cambia per l'utente, cosa non è stato possibile verificare, e proporre un solo passo successivo.
 - **Non mettere mai l'email dell'utente nel repo** (né in codice, né in `.env.example`, né negli appunti). Vive solo nella copia locale ignorata `firestore.rules` e nella console Firebase.
@@ -36,7 +36,8 @@ Cronologia in ordine (i passi 1–5 e 6a–6d sono lavori precedenti: i dettagli
 7. **Temi**: Ember (predefinito, stile Claude), Cyber Neon, Voltage (cyberpunk), Slate, Daylight. Aurora è stato rimosso: chi lo aveva salvato ricade su Ember. I tile di Ember hanno un bordo terracotta fisso che scorre all'hover (classe `tile`).
 8. **Controllo accessi (step 7)**, vedi sotto.
 9. `README.md` con istruzioni di installazione e deploy.
-10. **Pulizia**: rimossa la vecchia modalità ospite (stato `guest` in `useDashboard`/`dashboardSync`, relativi testi in `SyncStatus`) ed eliminato `.lovable/plan.md`. `SyncBanner` resta: serve ancora per offline ed errori.
+10. **Pulizia**: rimossa la vecchia modalità ospite (stato `guest` in `useDashboard`/`dashboardSync`, relativi testi in `SyncStatus`) ed eliminata la cartella `.lovable/` (`plan.md` e `project.json`). `SyncBanner` resta: serve ancora per offline ed errori.
+11. **Riquadri delle icone**: l'utente preferisce l'aspetto pulito **senza sfondo** dietro le icone (resta solo l'alone `--shadow-glow`), quindi la classe `bg-[var(--gradient-primary)]`, che non aveva effetto, è stata tolta dal codice. Le favicon dell'intestazione dei tile (`FeedFavicon` in `FeedCard`) sono passate da 16 a 24 px (+50%); l'icona RSS di riserva da 14 a 20 px.
 
 ## Come funziona il controllo accessi
 
@@ -50,8 +51,8 @@ Cronologia in ordine (i passi 1–5 e 6a–6d sono lavori precedenti: i dettagli
 ## Da fare / idee in sospeso
 
 - **Verificare le regole con il Simulatore di regole** della console (lettura di `users/<uid>/data/prefs` con: account amministratore, account in lista, account estraneo). Nell'ambiente di sviluppo di Claude l'emulatore Firestore non è raggiungibile, quindi le regole non sono mai state eseguite dai test.
-- **Riquadri con icona sempre scuri:** `bg-[var(--gradient-primary)]` in vari componenti non applica il gradiente (Tailwind lo tratta come colore). Correzione possibile: `bg-[image:var(--gradient-primary)]`; cambierebbe l'aspetto di tutti i temi, quindi va decisa insieme all'utente.
-- Valutare l'eliminazione di `.lovable/project.json` (resto di Lovable, `plan.md` è già stato tolto).
+- **Favicon delle righe nei Preferiti** (`BookmarkFavicon` in `BookmarksCard`): sono ancora da 16 px; l'utente ha chiesto +50% solo per quelle nell'intestazione dei tile. Da ingrandire solo se lo chiede.
+- Le favicon dell'intestazione dei tile (24 px) sono chieste a Google con `sz=64`, per essere nitide sugli schermi ad alta densità; quelle dei Preferiti restano a `sz=32` (16 px). Il servizio `s2/favicons` non è documentato da Google: se un giorno smettesse di funzionare, bisognerà cambiare fonte. Se un sito non ha un'icona così grande, Google ne dà una più piccola (che viene ingrandita). Non verificato con l'app vera.
 - Valutare la rimozione di `@tanstack/router-plugin` (dipendenza diretta non importata dal codice del repo: da verificare prima di toglierla).
 - Il nome interno `--gradient-aurora` (sfondo del body) è rimasto per non toccare tutti i temi.
 - Vulnerabilità residue (4, tutte in `@grpc/grpc-js` dentro Firebase, non incluse nei bundle serviti): scelta consapevole di non inseguirle ora.

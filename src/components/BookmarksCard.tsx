@@ -133,7 +133,7 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
         </button>
 
         {/* Star icon badge */}
-        <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0">
+        <div className="h-7 w-7 rounded-md flex items-center justify-center shadow-[var(--shadow-glow)] shrink-0">
           <Star className="h-3.5 w-3.5 text-white drop-shadow" fill="currentColor" />
         </div>
 

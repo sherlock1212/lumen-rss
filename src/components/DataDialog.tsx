@@ -240,7 +240,7 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
               onClick={() => setMode("import")}
               className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition"
             >
-              <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
+              <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-[var(--shadow-glow)]">
                 <Upload className="h-6 w-6 text-white" />
               </div>
               <div className="text-center">
@@ -252,7 +252,7 @@ function Modal({ state, onImport, onReplace, backups, exportInfo, onClose }: Mod
               onClick={() => setMode("export")}
               className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition"
             >
-              <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
+              <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-[var(--shadow-glow)]">
                 <Download className="h-6 w-6 text-white" />
               </div>
               <div className="text-center">

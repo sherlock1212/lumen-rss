@@ -243,7 +243,7 @@ function Dashboard() {
       <header className="app-header sticky top-0 z-30">
         <div className="flex items-center gap-3 px-4 md:px-6 py-3">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
+            <div className="h-9 w-9 rounded-lg flex items-center justify-center shadow-[var(--shadow-glow)]">
               <Sparkles className="h-5 w-5 text-white drop-shadow" />
             </div>
             <div>
@@ -489,7 +489,7 @@ function DragGhost({ widget }: { widget: import("@/lib/rss").FeedWidget }) {
       style={{ opacity: 0.92 }}
     >
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface/50">
-        <div className="h-7 w-7 rounded-md flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] shrink-0 opacity-80">
+        <div className="h-7 w-7 rounded-md flex items-center justify-center shadow-[var(--shadow-glow)] shrink-0 opacity-80">
           {isBookmarks ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -659,7 +659,7 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-24">
-      <div className="h-16 w-16 rounded-2xl flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)] mb-5">
+      <div className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-[var(--shadow-glow)] mb-5">
         <Sparkles className="h-7 w-7 text-primary-foreground" />
       </div>
       <h2 className="font-display text-2xl font-bold mb-2">Your dashboard is empty</h2>

@@ -151,7 +151,7 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
               onClick={() => setMode("feed")}
               className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition group"
             >
-              <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
+              <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-[var(--shadow-glow)]">
                 <Rss className="h-6 w-6 text-white" />
               </div>
               <div className="text-center">
@@ -166,7 +166,7 @@ function Modal({ onClose, onAddFeed, onAddBookmarks }: ModalProps) {
               }}
               className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border hover:border-primary hover:bg-primary/5 transition group"
             >
-              <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
+              <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-[var(--shadow-glow)]">
                 <Star className="h-6 w-6 text-white" fill="currentColor" />
               </div>
               <div className="text-center">
