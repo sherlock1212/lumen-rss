@@ -1,0 +1,56 @@
+rules_version = '2';
+
+// HOW TO USE THIS TEMPLATE
+//   1. Copy this file to "firestore.rules" (same folder). That copy is listed in .gitignore, so
+//      your address never reaches GitHub.
+//   2. In the copy, replace REPLACE-WITH-ADMIN-EMAIL (once, in isOwner) with your own Google
+//      address, all lowercase. That address is the administrator: the only one who can manage the
+//      list of allowed people. Until you do, nobody (you included) can open the app.
+//   3. Paste the whole copy in Firebase console > Firestore Database > Rules, then Publish.
+// Do this BEFORE deploying the website, and again whenever this template changes.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Signed in with a Google account whose address is verified.
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email != null;
+    }
+
+    function myAddress() {
+      return request.auth.token.email.lower();
+    }
+
+    function isOwner() {
+      return signedIn() && myAddress() == 'REPLACE-WITH-ADMIN-EMAIL';
+    }
+
+    // The owner, or somebody whose address the owner added to the "allowlist" collection.
+    function isAllowed() {
+      return isOwner()
+        || (signedIn()
+            && exists(/databases/$(database)/documents/allowlist/$(request.auth.token.email.lower())));
+    }
+
+    // One document per allowed address (the id is the lowercase address).
+    match /allowlist/{address} {
+      // Everybody may look up their OWN entry (this is how the app asks "am I allowed?").
+      allow get: if isOwner() || (signedIn() && address == myAddress());
+      // Only the owner can see the whole list, and only the owner can change it.
+      allow list: if isOwner();
+      allow create, update, delete: if isOwner();
+    }
+
+    // Everybody's saved data: only that person, and only while they are allowed.
+    match /users/{userId}/{document=**} {
+      allow read, write: if isAllowed() && request.auth.uid == userId;
+    }
+
+    // Anything else stays closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

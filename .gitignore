@@ -39,3 +39,6 @@ dist-ssr
 # OS files
 desktop.ini
 Thumbs.db
+
+# Your own copy of firestore.rules.example, with your real address in it
+firestore.rules

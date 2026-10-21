@@ -23,6 +23,7 @@ import { FeedCard } from "@/components/FeedCard";
 import { AddItemDialog } from "@/components/AddItemDialog";
 import { BookmarksCard } from "@/components/BookmarksCard";
 import { Plus, Sparkles, X, Pencil } from "lucide-react";
+import { AccessGate } from "@/components/AccessGate";
 import { UserMenu } from "@/components/UserMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { LayoutMenu } from "@/components/LayoutMenu";
@@ -51,6 +52,15 @@ export const Route = createFileRoute("/")({
   }),
   component: Home,
 });
+
+// Nothing of the dashboard runs (no listeners, no fetches) until the person is signed in and allowed.
+function Home() {
+  return (
+    <AccessGate>
+      <Dashboard />
+    </AccessGate>
+  );
+}
 
 function DigitalClock() {
   const [now, setNow] = useState(() => new Date());
@@ -122,7 +132,7 @@ function DigitalClock() {
   );
 }
 
-function Home() {
+function Dashboard() {
   const dash = useDashboard();
   const exportReminder = useExportReminder();
   // A backup is meaningful only when what is on screen is what is really stored.

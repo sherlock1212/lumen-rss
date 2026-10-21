@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ApiDiscoverFeedRouteImport } from './routes/api/discover-feed'
 import { Route as ApiFeedRouteImport } from './routes/api/feed'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiDiscoverFeedRoute = ApiDiscoverFeedRouteImport.update({
@@ -31,30 +37,34 @@ const ApiFeedRoute = ApiFeedRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/api/discover-feed': typeof ApiDiscoverFeedRoute
   '/api/feed': typeof ApiFeedRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/api/discover-feed': typeof ApiDiscoverFeedRoute
   '/api/feed': typeof ApiFeedRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/api/discover-feed': typeof ApiDiscoverFeedRoute
   '/api/feed': typeof ApiFeedRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/discover-feed' | '/api/feed'
+  fullPaths: '/' | '/admin' | '/api/discover-feed' | '/api/feed'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/discover-feed' | '/api/feed'
-  id: '__root__' | '/' | '/api/discover-feed' | '/api/feed'
+  to: '/' | '/admin' | '/api/discover-feed' | '/api/feed'
+  id: '__root__' | '/' | '/admin' | '/api/discover-feed' | '/api/feed'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   ApiDiscoverFeedRoute: typeof ApiDiscoverFeedRoute
   ApiFeedRoute: typeof ApiFeedRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/discover-feed': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   ApiDiscoverFeedRoute: ApiDiscoverFeedRoute,
   ApiFeedRoute: ApiFeedRoute,
 }

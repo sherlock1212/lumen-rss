@@ -1,3 +1,5 @@
+import { authFetch } from "./authFetch";
+
 export interface FeedItem {
   title: string;
   link: string;
@@ -55,7 +57,7 @@ export interface DashboardState {
 }
 
 export async function fetchFeed(url: string): Promise<FeedData> {
-  const res = await fetch(`/api/feed?url=${encodeURIComponent(url)}`);
+  const res = await authFetch(`/api/feed?url=${encodeURIComponent(url)}`);
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(data.error || `Request failed: ${res.status}`);

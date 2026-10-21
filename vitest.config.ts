@@ -9,5 +9,6 @@ export default defineConfig({
     environment: "node", // files that need a browser add:  // @vitest-environment jsdom
     include: ["src/**/*.test.{ts,tsx}"],
     restoreMocks: true,
+    env: { VITE_FIREBASE_PROJECT_ID: "test-project" }, // the server asks Firestore about this project
   },
 });

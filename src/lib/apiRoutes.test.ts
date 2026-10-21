@@ -1,6 +1,8 @@
 // The two server endpoints, called the way the server calls them, with a fake "internet".
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rss } from "@/test/data";
+import { fakeToken } from "@/test/token";
+import { forgetAccessAnswers } from "@/lib/serverAccess";
 
 // createFileRoute(path)(options) normally builds a route object; here we just keep the options.
 vi.mock("@tanstack/react-router", () => ({
@@ -14,7 +16,9 @@ async function handlers(path: "feed" | "discover-feed"): Promise<Handlers> {
 }
 
 const APP = "https://lumen.example";
-const get = (h: Handlers, target: string | null, headers: Record<string, string> = {}) =>
+// Every request carries a login token, unless a test says otherwise.
+const SIGNED_IN = { Authorization: `Bearer ${fakeToken()}` };
+const get = (h: Handlers, target: string | null, headers: Record<string, string> = SIGNED_IN) =>
   h.GET({
     request: new Request(
       `${APP}/api/x${target === null ? "" : `?url=${encodeURIComponent(target)}`}`,
@@ -24,11 +28,18 @@ const get = (h: Handlers, target: string | null, headers: Record<string, string>
 
 type Site = Record<string, () => Response>;
 let calls: string[];
+// What the "database" answers when the server asks whether the caller is allowed.
+let allowlistStatus = 200;
+let lookups: string[];
 function fakeInternet(site: Site) {
   calls = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: string) => {
+      if (String(input).startsWith("https://firestore.googleapis.com/")) {
+        lookups.push(String(input));
+        return new Response(null, { status: allowlistStatus });
+      }
       calls.push(String(input));
       const make = site[String(input)];
       return make ? make() : new Response("not found", { status: 404 });
@@ -40,7 +51,12 @@ const xml =
   () =>
     new Response(body, { headers: { "content-type": type } });
 
-beforeEach(() => (calls = []));
+beforeEach(() => {
+  calls = [];
+  lookups = [];
+  allowlistStatus = 200;
+  forgetAccessAnswers();
+});
 afterEach(() => vi.unstubAllGlobals());
 
 describe("/api/feed", () => {
@@ -58,7 +74,7 @@ describe("/api/feed", () => {
     });
     const res = await get(await handlers("feed"), "https://news.example/rss");
     expect(res.status).toBe(200);
-    expect(res.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(res.headers.get("cache-control")).toBe("private, max-age=300");
     const body = await res.json();
     expect(body.title).toBe("Test feed");
     expect(body.items.map((i: any) => i.link)).toEqual(["https://news.example/a/1", ""]);
@@ -161,8 +177,12 @@ describe("/api/feed", () => {
     expect((await get(h, "https://n.example/rss", { origin: "https://evil.example" })).status).toBe(
       403,
     );
+    expect(
+      (await get(h, "https://n.example/rss", { origin: "https://evil.example", ...SIGNED_IN }))
+        .status,
+    ).toBe(403);
     expect(calls).toEqual([]);
-    const ok = await get(h, "https://n.example/rss", { origin: APP });
+    const ok = await get(h, "https://n.example/rss", { origin: APP, ...SIGNED_IN });
     expect(ok.status).toBe(200);
     expect(ok.headers.get("access-control-allow-origin")).toBe(APP);
   });
@@ -243,5 +263,66 @@ describe("/api/discover-feed", () => {
     expect((await get(h, "https://n.example/", { origin: "https://evil.example" })).status).toBe(
       403,
     );
+  });
+});
+
+describe("who may call the endpoints", () => {
+  const FEED = "https://news.example/rss";
+  const site = {
+    [FEED]: xml(rss([{ title: "A", link: "https://news.example/a" }])),
+  };
+
+  for (const path of ["feed", "discover-feed"] as const) {
+    it(`/api/${path}: no login token -> 401, and nothing is fetched`, async () => {
+      fakeInternet(site);
+      const res = await get(await handlers(path), FEED, {});
+      expect(res.status).toBe(401);
+      expect((await res.json()).error).toMatch(/sign in/i);
+      expect(calls).toEqual([]);
+      expect(lookups).toEqual([]); // not even a database lookup for an anonymous caller
+    });
+
+    it(`/api/${path}: a person who is not on the list -> 403, and nothing is fetched`, async () => {
+      fakeInternet(site);
+      allowlistStatus = 404;
+      const res = await get(await handlers(path), FEED);
+      expect(res.status).toBe(403);
+      expect(calls).toEqual([]);
+    });
+
+    it(`/api/${path}: the database cannot be reached -> 503 (closed, not open)`, async () => {
+      fakeInternet(site);
+      allowlistStatus = 500;
+      const res = await get(await handlers(path), FEED);
+      expect(res.status).toBe(503);
+      expect(calls).toEqual([]);
+    });
+  }
+
+  it("a listed person gets the feed, and the lookup was about THEIR address", async () => {
+    fakeInternet(site);
+    const res = await get(await handlers("feed"), FEED, {
+      Authorization: `Bearer ${fakeToken("Someone@Example.com")}`,
+    });
+    expect(res.status).toBe(200);
+    expect(lookups).toHaveLength(1);
+    expect(lookups[0]).toContain("/projects/test-project/");
+    expect(lookups[0]).toContain("/allowlist/someone%40example.com");
+  });
+
+  it("the feed answer is never stored by shared caches", async () => {
+    fakeInternet(site);
+    const res = await get(await handlers("feed"), FEED);
+    expect(res.headers.get("cache-control")).toMatch(/^private/);
+  });
+
+  it("the browser's pre-flight check needs no login", async () => {
+    fakeInternet(site);
+    const h = await handlers("feed");
+    const res = await h.OPTIONS({
+      request: new Request(`${APP}/api/feed`, { method: "OPTIONS", headers: { origin: APP } }),
+    });
+    expect(res.status).toBe(204);
+    expect(lookups).toEqual([]);
   });
 });

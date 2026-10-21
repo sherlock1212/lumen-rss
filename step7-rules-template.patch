@@ -1,0 +1,37 @@
+diff --git a/.gitignore b/.gitignore
+index d654afb..58ec31e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -39,3 +39,6 @@ dist-ssr
+ # OS files
+ desktop.ini
+ Thumbs.db
++
++# Your own copy of firestore.rules.example, with your real address in it
++firestore.rules
+diff --git a/firestore.rules b/firestore.rules.example
+similarity index 71%
+rename from firestore.rules
+rename to firestore.rules.example
+index b298ebc..3a6b349 100644
+--- a/firestore.rules
++++ b/firestore.rules.example
+@@ -1,9 +1,14 @@
+ rules_version = '2';
+ 
+-// Paste this whole file in Firebase console > Firestore Database > Rules, then Publish.
+-// BEFORE publishing, replace REPLACE-WITH-ADMIN-EMAIL (once, in isOwner) with your own Google
+-// address, all lowercase. That address is the administrator: the only one who can manage the
+-// list of allowed people. Until you do, nobody (you included) can open the app.
++// HOW TO USE THIS TEMPLATE
++//   1. Copy this file to "firestore.rules" (same folder). That copy is listed in .gitignore, so
++//      your address never reaches GitHub.
++//   2. In the copy, replace REPLACE-WITH-ADMIN-EMAIL (once, in isOwner) with your own Google
++//      address, all lowercase. That address is the administrator: the only one who can manage the
++//      list of allowed people. Until you do, nobody (you included) can open the app.
++//   3. Paste the whole copy in Firebase console > Firestore Database > Rules, then Publish.
++// Do this BEFORE deploying the website, and again whenever this template changes.
++
+ service cloud.firestore {
+   match /databases/{database}/documents {
+ 

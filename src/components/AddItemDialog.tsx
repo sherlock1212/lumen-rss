@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Plus, X, Loader2, Rss, Star } from "lucide-react";
 import { fetchFeed } from "@/lib/rss";
+import { authFetch } from "@/lib/authFetch";
 
 interface Props {
   onAddFeed: (url: string, title?: string) => void;
@@ -30,7 +31,7 @@ function looksLikeFeedUrl(url: string): boolean {
 }
 
 async function discoverFeed(raw: string): Promise<{ url: string; title: string | null }[]> {
-  const res = await fetch(`/api/discover-feed?url=${encodeURIComponent(raw)}`);
+  const res = await authFetch(`/api/discover-feed?url=${encodeURIComponent(raw)}`);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? `Discovery failed (${res.status})`);
   return data.feeds as { url: string; title: string | null }[];

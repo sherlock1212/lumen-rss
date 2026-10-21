@@ -11,7 +11,10 @@ export const fs = {
   /** documents as the "server" holds them */
   store: new Map<string, any>(),
   deleted: [] as string[],
+  /** when set, setDoc rejects with this (e.g. { code: "permission-denied" }) */
+  setFails: null as unknown,
   reset() {
+    fs.setFails = null;
     fs.listeners = [];
     fs.sets = [];
     fs.store = new Map();
@@ -51,6 +54,7 @@ export const onSnapshot = (ref: string, a: any, b?: any, c?: any) => {
 
 export const setDoc = async (ref: string, data: unknown, options?: unknown) => {
   fs.sets.push({ ref, data, options });
+  if (fs.setFails) throw fs.setFails;
   fs.store.set(ref, data);
 };
 

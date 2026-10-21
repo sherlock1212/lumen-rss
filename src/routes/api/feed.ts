@@ -13,6 +13,7 @@ import {
   readCapped,
   safeFetch,
 } from "@/lib/feedProxy";
+import { requireAccess } from "@/lib/serverAccess";
 
 export const Route = createFileRoute("/api/feed")({
   server: {
@@ -21,6 +22,8 @@ export const Route = createFileRoute("/api/feed")({
       GET: async ({ request }) => {
         const blocked = checkOrigin(request);
         if (blocked) return blocked;
+        const refused = await requireAccess(request);
+        if (refused) return refused;
         try {
           const target = new URL(request.url).searchParams.get("url");
           if (!target) throw new ProxyError("Missing url param");
@@ -47,7 +50,7 @@ export const Route = createFileRoute("/api/feed")({
           feed.items = feed.items.slice(0, 30);
 
           return jsonResponse(request, { ...feed, fetchedAt: new Date().toISOString() }, 200, {
-            "Cache-Control": "public, max-age=300",
+            "Cache-Control": "private, max-age=300",
           });
         } catch (e) {
           return errorResponse(request, e);

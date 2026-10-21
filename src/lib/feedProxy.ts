@@ -24,7 +24,7 @@ export class ProxyError extends Error {
 // ── Origin / CORS ─────────────────────────────────────────────────────────────
 // The app calls these endpoints from its own origin, so no CORS headers are needed
 // for it to work. We only *refuse* browsers running pages of other websites.
-// (This does not stop curl/scripts, which send no Origin: see access control.)
+// (This does not stop curl/scripts, which send no Origin: that is what serverAccess.ts is for.)
 
 export function checkOrigin(request: Request): Response | null {
   const origin = request.headers.get("origin");
@@ -70,7 +70,7 @@ export function preflight(request: Request): Response {
   if (blocked) return blocked;
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     Vary: "Origin",
   };
   const origin = request.headers.get("origin");

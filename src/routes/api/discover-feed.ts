@@ -12,6 +12,7 @@ import {
   readHead,
   safeFetch,
 } from "@/lib/feedProxy";
+import { requireAccess } from "@/lib/serverAccess";
 
 // Common feed paths to probe when <link rel="alternate"> autodiscovery finds nothing
 const FEED_PATHS = [
@@ -87,6 +88,8 @@ export const Route = createFileRoute("/api/discover-feed")({
       GET: async ({ request }) => {
         const blocked = checkOrigin(request);
         if (blocked) return blocked;
+        const refused = await requireAccess(request);
+        if (refused) return refused;
         try {
           const target = new URL(request.url).searchParams.get("url")?.trim();
           if (!target) throw new ProxyError("Missing url param");
