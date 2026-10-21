@@ -19,7 +19,11 @@ export default tseslint.config(
       "react-refresh": reactRefresh,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      // Only the two classic hook rules, as before. eslint-plugin-react-hooks 7 also turns on
+      // new React Compiler rules (set-state-in-effect, refs, globals...) that flag code that
+      // works fine today; we leave them off on purpose.
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
       "no-restricted-imports": [
         "error",
         {
