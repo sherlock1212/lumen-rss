@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, CloudOff, Loader2, UserX } from "lucide-react";
+import { AlertTriangle, Check, CloudOff, Loader2 } from "lucide-react";
 import type { SyncInfo } from "@/lib/useDashboard";
 
 /**
@@ -49,13 +49,6 @@ export function SyncIndicator({ sync }: { sync: SyncInfo }) {
       </span>
     );
   }
-  if (status === "guest") {
-    return (
-      <span role="status" className={warn} title="Sign in to save your dashboard">
-        <UserX className="h-3 w-3" /> Not saved
-      </span>
-    );
-  }
   if (status === "offline") {
     return (
       <span role="status" className={warn} title="Can't reach your saved dashboard">
@@ -76,11 +69,6 @@ export function SyncIndicator({ sync }: { sync: SyncInfo }) {
 
 function bannerContent(sync: SyncInfo): { tone: "warn" | "danger"; text: string } | null {
   switch (sync.status) {
-    case "guest":
-      return {
-        tone: "warn",
-        text: "You're not signed in. Changes are kept only in this tab and will be lost when you reload. Sign in to save your dashboard.",
-      };
     case "offline":
       return {
         tone: "warn",

@@ -33,7 +33,6 @@ import type { DashboardState } from "./rss";
 export const SCHEMA_VERSION = 1;
 
 export type SyncStatus =
-  | "guest" //   not signed in: nothing is saved
   | "loading" // waiting for the first answer from the server
   | "offline" // server not reachable: editing paused, nothing will be overwritten
   | "synced" //  everything is saved

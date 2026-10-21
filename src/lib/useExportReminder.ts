@@ -11,7 +11,7 @@ import {
 } from "./exportReminder";
 
 export interface ExportReminder {
-  /** False for guests: there is no account to attach a backup date to. */
+  /** False when signed out: there is no account to attach a backup date to. */
   enabled: boolean;
   /** The server has told us what is stored (until then nothing is shown). */
   loaded: boolean;

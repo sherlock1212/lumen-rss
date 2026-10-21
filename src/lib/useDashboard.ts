@@ -77,7 +77,7 @@ export function useDashboard() {
     if (!userId) {
       syncRef.current = null;
       applyState(emptyState());
-      setSync({ status: "guest" });
+      setSync({ status: "loading" });
       return;
     }
 
@@ -434,7 +434,6 @@ export function useDashboard() {
   return {
     state,
     activeTab,
-    isGuest: !userId && !authLoading,
     sync,
     backups,
     widgetsByColumn,

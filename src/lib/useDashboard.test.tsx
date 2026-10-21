@@ -88,11 +88,10 @@ describe("loading and safety", () => {
     expect(dashWrites()).toHaveLength(0);
   });
 
-  it("guest: empty local dashboard, nothing saved, no subscription", async () => {
+  it("signed out: empty local dashboard, nothing saved, no subscription", async () => {
     auth.user = null;
     await open();
-    expect(d.sync.status).toBe("guest");
-    expect(d.isGuest).toBe(true);
+    expect(d.sync.status).toBe("loading");
     await act(async () => d.addTab("Local"));
     await wait(5000);
     expect(fs.sets).toHaveLength(0);

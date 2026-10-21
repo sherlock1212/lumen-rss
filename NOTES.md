@@ -36,6 +36,7 @@ Cronologia in ordine (i passi 1–5 e 6a–6d sono lavori precedenti: i dettagli
 7. **Temi**: Ember (predefinito, stile Claude), Cyber Neon, Voltage (cyberpunk), Slate, Daylight. Aurora è stato rimosso: chi lo aveva salvato ricade su Ember. I tile di Ember hanno un bordo terracotta fisso che scorre all'hover (classe `tile`).
 8. **Controllo accessi (step 7)**, vedi sotto.
 9. `README.md` con istruzioni di installazione e deploy.
+10. **Pulizia**: rimossa la vecchia modalità ospite (stato `guest` in `useDashboard`/`dashboardSync`, relativi testi in `SyncStatus`) ed eliminato `.lovable/plan.md`. `SyncBanner` resta: serve ancora per offline ed errori.
 
 ## Come funziona il controllo accessi
 
@@ -49,9 +50,8 @@ Cronologia in ordine (i passi 1–5 e 6a–6d sono lavori precedenti: i dettagli
 ## Da fare / idee in sospeso
 
 - **Verificare le regole con il Simulatore di regole** della console (lettura di `users/<uid>/data/prefs` con: account amministratore, account in lista, account estraneo). Nell'ambiente di sviluppo di Claude l'emulatore Firestore non è raggiungibile, quindi le regole non sono mai state eseguite dai test.
-- Rimuovere il codice della **vecchia modalità ospite** (stato `guest` in `useDashboard`, `SyncBanner`/"Not saved"): non è più raggiungibile ma è ancora nel codice.
 - **Riquadri con icona sempre scuri:** `bg-[var(--gradient-primary)]` in vari componenti non applica il gradiente (Tailwind lo tratta come colore). Correzione possibile: `bg-[image:var(--gradient-primary)]`; cambierebbe l'aspetto di tutti i temi, quindi va decisa insieme all'utente.
-- Eliminare `.lovable/plan.md` (guida di deploy superata, sostituita dal `README.md`).
+- Valutare l'eliminazione di `.lovable/project.json` (resto di Lovable, `plan.md` è già stato tolto).
 - Valutare la rimozione di `@tanstack/router-plugin` (dipendenza diretta non importata dal codice del repo: da verificare prima di toglierla).
 - Il nome interno `--gradient-aurora` (sfondo del body) è rimasto per non toccare tutti i temi.
 - Vulnerabilità residue (4, tutte in `@grpc/grpc-js` dentro Firebase, non incluse nei bundle serviti): scelta consapevole di non inseguirle ora.
