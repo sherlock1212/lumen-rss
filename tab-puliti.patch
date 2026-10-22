@@ -1,0 +1,577 @@
+diff --git a/NOTES.md b/NOTES.md
+index 1c76e38..c69850f 100644
+--- a/NOTES.md
++++ b/NOTES.md
+@@ -41,6 +41,7 @@ Cronologia in ordine (i passi 1–5 e 6a–6d sono lavori precedenti: i dettagli
+ 12. **`@tanstack/router-plugin`** tolto dalle dipendenze dirette: nessun file del repo lo importava e `vite.config.ts` non lo nomina. Resta installato comunque, perché lo richiede `@tanstack/start-plugin-core` (dentro `react-start`) alla versione esatta; è lui che genera `routeTree.gen.ts`. Verificato: build e `routeTree.gen.ts` identici byte per byte, `npm ci` ok con npm 10 e npm 11. Non rimetterlo a mano: se serve, lo porta `react-start`.
+ 13. **Wrangler** aggiornato a 4.151.3 (porta con sé `workerd` 1.20261019.1, ora in una sola copia). In `package.json`, `allowScripts` elenca la versione esatta di `workerd`: **a ogni aggiornamento di wrangler va aggiornata anche quella riga**. Verificato: build identica byte per byte e `wrangler deploy --dry-run` ok.
+ 14. **ESLint 10** (la 9 non è più supportata e `npm ci` mostrava un avviso): aggiornati `eslint` 10.13.0, `@eslint/js` 10.0.1 e `eslint-plugin-react-hooks` 7.1.1 (la 5.x non supportava ESLint 10). In `eslint.config.js` restano attive **solo** `rules-of-hooks` ed `exhaustive-deps`, come prima: la 7.x attiva da sola nuove regole del compilatore React (`set-state-in-effect`, `refs`, `globals`) che segnalano 16 punti del codice che funzionano; lasciate spente di proposito. Verificato con un errore introdotto apposta. Riguarda solo gli strumenti di sviluppo: la build non cambia.
++15. **Tab puliti** (scelta dell'utente tra tre bozze): il tab mostra solo il nome, quindi ha sempre la stessa larghezza (prima il tab attivo riservava ~40 px per matitina e ✕ invisibili e gli altri tab scivolavano a ogni clic). Rinomina: doppio clic (o F2). Rinomina/Elimina: clic destro (o tasto menu della tastiera) apre un piccolo menu (`TabContextMenu`). `SortableTab` è stato spostato da `routes/index.tsx` in `components/SortableTab.tsx`, con test (`SortableTab.test.tsx`). Limite noto: su iPhone/iPad il clic destro non esiste e non c'è il tasto F2; il doppio tocco funziona di solito, ma non è garantito.
+ 
+ ## Come funziona il controllo accessi
+ 
+@@ -56,6 +57,8 @@ Cronologia in ordine (i passi 1–5 e 6a–6d sono lavori precedenti: i dettagli
+ - **Verificare le regole con il Simulatore di regole** della console (lettura di `users/<uid>/data/prefs` con: account amministratore, account in lista, account estraneo). Nell'ambiente di sviluppo di Claude l'emulatore Firestore non è raggiungibile, quindi le regole non sono mai state eseguite dai test.
+ - **Favicon delle righe nei Preferiti** (`BookmarkFavicon` in `BookmarksCard`): sono ancora da 16 px; l'utente ha chiesto +50% solo per quelle nell'intestazione dei tile. Da ingrandire solo se lo chiede.
+ - Le favicon dell'intestazione dei tile (24 px) sono chieste a Google con `sz=64`, per essere nitide sugli schermi ad alta densità; quelle dei Preferiti restano a `sz=32` (16 px). Il servizio `s2/favicons` non è documentato da Google: se un giorno smettesse di funzionare, bisognerà cambiare fonte. Se un sito non ha un'icona così grande, Google ne dà una più piccola (che viene ingrandita). Non verificato con l'app vera.
++- **Daylight, tab attivo poco leggibile:** l'etichetta usa `text-foreground` (scuro) sull'header scuro del tema; `.app-header` ridefinisce solo `text-muted-foreground`. Correzione possibile in `styles.css`: `.app-header .text-foreground { color: var(--header-fg); }` (anche per `hover:text-foreground`). Presente già prima dei tab puliti; da decidere con l'utente perché cambia l'aspetto di Daylight.
++- Durante la rinomina il tab si allarga alla larghezza del campo (`w-24`) e i tab a destra si spostano per un attimo: eventualmente adattare il campo alla lunghezza del nome.
+ - Il nome interno `--gradient-aurora` (sfondo del body) è rimasto per non toccare tutti i temi.
+ - Vulnerabilità residue (4, tutte in `@grpc/grpc-js` dentro Firebase, non incluse nei bundle serviti): scelta consapevole di non inseguirle ora.
+ - Idea dell'utente per dopo: un aspetto di base "come l'avrebbe creato Claude al posto di Lovable".
+diff --git a/src/components/SortableTab.test.tsx b/src/components/SortableTab.test.tsx
+new file mode 100644
+index 0000000..a36742d
+--- /dev/null
++++ b/src/components/SortableTab.test.tsx
+@@ -0,0 +1,185 @@
++// @vitest-environment jsdom
++import { afterEach, describe, expect, it, vi } from "vitest";
++import { act } from "react";
++import { DndContext } from "@dnd-kit/core";
++import { SortableContext } from "@dnd-kit/sortable";
++import { SortableTab } from "./SortableTab";
++import { mount } from "@/test/render";
++
++const calls = {
++  onActivate: vi.fn(),
++  onStartEdit: vi.fn(),
++  onFinishEdit: vi.fn(),
++  onRemove: vi.fn(),
++};
++
++const mounted: Array<() => Promise<void>> = [];
++
++const open = async (props: { isEditing?: boolean; canRemove?: boolean } = {}) => {
++  const view = mount(
++    <DndContext>
++      <SortableContext items={["t1"]}>
++        <SortableTab
++          id="t1"
++          name="News"
++          active
++          isEditing={props.isEditing ?? false}
++          canRemove={props.canRemove ?? true}
++          {...calls}
++        />
++      </SortableContext>
++    </DndContext>,
++  );
++  mounted.push(view.unmount);
++  await act(async () => {});
++};
++
++const tab = () => document.querySelector("button[aria-roledescription]") as HTMLElement;
++const menu = () => document.querySelector('[role="menu"]');
++const items = () => Array.from(document.querySelectorAll('[role="menuitem"]'));
++const item = (text: string) =>
++  items().find((el) => el.textContent?.includes(text)) as HTMLElement | undefined;
++const fire = (el: Element | Document, type: string, init: MouseEventInit = {}) => {
++  const ev = new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
++  act(() => void el.dispatchEvent(ev));
++  return ev;
++};
++const rightClick = (init: MouseEventInit = { clientX: 120, clientY: 60 }) =>
++  fire(tab(), "contextmenu", init);
++
++afterEach(async () => {
++  // Unmount first: an open menu has listeners on the document that must not outlive the test.
++  for (const unmount of mounted.splice(0)) await unmount();
++  document.body.innerHTML = "";
++  Object.values(calls).forEach((f) => f.mockClear());
++});
++
++describe("SortableTab: a plain, fixed-width tab", () => {
++  it("shows only the name: no pencil and no cross beside it", async () => {
++    await open();
++    expect(tab().textContent).toBe("News");
++    expect(document.querySelector('[aria-label="Rename tab"]')).toBeNull();
++    expect(document.querySelector('[aria-label="Remove tab"]')).toBeNull();
++    expect(document.querySelectorAll("svg")).toHaveLength(0);
++  });
++
++  it("clicking the name activates the tab", async () => {
++    await open();
++    fire(tab(), "click");
++    expect(calls.onActivate).toHaveBeenCalledTimes(1);
++  });
++});
++
++describe("rename with a double click or F2", () => {
++  it("a double click starts renaming", async () => {
++    await open();
++    fire(tab(), "dblclick");
++    expect(calls.onStartEdit).toHaveBeenCalledTimes(1);
++  });
++
++  it("F2 on the tab starts renaming", async () => {
++    await open();
++    act(() => void tab().dispatchEvent(new KeyboardEvent("keydown", { key: "F2", bubbles: true })));
++    expect(calls.onStartEdit).toHaveBeenCalledTimes(1);
++  });
++
++  it("while the name is being edited, a double click does not restart it", async () => {
++    await open({ isEditing: true });
++    fire(document.querySelector("input")!, "dblclick");
++    expect(calls.onStartEdit).not.toHaveBeenCalled();
++  });
++});
++
++describe("right-click menu", () => {
++  it("opens with Rename and Delete, and the browser menu stays away", async () => {
++    await open();
++    const ev = rightClick();
++    expect(ev.defaultPrevented).toBe(true);
++    expect(menu()).not.toBeNull();
++    expect(items().map((i) => i.textContent?.trim())).toEqual(["Rename", "Delete tab…"]);
++  });
++
++  it("opens where the pointer is", async () => {
++    await open();
++    rightClick({ clientX: 120, clientY: 60 });
++    const m = menu() as HTMLElement;
++    expect(m.style.left).toBe("120px");
++    expect(m.style.top).toBe("60px");
++  });
++
++  it("opened from the keyboard (no pointer position) it appears under the tab", async () => {
++    await open();
++    rightClick({ clientX: 0, clientY: 0 });
++    expect(menu()).not.toBeNull();
++  });
++
++  it("Rename starts renaming and closes the menu", async () => {
++    await open();
++    rightClick();
++    fire(item("Rename")!, "click");
++    expect(calls.onStartEdit).toHaveBeenCalledTimes(1);
++    expect(menu()).toBeNull();
++    expect(calls.onRemove).not.toHaveBeenCalled();
++  });
++
++  it("Delete asks to remove the tab and closes the menu", async () => {
++    await open();
++    rightClick();
++    fire(item("Delete")!, "click");
++    expect(calls.onRemove).toHaveBeenCalledTimes(1);
++    expect(menu()).toBeNull();
++    expect(calls.onStartEdit).not.toHaveBeenCalled();
++  });
++
++  it("the last remaining tab cannot be deleted: only Rename is offered", async () => {
++    await open({ canRemove: false });
++    rightClick();
++    expect(items().map((i) => i.textContent?.trim())).toEqual(["Rename"]);
++  });
++
++  it("Escape closes it, changes nothing and gives the focus back to the tab", async () => {
++    await open();
++    rightClick();
++    act(() => void document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
++    expect(menu()).toBeNull();
++    expect(document.activeElement).toBe(tab());
++    expect(calls.onStartEdit).not.toHaveBeenCalled();
++    expect(calls.onRemove).not.toHaveBeenCalled();
++  });
++
++  it("moving the focus away (e.g. with Tab) closes it", async () => {
++    await open();
++    rightClick();
++    act(() => tab().focus());
++    expect(menu()).toBeNull();
++  });
++
++  it("a click elsewhere closes it without doing anything", async () => {
++    await open();
++    rightClick();
++    fire(document.body, "pointerdown");
++    expect(menu()).toBeNull();
++    expect(calls.onStartEdit).not.toHaveBeenCalled();
++    expect(calls.onRemove).not.toHaveBeenCalled();
++  });
++
++  it("the arrow keys move between the two entries", async () => {
++    await open();
++    rightClick();
++    expect(document.activeElement).toBe(item("Rename"));
++    act(
++      () =>
++        void menu()!.dispatchEvent(
++          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true }),
++        ),
++    );
++    expect(document.activeElement).toBe(item("Delete"));
++  });
++
++  it("while the name is being edited the normal browser menu is left alone", async () => {
++    await open({ isEditing: true });
++    const ev = fire(document.querySelector("input")!, "contextmenu", { clientX: 5, clientY: 5 });
++    expect(ev.defaultPrevented).toBe(false);
++    expect(menu()).toBeNull();
++  });
++});
+diff --git a/src/components/SortableTab.tsx b/src/components/SortableTab.tsx
+new file mode 100644
+index 0000000..f3450e5
+--- /dev/null
++++ b/src/components/SortableTab.tsx
+@@ -0,0 +1,116 @@
++import { useRef, useState } from "react";
++import { useSortable } from "@dnd-kit/sortable";
++import { CSS } from "@dnd-kit/utilities";
++import { TabContextMenu, type TabMenuCloseReason } from "@/components/TabContextMenu";
++
++interface Props {
++  id: string;
++  name: string;
++  active: boolean;
++  isEditing: boolean;
++  canRemove: boolean;
++  onActivate: () => void;
++  onStartEdit: () => void;
++  onFinishEdit: (name: string | null) => void;
++  onRemove: () => void;
++}
++
++/**
++ * One tab of the bar. It shows only its name, so every tab keeps the same width whether
++ * it is active or not. Rename: double click (or F2). Rename / delete: right click
++ * (or the keyboard "menu" key) opens a small menu.
++ */
++export function SortableTab({
++  id,
++  name,
++  active,
++  isEditing,
++  canRemove,
++  onActivate,
++  onStartEdit,
++  onFinishEdit,
++  onRemove,
++}: Props) {
++  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
++    id,
++  });
++  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
++  const nameButton = useRef<HTMLButtonElement | null>(null);
++
++  const style = {
++    transform: CSS.Transform.toString(transform),
++    transition,
++    opacity: isDragging ? 0.5 : 1,
++  };
++
++  function closeMenu(reason: TabMenuCloseReason) {
++    setMenu(null);
++    // Back to the tab only when the menu was dismissed: after "Rename" the name field has the focus.
++    if (reason === "escape") nameButton.current?.focus();
++  }
++
++  return (
++    <div
++      ref={setNodeRef}
++      style={style}
++      className={`group flex items-center px-3 pt-2 pb-2.5 -mb-px text-sm border-b-2 transition ${
++        active
++          ? "border-primary text-foreground"
++          : "border-transparent text-muted-foreground hover:text-foreground"
++      }`}
++      onDoubleClick={() => {
++        if (!isEditing) onStartEdit();
++      }}
++      onContextMenu={(e) => {
++        if (isEditing) return; // keep the normal menu (copy / paste) inside the name field
++        e.preventDefault();
++        // Opened from the keyboard the browser reports no pointer position.
++        const fromKeyboard = e.clientX === 0 && e.clientY === 0;
++        const box = e.currentTarget.getBoundingClientRect();
++        setMenu(fromKeyboard ? { x: box.left, y: box.bottom } : { x: e.clientX, y: e.clientY });
++      }}
++    >
++      {isEditing ? (
++        <input
++          autoFocus
++          defaultValue={name}
++          onBlur={(e) => onFinishEdit(e.target.value || name)}
++          onKeyDown={(e) => {
++            if (e.key === "Enter") onFinishEdit((e.target as HTMLInputElement).value || name);
++            if (e.key === "Escape") onFinishEdit(null);
++          }}
++          className="bg-transparent outline-none border-b border-primary w-24"
++        />
++      ) : (
++        <button
++          ref={(el) => {
++            nameButton.current = el;
++          }}
++          onClick={onActivate}
++          {...attributes}
++          {...listeners}
++          onKeyDown={(e) => {
++            if (e.key === "F2") {
++              e.preventDefault();
++              onStartEdit();
++            }
++          }}
++          title="Double-click to rename · right-click for more"
++          className="cursor-grab active:cursor-grabbing"
++        >
++          {name}
++        </button>
++      )}
++      {menu && (
++        <TabContextMenu
++          x={menu.x}
++          y={menu.y}
++          canRemove={canRemove}
++          onRename={onStartEdit}
++          onRemove={onRemove}
++          onClose={closeMenu}
++        />
++      )}
++    </div>
++  );
++}
+diff --git a/src/components/TabContextMenu.tsx b/src/components/TabContextMenu.tsx
+new file mode 100644
+index 0000000..0f70ef5
+--- /dev/null
++++ b/src/components/TabContextMenu.tsx
+@@ -0,0 +1,117 @@
++import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
++import { createPortal } from "react-dom";
++import { Pencil, Trash2 } from "lucide-react";
++
++export type TabMenuCloseReason = "escape" | "outside" | "action";
++
++interface Props {
++  /** Where the menu opens (window coordinates); it is moved if it would leave the window. */
++  x: number;
++  y: number;
++  canRemove: boolean;
++  onRename: () => void;
++  onRemove: () => void;
++  /** The menu must disappear: always called, also after an action. */
++  onClose: (reason: TabMenuCloseReason) => void;
++}
++
++const ITEM =
++  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-left outline-none transition hover:bg-secondary focus:bg-secondary";
++
++/**
++ * Small menu opened with a right click on a tab: Rename and Delete.
++ * Drawn on `document.body` so the (scrolling) tab bar cannot clip it.
++ */
++export function TabContextMenu({ x, y, canRemove, onRename, onRemove, onClose }: Props) {
++  const ref = useRef<HTMLDivElement>(null);
++  const [pos, setPos] = useState({ left: x, top: y });
++
++  useLayoutEffect(() => {
++    const el = ref.current;
++    if (!el) return;
++    const r = el.getBoundingClientRect();
++    setPos({
++      left: Math.max(4, Math.min(x, window.innerWidth - r.width - 4)),
++      top: Math.max(4, Math.min(y, window.innerHeight - r.height - 4)),
++    });
++  }, [x, y]);
++
++  useEffect(() => {
++    ref.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
++  }, []);
++
++  useEffect(() => {
++    const outside = (e: Event) => {
++      if (!ref.current?.contains(e.target as Node)) onClose("outside");
++    };
++    const escape = (e: globalThis.KeyboardEvent) => {
++      if (e.key !== "Escape") return;
++      e.preventDefault();
++      onClose("escape");
++    };
++    const away = () => onClose("outside");
++    document.addEventListener("pointerdown", outside, true);
++    document.addEventListener("keydown", escape, true);
++    window.addEventListener("blur", away);
++    window.addEventListener("resize", away);
++    window.addEventListener("scroll", away, true);
++    return () => {
++      document.removeEventListener("pointerdown", outside, true);
++      document.removeEventListener("keydown", escape, true);
++      window.removeEventListener("blur", away);
++      window.removeEventListener("resize", away);
++      window.removeEventListener("scroll", away, true);
++    };
++  }, [onClose]);
++
++  function moveFocus(e: KeyboardEvent<HTMLDivElement>) {
++    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
++    e.preventDefault();
++    const items = Array.from(ref.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
++    if (items.length === 0) return;
++    const i = items.indexOf(document.activeElement as HTMLElement);
++    const next = e.key === "ArrowDown" ? i + 1 : i - 1;
++    items[(next + items.length) % items.length].focus();
++  }
++
++  return createPortal(
++    <div
++      ref={ref}
++      role="menu"
++      aria-label="Tab menu"
++      style={{ position: "fixed", left: pos.left, top: pos.top }}
++      className="z-50 min-w-44 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
++      onKeyDown={moveFocus}
++      onBlur={(e) => {
++        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onClose("outside");
++      }}
++      onContextMenu={(e) => e.preventDefault()}
++    >
++      <button
++        type="button"
++        role="menuitem"
++        className={ITEM}
++        onClick={() => {
++          onRename();
++          onClose("action");
++        }}
++      >
++        <Pencil className="h-4 w-4" /> Rename
++      </button>
++      {canRemove && (
++        <button
++          type="button"
++          role="menuitem"
++          className={`${ITEM} text-destructive`}
++          onClick={() => {
++            onRemove();
++            onClose("action");
++          }}
++        >
++          <Trash2 className="h-4 w-4" /> Delete tab…
++        </button>
++      )}
++    </div>,
++    document.body,
++  );
++}
+diff --git a/src/routes/index.tsx b/src/routes/index.tsx
+index e77bb67..2ddc916 100644
+--- a/src/routes/index.tsx
++++ b/src/routes/index.tsx
+@@ -10,19 +10,14 @@ import {
+   type DragEndEvent,
+   type DragStartEvent,
+ } from "@dnd-kit/core";
+-import {
+-  SortableContext,
+-  horizontalListSortingStrategy,
+-  useSortable,
+-  arrayMove,
+-} from "@dnd-kit/sortable";
+-import { CSS } from "@dnd-kit/utilities";
++import { SortableContext, horizontalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+ import { useDashboard } from "@/lib/useDashboard";
+ import { computeDropSlot, measureColumns, sameSlot, type DropSlot } from "@/lib/dropSlot";
+ import { FeedCard } from "@/components/FeedCard";
+ import { AddItemDialog } from "@/components/AddItemDialog";
+ import { BookmarksCard } from "@/components/BookmarksCard";
+-import { Plus, Sparkles, X, Pencil } from "lucide-react";
++import { SortableTab } from "@/components/SortableTab";
++import { Plus, Sparkles } from "lucide-react";
+ import { AccessGate } from "@/components/AccessGate";
+ import { UserMenu } from "@/components/UserMenu";
+ import { ConfirmDialog } from "@/components/ConfirmDialog";
+@@ -564,92 +559,6 @@ function Column({
+   );
+ }
+ 
+-function SortableTab({
+-  id,
+-  name,
+-  active,
+-  isEditing,
+-  canRemove,
+-  onActivate,
+-  onStartEdit,
+-  onFinishEdit,
+-  onRemove,
+-}: {
+-  id: string;
+-  name: string;
+-  active: boolean;
+-  isEditing: boolean;
+-  canRemove: boolean;
+-  onActivate: () => void;
+-  onStartEdit: () => void;
+-  onFinishEdit: (name: string | null) => void;
+-  onRemove: () => void;
+-}) {
+-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+-    id,
+-  });
+-
+-  const style = {
+-    transform: CSS.Transform.toString(transform),
+-    transition,
+-    opacity: isDragging ? 0.5 : 1,
+-  };
+-
+-  return (
+-    <div
+-      ref={setNodeRef}
+-      style={style}
+-      className={`group flex items-center gap-1 px-3 pt-2 pb-2.5 -mb-px text-sm border-b-2 transition ${
+-        active
+-          ? "border-primary text-foreground"
+-          : "border-transparent text-muted-foreground hover:text-foreground"
+-      }`}
+-    >
+-      {isEditing ? (
+-        <input
+-          autoFocus
+-          defaultValue={name}
+-          onBlur={(e) => onFinishEdit(e.target.value || name)}
+-          onKeyDown={(e) => {
+-            if (e.key === "Enter") onFinishEdit((e.target as HTMLInputElement).value || name);
+-            if (e.key === "Escape") onFinishEdit(null);
+-          }}
+-          className="bg-transparent outline-none border-b border-primary w-24"
+-        />
+-      ) : (
+-        <button
+-          onClick={onActivate}
+-          {...attributes}
+-          {...listeners}
+-          className="cursor-grab active:cursor-grabbing"
+-        >
+-          {name}
+-        </button>
+-      )}
+-      {active && !isEditing && (
+-        <>
+-          <button
+-            onClick={onStartEdit}
+-            className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-foreground"
+-            aria-label="Rename tab"
+-          >
+-            <Pencil className="h-3 w-3" />
+-          </button>
+-          {canRemove && (
+-            <button
+-              onClick={onRemove}
+-              className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-destructive"
+-              aria-label="Remove tab"
+-            >
+-              <X className="h-3 w-3" />
+-            </button>
+-          )}
+-        </>
+-      )}
+-    </div>
+-  );
+-}
+-
+ function EmptyState({
+   onAddFeed,
+   onAddBookmarks,

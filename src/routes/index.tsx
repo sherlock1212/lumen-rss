@@ -10,19 +10,14 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  horizontalListSortingStrategy,
-  useSortable,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { SortableContext, horizontalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { useDashboard } from "@/lib/useDashboard";
 import { computeDropSlot, measureColumns, sameSlot, type DropSlot } from "@/lib/dropSlot";
 import { FeedCard } from "@/components/FeedCard";
 import { AddItemDialog } from "@/components/AddItemDialog";
 import { BookmarksCard } from "@/components/BookmarksCard";
-import { Plus, Sparkles, X, Pencil } from "lucide-react";
+import { SortableTab } from "@/components/SortableTab";
+import { Plus, Sparkles } from "lucide-react";
 import { AccessGate } from "@/components/AccessGate";
 import { UserMenu } from "@/components/UserMenu";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -561,92 +556,6 @@ function Column({
         {children}
       </div>
     </SortableContext>
-  );
-}
-
-function SortableTab({
-  id,
-  name,
-  active,
-  isEditing,
-  canRemove,
-  onActivate,
-  onStartEdit,
-  onFinishEdit,
-  onRemove,
-}: {
-  id: string;
-  name: string;
-  active: boolean;
-  isEditing: boolean;
-  canRemove: boolean;
-  onActivate: () => void;
-  onStartEdit: () => void;
-  onFinishEdit: (name: string | null) => void;
-  onRemove: () => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id,
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`group flex items-center gap-1 px-3 pt-2 pb-2.5 -mb-px text-sm border-b-2 transition ${
-        active
-          ? "border-primary text-foreground"
-          : "border-transparent text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {isEditing ? (
-        <input
-          autoFocus
-          defaultValue={name}
-          onBlur={(e) => onFinishEdit(e.target.value || name)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") onFinishEdit((e.target as HTMLInputElement).value || name);
-            if (e.key === "Escape") onFinishEdit(null);
-          }}
-          className="bg-transparent outline-none border-b border-primary w-24"
-        />
-      ) : (
-        <button
-          onClick={onActivate}
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing"
-        >
-          {name}
-        </button>
-      )}
-      {active && !isEditing && (
-        <>
-          <button
-            onClick={onStartEdit}
-            className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-foreground"
-            aria-label="Rename tab"
-          >
-            <Pencil className="h-3 w-3" />
-          </button>
-          {canRemove && (
-            <button
-              onClick={onRemove}
-              className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-destructive"
-              aria-label="Remove tab"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </>
-      )}
-    </div>
   );
 }
 
