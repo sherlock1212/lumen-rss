@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Star, Trash2, Plus, X, Pencil } from "lucide-react";
+import { Check, GripVertical, Star, Trash2, Plus, X, Pencil } from "lucide-react";
 import type { FeedWidget, Bookmark } from "@/lib/rss";
 import { ConfirmDialog } from "./ConfirmDialog";
 
@@ -54,6 +54,132 @@ function BookmarkFavicon({ url }: { url: string }) {
   );
 }
 
+/** The label used when none is given: the site name, e.g. "example.com". */
+function hostnameTitle(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
+interface RowProps {
+  bookmark: Bookmark;
+  onRename: (id: string, title: string) => void;
+  onAskRemove: (bookmark: Bookmark) => void;
+}
+
+/** One bookmark: the link, plus buttons to rename it or remove it (after a confirmation). */
+function BookmarkRow({ bookmark, onRename, onAskRemove }: RowProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(bookmark.title);
+  // Set as soon as an edit is finished (saved or cancelled), so that the blur which follows
+  // the input disappearing cannot save a second time or undo a cancel.
+  const finished = useRef(false);
+
+  function start() {
+    finished.current = false;
+    setDraft(bookmark.title);
+    setEditing(true);
+  }
+
+  function save() {
+    if (finished.current) return;
+    finished.current = true;
+    // An empty label falls back to the site name, as when the bookmark is added.
+    const next = draft.trim() || hostnameTitle(bookmark.url);
+    setEditing(false);
+    if (next !== bookmark.title) onRename(bookmark.id, next);
+  }
+
+  function cancel() {
+    finished.current = true;
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <li className="flex items-center gap-2.5 px-3 py-1.5 border-b border-border last:border-b-0 bg-secondary/30">
+        <BookmarkFavicon url={bookmark.url} />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            save();
+          }}
+          className="flex-1 flex items-center gap-1 min-w-0"
+        >
+          <input
+            autoFocus
+            aria-label="Bookmark label"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={save}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                cancel();
+              }
+            }}
+            className="flex-1 min-w-0 bg-input border border-border rounded px-2 py-0.5 text-sm outline-none focus:border-primary"
+          />
+          {/* mousedown is stopped so the input keeps focus: otherwise its blur would save first */}
+          <button
+            type="submit"
+            aria-label="Save label"
+            onMouseDown={(e) => e.preventDefault()}
+            className="p-1 rounded hover:bg-secondary text-primary shrink-0"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            aria-label="Cancel renaming"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={cancel}
+            className="p-1 rounded hover:bg-secondary text-muted-foreground shrink-0"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </form>
+      </li>
+    );
+  }
+
+  const reveal =
+    "opacity-0 group-hover/item:opacity-100 group-focus-within/item:opacity-100 focus-visible:opacity-100 transition shrink-0";
+  return (
+    <li className="group/item flex items-center gap-2.5 px-3 py-2 border-b border-border last:border-b-0 hover:bg-secondary/40 transition">
+      <BookmarkFavicon url={bookmark.url} />
+      <a
+        href={bookmark.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex-1 text-sm truncate hover:text-primary hover:underline underline-offset-2 transition-colors"
+        title={bookmark.url}
+      >
+        {bookmark.title}
+      </a>
+      <button
+        onClick={start}
+        className={`${reveal} p-1 rounded hover:bg-secondary text-muted-foreground`}
+        aria-label="Rename bookmark"
+        title="Rename"
+      >
+        <Pencil className="h-3 w-3" />
+      </button>
+      <button
+        onClick={() => onAskRemove(bookmark)}
+        className={`${reveal} p-1 rounded hover:bg-destructive/20 text-destructive`}
+        aria-label="Remove bookmark"
+        title="Remove"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </li>
+  );
+}
+
 export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -62,6 +188,10 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
   const [newUrl, setNewUrl] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
+  // The bookmark waiting for the "remove?" answer. The target is kept while the dialog closes,
+  // so its text does not go blank during the fade-out.
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<Bookmark | null>(null);
 
   const bookmarks: Bookmark[] = widget.bookmarks ?? [];
 
@@ -95,15 +225,7 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
       setAddError("Invalid URL");
       return;
     }
-    const title =
-      newTitle.trim() ||
-      (() => {
-        try {
-          return new URL(normalized).hostname.replace(/^www\./, "");
-        } catch {
-          return normalized;
-        }
-      })();
+    const title = newTitle.trim() || hostnameTitle(normalized);
     onUpdate({ bookmarks: [...bookmarks, { id: uid(), url: normalized, title }] });
     setNewUrl("");
     setNewTitle("");
@@ -113,6 +235,10 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
 
   function removeBookmark(id: string) {
     onUpdate({ bookmarks: bookmarks.filter((b) => b.id !== id) });
+  }
+
+  function renameBookmark(id: string, title: string) {
+    onUpdate({ bookmarks: bookmarks.map((b) => (b.id === id ? { ...b, title } : b)) });
   }
 
   return (
@@ -217,28 +343,15 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
 
         <ul>
           {bookmarks.map((b) => (
-            <li
+            <BookmarkRow
               key={b.id}
-              className="group/item flex items-center gap-2.5 px-3 py-2 border-b border-border last:border-b-0 hover:bg-secondary/40 transition"
-            >
-              <BookmarkFavicon url={b.url} />
-              <a
-                href={b.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 text-sm truncate hover:text-primary hover:underline underline-offset-2 transition-colors"
-                title={b.url}
-              >
-                {b.title}
-              </a>
-              <button
-                onClick={() => removeBookmark(b.id)}
-                className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:bg-destructive/20 text-destructive transition shrink-0"
-                aria-label="Remove bookmark"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </li>
+              bookmark={b}
+              onRename={renameBookmark}
+              onAskRemove={(bm) => {
+                setRemoveTarget(bm);
+                setRemoveOpen(true);
+              }}
+            />
           ))}
         </ul>
 
@@ -285,6 +398,18 @@ export function BookmarksCard({ widget, onRemove, onUpdate }: Props) {
           </form>
         )}
       </div>
+
+      <ConfirmDialog
+        open={removeOpen}
+        onOpenChange={setRemoveOpen}
+        title="Remove this bookmark?"
+        description={`"${removeTarget?.title ?? ""}" will be removed from this tile.`}
+        confirmLabel="Remove"
+        onConfirm={() => {
+          setRemoveOpen(false);
+          if (removeTarget) removeBookmark(removeTarget.id);
+        }}
+      />
 
       <ConfirmDialog
         open={confirmOpen}
